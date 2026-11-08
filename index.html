@@ -1980,6 +1980,21 @@ function layers() {
       opacity: fade,
       updateTriggers: { getPosition: [sig, tilted] },
     }),
+    // ward view: species count on each raised ward, placed over your own spots so it always sits on the ward
+    wardZone && new deck.TextLayer({
+      id: "ward-labels", parameters: { depthCompare: "always", depthWriteEnabled: false, depthTest: false },
+      data: (() => {
+        const acc = new Map();
+        for (const g of current.groups || []) { const k = g.items[0] && g.items[0].ward; if (!k || !aggW.has(k)) continue; const s = acc.get(k) || { k, x: 0, y: 0, c: 0 }; s.x += g.lng; s.y += g.lat; s.c++; acc.set(k, s); }
+        return [...acc.values()].map((s) => ({ k: s.k, n: aggW.get(s.k).n, x: s.x / s.c, y: s.y / s.c }));
+      })(),
+      getPosition: (d) => [d.x, d.y, wardSlabH(d.k) + mpp * 3], getText: (d) => String(d.n),
+      getSize: 13, getColor: [27, 42, 47], fontFamily: "'IBM Plex Mono', Menlo, monospace", fontWeight: 600, characterSet: "0123456789",
+      background: true, getBackgroundColor: [255, 255, 255, 235], backgroundPadding: [5, 2, 5, 2], getBorderColor: [184, 194, 196], getBorderWidth: 1,
+      getTextAnchor: "middle", getAlignmentBaseline: "bottom", getPixelOffset: [0, -6], billboard: true,
+      opacity: fade,
+      updateTriggers: { getPosition: [sig, tilted, Math.round(viewState.zoom * 8)] },
+    }),
   ];
 }
 function initMap() {
