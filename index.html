@@ -278,7 +278,7 @@ ul.species li button[aria-pressed="true"] { background: var(--accent-soft); bord
 ul.species li.sp-row { grid-template-columns: auto 1fr auto; }
 ul.species li.sp-row .sp-thumb { background: transparent; border: 0; padding: 6px 2px 6px 6px; align-self: center; cursor: pointer; }
 .sp-card { transition: border-color .4s; }
-.sp-card[style*="--bird"] { border-color: var(--bird); border-width: 1.5px; }
+.sp-card[style*="--bird"] { border-color: var(--bird); border-width: 2px; }
 .sp-card.focus[style*="--bird"] { box-shadow: 0 0 0 2px color-mix(in srgb, var(--bird) 30%, transparent); }
 .ph-thumb.ok { box-shadow: 0 0 0 2px var(--bird, transparent); }
 .sp-card .top.has-ph { justify-content: flex-start; align-items: center; }
@@ -1708,6 +1708,25 @@ function vizLayers(t) {
 /* ---------- click a totem layer or a bird: family detail in the panel ---------- */
 const ebirdLink = (sub) => sub ? `https://ebird.org/checklist/${encodeURIComponent(sub)}` : null;
 
+/* hand-picked main plumage colours (Latin name), used before trying to read a colour from the photo */
+const PLUMAGE = {
+  "Chroicocephalus ridibundus": "#c4ccd2", "Larus michahellis": "#b8c2ca", "Larus argentatus": "#b8c2ca", "Larus fuscus": "#6c737a", "Larus canus": "#b8c2ca", "Larus marinus": "#5d646b",
+  "Branta canadensis": "#8a6e55", "Anser anser": "#9a8b78", "Cygnus olor": "#dde2e5", "Anas platyrhynchos": "#8c6a4c", "Mareca strepera": "#8e8378", "Mareca penelope": "#b0603e",
+  "Aythya fuligula": "#5e6670", "Aythya ferina": "#a8573a", "Anas crecca": "#9a6248", "Spatula clypeata": "#3f8a5a", "Tadorna tadorna": "#c0583a", "Aix galericulata": "#d08a3c",
+  "Fulica atra": "#5a6068", "Gallinula chloropus": "#5a5560", "Tachybaptus ruficollis": "#8c5a3e", "Podiceps cristatus": "#a8714c", "Ardea cinerea": "#8f9aa3", "Phalacrocorax carbo": "#4f5a55",
+  "Alcedo atthis": "#2f9fc4", "Corvus corone": "#5a5f66", "Corvus frugilegus": "#5d5a6b", "Corvus monedula": "#6d7680", "Coloeus monedula": "#6d7680", "Corvus corax": "#565b63",
+  "Garrulus glandarius": "#b88a74", "Pica pica": "#3f6f8a", "Periparus ater": "#7b7f86", "Cyanistes caeruleus": "#3d8fd0", "Parus major": "#c9b83a", "Aegithalos caudatus": "#c99aa4",
+  "Poecile palustris": "#8d8577", "Fringilla coelebs": "#c27a5c", "Carduelis carduelis": "#d0463a", "Chloris chloris": "#8faa3c", "Spinus spinus": "#b2c23c", "Pyrrhula pyrrhula": "#d06a5c",
+  "Linaria cannabina": "#b3664f", "Phylloscopus collybita": "#9aa060", "Phylloscopus trochilus": "#a9ab5c", "Sylvia atricapilla": "#868a8e", "Curruca communis": "#9b8a72", "Regulus regulus": "#a8b04a",
+  "Prunella modularis": "#8a6a52", "Turdus merula": "#5a5f66", "Turdus philomelos": "#9a7a56", "Turdus iliacus": "#b5603e", "Turdus pilaris": "#8a7f88", "Turdus viscivorus": "#9c8a6a",
+  "Erithacus rubecula": "#d0703a", "Streptopelia decaocto": "#b8a48e", "Columba palumbus": "#8a95a8", "Columba livia": "#8590a0", "Columba oenas": "#7d8aa0", "Sitta europaea": "#7d93a8",
+  "Passer montanus": "#9a6a48", "Passer domesticus": "#9a7454", "Certhia familiaris": "#9a7c5e", "Nannus troglodytes": "#9a6c48", "Troglodytes troglodytes": "#9a6c48", "Motacilla cinerea": "#d6c03c",
+  "Motacilla alba": "#8d949a", "Psittacula krameri": "#58b04a", "Sturnus vulgaris": "#4f6a6a", "Dendrocopos major": "#c04a4a", "Picus viridis": "#6c9a3e", "Buteo buteo": "#8a6a4e",
+  "Falco tinnunculus": "#b0683e", "Accipiter nisus": "#7f8a96", "Strix aluco": "#9a6e4a", "Hirundo rustica": "#3e5a88", "Delichon urbicum": "#405a80", "Apus apus": "#5d5c5a",
+  "Numenius arquata": "#9a8466", "Vanellus vanellus": "#3f7a5a", "Tringa totanus": "#a86b52", "Haematopus ostralegus": "#c8584a", "Emberiza citrinella": "#d6b832", "Alauda arvensis": "#9a8466",
+  "Phasianus colchicus": "#b0603a", "Oenanthe oenanthe": "#b08a68", "Saxicola rubicola": "#c06a3e", "Phoenicurus ochruros": "#6a6e75", "Bombycilla garrulus": "#b88a70", "Cettia cetti": "#8a5e42",
+  "Acrocephalus scirpaceus": "#9a8060", "Emberiza schoeniclus": "#8a6a4a", "Panurus biarmicus": "#c08a5c", "Anthus pratensis": "#8f8a62", "Cinclus cinclus": "#7a4e3a",
+};
 /* ---------- bird photos from iNaturalist, matched by Latin name ---------- */
 const Photos = (() => {
   const KEY = "birb-photos-v1", mem = new Map(), wait = new Map();
@@ -1754,10 +1773,11 @@ const Photos = (() => {
     (root || document).querySelectorAll(".ph[data-photo]:not([data-done])").forEach((el) => {
       el.dataset.done = "1";
       get(el.dataset.photo).then((v) => {
+        if (PLUMAGE[el.dataset.photo]) paint(el, el.dataset.photo, v || {});
         if (!v) { if (el.classList.contains("ph-hero") || el.classList.contains("ph-tip")) el.classList.add("none"); return; }
         const img = new Image();
         img.alt = ""; img.decoding = "async"; img.referrerPolicy = "no-referrer";
-        img.onload = () => { el.classList.add("ok"); paint(el, el.dataset.photo, v); };
+        img.onload = () => { el.classList.add("ok"); if (!PLUMAGE[el.dataset.photo]) paint(el, el.dataset.photo, v); };
         img.onerror = () => { if (!el.classList.contains("ph-thumb") && !el.classList.contains("ph-card")) el.classList.add("none"); };
         img.src = el.dataset.size === "sq" ? v.sq : v.md;
         el.title = `Photo ${v.credit}, via iNaturalist`;
@@ -1770,7 +1790,10 @@ const Photos = (() => {
      favour saturated pixels near the centre, then nudge lightness so it reads on day and night */
   const colours = (() => { try { return JSON.parse(localStorage.getItem(KEY + "-col") || "{}"); } catch (e) { return {}; } })();
   function colourOf(sci, url) {
+    if (PLUMAGE[sci]) return Promise.resolve(PLUMAGE[sci]);
     if (colours[sci]) return Promise.resolve(colours[sci]);
+    /* on the hosted site, read the photo through our own address so the browser lets us see its colours */
+    if (location.protocol.startsWith("http")) url = url.replace(/^https:\/\/inaturalist-open-data\.s3\.amazonaws\.com\//, "/inat-open/").replace(/^https:\/\/static\.inaturalist\.org\//, "/inat-static/");
     return new Promise((resolve) => {
       const im = new Image(); im.crossOrigin = "anonymous"; im.referrerPolicy = "no-referrer";
       im.onload = () => {

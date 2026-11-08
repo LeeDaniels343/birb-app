@@ -1,2 +1,13 @@
 [build]
   publish = "."
+
+# Bird photos read through this site's own address, so the app can pick each bird's colour from its photo
+[[redirects]]
+  from = "/inat-open/*"
+  to = "https://inaturalist-open-data.s3.amazonaws.com/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/inat-static/*"
+  to = "https://static.inaturalist.org/:splat"
+  status = 200
