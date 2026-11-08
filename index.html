@@ -506,7 +506,9 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
   .world-tools .seg { flex: 1 1 100%; }
   .world-tools .seg[data-k="Turn"] { display: none; }
   .world-legend { display: none !important; }
-  .world-focus { top: calc(78px + env(safe-area-inset-top)); }
+  .world-focus { top: calc(78px + env(safe-area-inset-top)); flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .world-focus .lg, .world-focus .lvl { display: none; }
+  .world-focus button { padding-left: 11px; padding-right: 11px; white-space: nowrap; }
 }
 </style>
 </head>
@@ -664,9 +666,9 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
     <div id="world-gl"></div>
     <nav class="crumbs world-focus" aria-label="Focus on a habitat">
       <button type="button" data-wfocus="all" aria-current="location"><span class="lvl">Habitats</span>All<span class="n"></span></button>
-      <button type="button" data-wfocus="pond" aria-current="false">Pond and wetland<span class="n"></span></button>
+      <button type="button" data-wfocus="pond" aria-current="false">Pond<span class="lg"> and wetland</span><span class="n"></span></button>
       <button type="button" data-wfocus="wood" aria-current="false">Woodland<span class="n"></span></button>
-      <button type="button" data-wfocus="farm" aria-current="false">Farmland and hedgerow<span class="n"></span></button>
+      <button type="button" data-wfocus="farm" aria-current="false">Farm<span class="lg">land and hedgerow</span><span class="n"></span></button>
     </nav>
     <div class="map-tools world-tools">
       <div class="seg" data-k="View" role="group" aria-label="Choose a view">
@@ -2878,7 +2880,7 @@ const World = (() => {
   let birds = [], sway = [], song = [], swim = [], flyers = [], peckers = [], ripples = [], notes = [], leaves = [], clouds = [], flies = [], climbers = [], labels = [];
   let PX = -6, PZ = 1.5, PR = 1;
   const tgt = { x: 1, y: 0, z: -1 }, tgtGo = { x: 1, y: 0, z: -1 };
-  let dist = 30, distGo = 30, th = 0.5, ph = 0.62, drag = null, hov = null, shift = 0;
+  let fit = 1, dist = 30, distGo = 30, th = 0.5, ph = 0.62, drag = null, hov = null, shift = 0;
   let seed = 5;
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const M = (c, o) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o || {}));
@@ -2936,7 +2938,12 @@ const World = (() => {
   function resize() {
     if (!R) return;
     const w = host.clientWidth || window.innerWidth, h = host.clientHeight || window.innerHeight;
-    R.setSize(w, h); C.aspect = w / h; C.updateProjectionMatrix();
+    R.setSize(w, h); C.aspect = w / h;
+    /* upright phones: widen the lens and step back so each habitat fits side to side, not just top to bottom */
+    const a = C.aspect;
+    C.fov = a < 1 ? 34 + (1 - a) * 32 : 34;
+    fit = a < 1 ? Math.max(1, 0.34 / (Math.tan((C.fov * Math.PI) / 360) * a)) : 1;
+    C.updateProjectionMatrix();
   }
 
   function disposeScene() {
@@ -3150,8 +3157,8 @@ const World = (() => {
   }
 
   function setFocusPressed(k) { document.querySelectorAll(".world-focus [data-wfocus]").forEach((b) => b.setAttribute("aria-current", b.dataset.wfocus === k ? "location" : "false")); }
-  const narrow = () => (C && C.aspect < 1 ? 1.35 : 1);
-  function focus(k) { const [f, d] = FOCUS[k]; tgtGo.x = f[0]; tgtGo.y = f[1]; tgtGo.z = f[2]; distGo = d * narrow(); idle = 0; setFocusPressed(k); }
+  const narrow = (k) => fit * (fit > 1 ? ({ all: 1.15, wood: 1.1 })[k] || 1 : 1);
+  function focus(k) { const [f, d] = FOCUS[k]; tgtGo.x = f[0]; tgtGo.y = f[1]; tgtGo.z = f[2]; distGo = d * narrow(k); idle = 0; setFocusPressed(k); }
 
   function setLight(name) {
     light = name;
@@ -3208,7 +3215,7 @@ const World = (() => {
     resize();
     const first = !S;
     if (dirty || !S) build();
-    if (first) { dist = distGo = FOCUS.all[1] * narrow(); }
+    if (first) { dist = distGo = FOCUS.all[1] * narrow("all"); }
     last = performance.now();
     if (!raf) raf = requestAnimationFrame(frame);
   }
