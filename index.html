@@ -262,6 +262,37 @@ ul.species li button[aria-pressed="true"] { background: var(--accent-soft); bord
 .sp-count { grid-row: 1 / span 2; grid-column: 2; align-self: center; text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .sp-count strong { display: block; font-family: var(--font-display); font-size: 18px; color: var(--ink); font-weight: 700; }
 .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+/* ---------- latest bird ---------- */
+.latest { display: grid; gap: 6px; justify-items: start; }
+.latest[hidden] { display: none; }
+.latest-pill { display: flex; align-items: center; gap: 9px; padding: 5px 12px 5px 5px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); color: var(--ink); border: 1.5px solid var(--bird, var(--line)); box-shadow: 0 1px 3px rgba(0,0,0,.12); text-align: left; cursor: pointer; }
+.latest-pill:hover { background: var(--surface); }
+.latest-thumb .ph-thumb { width: 34px; height: 34px; }
+.latest-txt { display: grid; line-height: 1.15; }
+.latest-txt small { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-family: var(--font-mono); }
+.latest-txt b { font-size: 13px; font-weight: 600; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.latest-chev { color: var(--muted); transition: transform .2s; }
+.latest-pill[aria-expanded="true"] .latest-chev { transform: rotate(180deg); }
+.latest-card { width: 272px; border-radius: 14px; overflow: hidden; background: var(--surface); border: 2px solid var(--bird, var(--line)); box-shadow: 0 6px 22px rgba(0,0,0,.18); animation: latestIn .22s ease; }
+.latest-card[hidden] { display: none; }
+@keyframes latestIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.latest-card .ph-hero { width: 100%; margin: 0; border-radius: 0; aspect-ratio: 4 / 3; }
+.latest-card .body { padding: 10px 13px 12px; display: grid; gap: 3px; }
+.latest-card h3 { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--ink); }
+.latest-card .where, .latest-card .when { font-size: 12.5px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.latest-card .when { font-family: var(--font-mono); font-size: 11.5px; }
+.latest-card .acts { display: flex; gap: 6px; margin-top: 7px; }
+.latest-card .acts button { font-size: 12px; padding: 5px 10px; }
+body.world-on .latest { display: none !important; }
+@media (max-width: 760px) {
+  .latest { position: fixed; top: calc(12px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); justify-items: end; z-index: 7; }
+  .latest-pill { padding: 4px; }
+  .latest-txt, .latest-chev { display: none; }
+  .latest-thumb .ph-thumb { width: 40px; height: 40px; }
+  .latest-card { width: min(272px, calc(100vw - 24px)); }
+  body.panel-open .latest { display: none; }
+}
+
 /* ---------- bird photos (iNaturalist) ---------- */
 .ph { position: relative; display: block; overflow: hidden; background: color-mix(in srgb, var(--ph, var(--accent)) 22%, var(--bg)); }
 .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .35s ease; }
@@ -481,6 +512,14 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
       <span><b>BIRB app</b><small id="open-summary">Show birds and places</small></span>
     </button>
     <div class="chips" id="map-chips" aria-label="Active filters"></div>
+    <div class="latest" id="latest" hidden>
+      <button type="button" class="latest-pill" id="latest-pill" aria-expanded="false" aria-controls="latest-card">
+        <span class="latest-thumb" id="latest-thumb"></span>
+        <span class="latest-txt"><small>Latest bird</small><b id="latest-name"></b></span>
+        <svg class="latest-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="latest-card" id="latest-card" hidden></div>
+    </div>
   </div>
   <nav class="crumbs" id="crumbs" aria-label="Where you are on the map"></nav>
   <div id="map" aria-label="3D map of sightings by county"><div class="loading">Drawing the map…</div></div>
@@ -845,7 +884,7 @@ function toRecords(text) {
       tax: parseFloat(get(r, "Taxonomic Order")) || 1e9,
       loc: get(r, "Location") || "Unnamed place",
       locId: get(r, "Location ID") || `${lat.toFixed(5)},${lng.toFixed(5)}`,
-      lat, lng, date: isoDate(get(r, "Date")), sub: get(r, "Submission ID"),
+      lat, lng, date: isoDate(get(r, "Date")), time: get(r, "Time") || "", sub: get(r, "Submission ID"),
       county: c ? c.name : (get(r, "County") || "Outside Great Britain"),
       region: c ? c.region : "Outside Great Britain",
       ward: (wardFor(lng, lat) || { name: WARD_HINTS[lng.toFixed(5) + "," + lat.toFixed(5)] || "Outside ward data" }).name,
@@ -2351,6 +2390,7 @@ function render() {
   pushLayers();
   crumbSig = ""; queueCrumbs();
   try { World.dataChanged(); } catch (e) {}
+  renderLatest();
 }
 
 $("species").addEventListener("click", (e) => {
@@ -2402,6 +2442,40 @@ document.querySelectorAll("[data-barby]").forEach((b) => {
     pushLayers();
   });
 });
+
+/* ---------- latest bird card on the map ---------- */
+let latestKey = "";
+function renderLatest() {
+  const box = $("latest");
+  if (!state.data.length) { box.hidden = true; return; }
+  const tk = (x) => { const m = /(\d+):(\d+)\s*([AP]M)?/i.exec(x.time || ""); if (!m) return x.date + " 00:00"; let h = +m[1] % 12; if (!m[3] || /p/i.test(m[3])) h = m[3] ? h + 12 : +m[1]; return x.date + " " + String(h).padStart(2, "0") + ":" + m[2]; };
+  const d = state.data.reduce((a, b) => (tk(b) >= tk(a) ? b : a));
+  box.hidden = false;
+  const key = d.name + d.date + d.loc;
+  if (key === latestKey) return;
+  latestKey = key;
+  const col = PLUMAGE[String(d.sci).split(" ").slice(0, 2).join(" ")];
+  box.style.removeProperty("--bird"); if (col) box.style.setProperty("--bird", col);
+  $("latest-name").textContent = d.name;
+  $("latest-pill").title = `Latest bird: ${d.name}, ${fmtDate(d.date)}`;
+  $("latest-thumb").innerHTML = Photos.slot(d.sci, "ph-thumb", famColour(d.family));
+  const t = d.time ? " · " + d.time.replace(/^0/, "") : "";
+  $("latest-card").innerHTML = `${Photos.slot(d.sci, "ph-hero", famColour(d.family), true)}
+    <div class="body">
+      <h3>${esc(d.name)}</h3>
+      <div class="where">${esc(d.loc)}</div>
+      <div class="when">Heard ${esc(fmtDate(d.date))}${esc(t)}</div>
+      <div class="acts"><button type="button" data-more="${esc(d.name)}">Its story</button><button type="button" data-flyto="${d.lng},${d.lat}">Fly there</button></div>
+    </div>`;
+  Photos.fill(box);
+}
+function setLatest(open) {
+  $("latest-card").hidden = !open;
+  $("latest-pill").setAttribute("aria-expanded", String(open));
+  try { localStorage.setItem("birb-latest-open", open ? "1" : "0"); } catch (e) {}
+}
+$("latest-pill").addEventListener("click", () => setLatest($("latest-card").hidden));
+try { if (localStorage.getItem("birb-latest-open") === "1" && window.innerWidth >= 760) setLatest(true); } catch (e) {}
 
 /* ---------- loading data ---------- */
 function setStatus(msg, isError = false) { const s = $("status"); s.innerHTML = msg; s.classList.toggle("error", isError); }
