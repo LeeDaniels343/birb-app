@@ -305,6 +305,16 @@ body.coll-on #crumbs, body.coll-on #map-tools, body.coll-on #legend, body.coll-o
 .cb-d { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); margin-top: -4px; }
 .cb-new { position: absolute; top: -4px; right: -8px; background: var(--hot); color: #fff; font-size: 9.5px; font-weight: 700; letter-spacing: .04em; padding: 2px 5px; border-radius: 999px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
 .cb.sel .cb-c { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* rarer visitors: a lilac frame, like a rare drop in a game */
+.cb { --lilac: #a982e8; --lilac-soft: rgba(169,130,232,.16); }
+.cb.rare.miss .cb-c { border: 2px solid var(--lilac); background: var(--lilac-soft); box-shadow: 0 0 0 3px rgba(169,130,232,.18), 0 0 14px rgba(169,130,232,.35); }
+.cb.rare.miss .cb-c svg { fill: color-mix(in srgb, var(--lilac) 70%, var(--muted)); }
+.cb.rare.got .cb-c { box-shadow: 0 0 0 3px var(--lilac), 0 0 16px rgba(169,130,232,.6); }
+.cb.rare .cb-n { color: color-mix(in srgb, var(--lilac) 75%, var(--ink)); }
+.cb-gem { position: absolute; bottom: -3px; right: -3px; width: 18px; height: 18px; border-radius: 50%; background: var(--lilac); display: grid; place-items: center; box-shadow: 0 0 0 2px var(--bg); }
+.cb .cb-c .cb-gem svg { width: 10px; height: 10px; fill: #fff; }
+.coll-key { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+.coll-key i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #a982e8; background: rgba(169,130,232,.16); box-shadow: 0 0 8px rgba(169,130,232,.45); }
 .crare { margin-top: 14px; }
 .crare > button { background: transparent; border: 1px dashed var(--line); color: var(--muted); font-size: 12px; padding: 5px 12px; border-radius: 999px; }
 .crare > button:hover { color: var(--ink); border-color: var(--muted); }
@@ -640,11 +650,13 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
           <button type="button" data-cf="all" aria-pressed="true">All</button>
           <button type="button" data-cf="got" aria-pressed="false">Collected</button>
           <button type="button" data-cf="miss" aria-pressed="false">Still to find</button>
+          <button type="button" data-cf="rare" aria-pressed="false">Rare</button>
         </div>
         <input type="search" id="coll-q" placeholder="Find a bird" aria-label="Find a bird in the collection">
+        <span class="coll-key"><i></i>Rarer visitor</span>
       </div>
       <div id="coll-wall"></div>
-      <p class="coll-note">The wall holds every species on eBird's United Kingdom list (native, naturalised and provisional, 634 in all). "Rarer visitors" are species nobody has logged in the UK on eBird in the past year.</p>
+      <p class="coll-note">The wall holds every species on eBird's United Kingdom list (native, naturalised and provisional, 634 in all). Birds with a lilac frame are rarer visitors: species nobody has logged in the UK on eBird in the past year.</p>
     </div>
     <div class="coll-pop" id="coll-pop" hidden></div>
   </section>
@@ -2546,7 +2558,7 @@ document.querySelectorAll("[data-barby]").forEach((b) => {
 /* ---------- collection wall ---------- */
 const Coll = (() => {
   const SIL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15.5c1.8-.2 3.2-1 4.2-2.3.9-3 3.3-5.2 6.4-5.2.6-1.8 2.2-3 4-3 1.5 0 2.7.8 3.3 2l1.6.6-1.6.7c0 3.9-2.4 7.2-6.3 8.2l-1.1 2.5h-1.6l.8-2.2c-1.6 0-3-.4-4.1-1.1-1.6.8-3.4 1.1-5.6.8z"/></svg>';
-  let filt = "all", q = "", openRare = new Set(), sel = null, heard = new Map();
+  let filt = "all", q = "", sel = null, heard = new Map();
   function tally() {
     heard = new Map();
     let latest = "";
@@ -2562,10 +2574,12 @@ const Coll = (() => {
   const col = (w) => PLUMAGE[w[1]] || famColour(w[2]);
   function badge(w) {
     const h = heard.get(w[1]);
-    if (h) return `<button type="button" class="cb got${sel === w[1] ? " sel" : ""}" data-cb="${esc(w[1])}" aria-label="${esc(w[0])}, heard on ${h.days.size} ${h.days.size === 1 ? "day" : "days"}">
-      <span class="cb-c" style="--rim:${col(w)}">${Photos.slot(w[1], "ph-badge", col(w))}${h.isNew ? '<span class="cb-new">NEW</span>' : ""}</span>
+    const GEM = w[3] === 2 ? `<span class="cb-gem" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9z"/></svg></span>` : "";
+    const rr = w[3] === 2 ? " rare" : "";
+    if (h) return `<button type="button" class="cb got${rr}${sel === w[1] ? " sel" : ""}" data-cb="${esc(w[1])}" aria-label="${esc(w[0])}, heard on ${h.days.size} ${h.days.size === 1 ? "day" : "days"}">
+      <span class="cb-c" style="--rim:${col(w)}">${Photos.slot(w[1], "ph-badge", col(w))}${h.isNew ? '<span class="cb-new">NEW</span>' : ""}${GEM}</span>
       <span class="cb-n">${esc(w[0])}</span><span class="cb-d">${h.days.size} ${h.days.size === 1 ? "day" : "days"}</span></button>`;
-    return `<button type="button" class="cb miss${sel === w[1] ? " sel" : ""}" data-cb="${esc(w[1])}" aria-label="${esc(w[0])}, not heard yet"><span class="cb-c">${SIL}</span><span class="cb-n">${esc(w[0])}</span></button>`;
+    return `<button type="button" class="cb miss${rr}${sel === w[1] ? " sel" : ""}" data-cb="${esc(w[1])}" aria-label="${esc(w[0])}, ${w[3] === 2 ? "rarer visitor, " : ""}not heard yet"><span class="cb-c">${SIL}${GEM}</span><span class="cb-n">${esc(w[0])}</span></button>`;
   }
   function render() {
     if ($("coll").hidden) return;
@@ -2577,19 +2591,16 @@ const Coll = (() => {
     $("coll-pct").textContent = Math.round((got / WALL.length) * 100) + "%";
     $("coll-ring").setAttribute("stroke-dasharray", `${((2 * Math.PI * 30 * got) / WALL.length).toFixed(1)} 999`);
     const ql = q.trim().toLowerCase();
-    const show = (w) => (filt === "all" || (filt === "got") === heard.has(w[1])) && (!ql || w[0].toLowerCase().includes(ql) || w[1].toLowerCase().includes(ql));
+    const show = (w) => (filt === "all" || (filt === "rare" ? w[3] === 2 : (filt === "got") === heard.has(w[1]))) && (!ql || w[0].toLowerCase().includes(ql) || w[1].toLowerCase().includes(ql));
     let html = "";
     for (const f of FAMILIES) {
       const all = WALL.filter((w) => w[2] === f.id);
       if (!all.length) continue;
       const g = all.filter((w) => heard.has(w[1])).length;
-      const main = all.filter((w) => (w[3] === 1 || heard.has(w[1])) && show(w));
-      const rare = all.filter((w) => w[3] === 2 && !heard.has(w[1]) && show(w));
-      if (!main.length && !rare.length) continue;
-      const rOpen = openRare.has(f.id) || (ql && rare.length);
+      const main = all.filter(show);
+      if (!main.length) continue;
       html += `<section class="cfam"><div class="cfam-h"><span class="swatch" style="background:${f.colour}"></span><h3>${esc(f.name)}</h3><span class="k">${g} / ${all.length}</span><span class="bar"><i style="width:${Math.max(g ? 2 : 0, Math.round((g / all.length) * 100))}%;background:${f.colour}"></i></span></div>
         ${main.length ? `<div class="cgrid">${main.map(badge).join("")}</div>` : ""}
-        ${rare.length ? `<div class="crare"><button type="button" data-rare="${f.id}" aria-expanded="${!!rOpen}">${rOpen ? "Hide" : "Show"} rarer visitors · ${rare.length}</button>${rOpen ? `<div class="cgrid">${rare.map(badge).join("")}</div>` : ""}</div>` : ""}
       </section>`;
     }
     $("coll-wall").innerHTML = html || `<p class="empty">No birds match.</p>`;
@@ -2614,8 +2625,6 @@ const Coll = (() => {
   document.addEventListener("click", (e) => {
     const f = e.target.closest("[data-cf]");
     if (f) { filt = f.dataset.cf; document.querySelectorAll("[data-cf]").forEach((x) => x.setAttribute("aria-pressed", String(x === f))); render(); return; }
-    const r = e.target.closest("[data-rare]");
-    if (r) { const id = r.dataset.rare; openRare.has(id) ? openRare.delete(id) : openRare.add(id); render(); return; }
     if (e.target.closest("#coll-pop-x")) { $("coll-pop").hidden = true; sel = null; document.querySelectorAll("#coll-wall .cb.sel").forEach((b) => b.classList.remove("sel")); return; }
     const b = e.target.closest("[data-cb]"); if (b) pop(b.dataset.cb);
   });
