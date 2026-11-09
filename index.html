@@ -262,6 +262,101 @@ ul.species li button[aria-pressed="true"] { background: var(--accent-soft); bord
 .sp-count { grid-row: 1 / span 2; grid-column: 2; align-self: center; text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .sp-count strong { display: block; font-family: var(--font-display); font-size: 18px; color: var(--ink); font-weight: 700; }
 .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+/* ---------- accounts: corner avatar, dialog, avatar builder, flock, admin ---------- */
+.me-btn { position: absolute; top: 14px; right: 14px; z-index: 8; display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line); box-shadow: 0 2px 10px rgba(0,0,0,.1); color: var(--ink); }
+.me-btn:hover { border-color: var(--accent); }
+.me-btn .av { width: 44px; height: 44px; }
+.me-btn .me-txt { display: grid; text-align: left; line-height: 1.15; }
+.me-btn .me-txt small { font-size: 10px; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .07em; }
+.me-btn .me-txt b { font-size: 13px; font-weight: 600; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.me-btn[hidden] { display: none; }
+@media (min-width: 761px) { body.has-me .map-tools { top: 76px; } }
+.av { position: relative; display: inline-grid; place-items: center; border-radius: 50%; overflow: hidden; flex: none; background: var(--avbg, var(--accent-soft)); box-shadow: inset 0 0 0 2px var(--avrim, transparent); }
+.av img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.av svg { width: 60%; height: 60%; color: var(--accent); }
+.who { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--line); font-size: 12.5px; color: var(--ink); cursor: pointer; }
+.who[hidden] { display: none; }
+.who .av { width: 26px; height: 26px; }
+.who b { font-weight: 600; }
+.acct { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; background: rgba(12, 22, 26, .45); backdrop-filter: blur(3px); }
+.acct[hidden] { display: none; }
+.acct-card { position: relative; width: min(640px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.3); padding: 20px 22px 18px; }
+.acct-x { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; padding: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 20px; }
+.acct h2 { margin: 0 0 4px; font-family: var(--font-display); font-size: 22px; font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.acct .sub { margin: 0 0 14px; color: var(--muted); font-size: 13.5px; }
+.acct-tabs { display: flex; gap: 4px; margin: -4px 40px 16px 0; flex-wrap: wrap; }
+.acct-tabs button { background: transparent; color: var(--muted); }
+.acct-tabs button[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+.acct form, .acct .stack { display: grid; gap: 12px; }
+.acct .fld { display: grid; gap: 4px; }
+.acct .fld input, .acct .fld select { font: inherit; font-size: 15px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; }
+.acct .hint { font-size: 12px; color: var(--muted); border-top: 0; padding-top: 0; }
+.acct .err { color: #c0392b; font-size: 13px; min-height: 1px; }
+body.night .acct .err { color: #ff8a7a; }
+.acct .ok { color: #2e8a57; font-size: 13px; }
+.acct .acts { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.acct .primary { background: var(--accent); color: #fff; }
+body.night .acct .primary { color: #0f191d; }
+.acct .steps { display: flex; gap: 6px; margin: 0 40px 14px 0; }
+.acct .steps span { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.acct .steps span.on { background: var(--accent); }
+.acct .switch { font-size: 13px; color: var(--muted); }
+.acct .switch button { background: none; padding: 0; color: var(--accent); text-decoration: underline; }
+.abld { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 18px; align-items: start; }
+.abld-stage { width: 230px; height: 230px; border-radius: 50%; overflow: hidden; border: 3px solid var(--avrim, var(--line)); cursor: grab; touch-action: none; margin: 0 auto; }
+.abld-stage canvas { display: block; }
+.abld-left { display: grid; justify-items: center; gap: 8px; position: sticky; top: 0; }
+.abld .grp { margin-bottom: 10px; }
+.abld .lab { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.abld .opt { display: flex; gap: 5px; flex-wrap: wrap; }
+.abld .opt button { font-size: 12px; padding: 4px 9px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+.abld .opt button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.abld .sw { display: flex; gap: 6px; flex-wrap: wrap; }
+.abld .sw button { width: 24px; height: 24px; border-radius: 50%; padding: 0; border: 2px solid var(--line); }
+.abld .sw button[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
+.abld .sec { font-size: 13px; font-weight: 600; margin: 6px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.abld .sec:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.drop { border: 1.5px dashed var(--line); border-radius: 12px; padding: 18px; text-align: center; display: grid; gap: 6px; justify-items: center; }
+.drop.on { border-color: var(--accent); background: var(--accent-soft); }
+.prof { display: flex; gap: 16px; align-items: center; margin-bottom: 14px; }
+.prof .av { width: 88px; height: 88px; }
+.stats { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.stats b { display: block; font-size: 20px; color: var(--ink); font-family: var(--font-display); }
+.flock { display: grid; gap: 8px; }
+.flock-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); text-align: left; color: var(--ink); width: 100%; }
+.flock-row:hover { border-color: var(--accent); }
+.flock-row.cur { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.flock-row .av { width: 48px; height: 48px; }
+.flock-row .t { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.flock-row .t b { font-size: 15px; font-weight: 600; }
+.flock-row .t small { color: var(--muted); font-size: 12px; }
+.flock-row .n { font-family: var(--font-display); font-size: 20px; font-weight: 700; text-align: right; }
+.flock-row .n small { display: block; font-family: var(--font-body, inherit); font-size: 10.5px; color: var(--muted); font-weight: 400; }
+.tag-owner { font-size: 10px; font-family: var(--font-mono); padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-left: 6px; vertical-align: 2px; }
+.adm-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.adm-row .av { width: 34px; height: 34px; }
+.adm-row .t { flex: 1; min-width: 120px; font-size: 13px; }
+.adm-row .t small { display: block; color: var(--muted); }
+.adm-row button { font-size: 12px; padding: 5px 9px; }
+.adm-row .danger { color: #c0392b; background: rgba(192,57,43,.08); }
+.copybox { display: flex; gap: 6px; align-items: center; }
+.copybox code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 8px 10px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); font-size: 12.5px; }
+@media (max-width: 760px) {
+  .me-btn { top: calc(12px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); padding: 3px; }
+  .me-btn .me-txt { display: none; }
+  .me-btn .av { width: 40px; height: 40px; }
+  .latest { top: calc(66px + env(safe-area-inset-top)) !important; }
+  body.has-who .crumbs { top: calc(116px + env(safe-area-inset-top)); }
+  body.has-who.has-chips .crumbs { top: calc(154px + env(safe-area-inset-top)); }
+  body.panel-open .me-btn { display: none; }
+  .abld { grid-template-columns: 1fr; }
+  .abld-left { position: static; }
+  .abld-stage { width: 200px; height: 200px; }
+  .acct-card { padding: 18px 16px 16px; }
+  .acct { padding: 8px; align-items: end; }
+}
+@media (min-width: 761px) { .coll-in { padding-right: max(24px, min(200px, calc((1180px - 100vw) / 2 + 220px))); } }
+
 /* ---------- collection wall ---------- */
 .coll { position: absolute; inset: 0; z-index: 4; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .coll[hidden] { display: none; }
@@ -589,6 +684,7 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
       <span><b>BIRB app</b><small id="open-summary">Show birds and places</small></span>
     </button>
+    <button type="button" class="who" id="who" hidden aria-label="Whose birds these are. Open the flock."></button>
     <div class="chips" id="map-chips" aria-label="Active filters"></div>
     <div class="latest" id="latest" hidden>
       <button type="button" class="latest-pill" id="latest-pill" aria-expanded="false" aria-controls="latest-card">
@@ -695,6 +791,8 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
     <div class="world-tip" id="world-tip" hidden></div>
     <div class="world-msg" id="world-msg" hidden>The 3D scene couldn't load. Check your internet connection, then reload the page.</div>
   </section>
+  <button type="button" class="me-btn" id="me-btn" hidden aria-haspopup="dialog"></button>
+  <div class="acct" id="acct" hidden role="dialog" aria-modal="true" aria-labelledby="acct-h"><div class="acct-card" id="acct-card"></div></div>
   <div class="help" id="help" role="dialog" aria-labelledby="help-h" hidden>
     <h2 id="help-h">Exploring the map</h2>
     <ol>
@@ -2499,7 +2597,7 @@ function render() {
   const aggBy = { county: aggregate(mapRows, "county"), region: aggregate(mapRows, "region"), ward: aggregate(mapRows, "ward") };
   current = { agg, aggBy, maxN: Math.max(1, ...[...agg.values()].map((a) => a.n)), groups: groupPlaces(mapRows) };
   if (!deckgl) updateLegend(false, null);
-  $("reset").hidden = state.source === "built-in";
+  $("reset").hidden = state.source !== "file";
   pushLayers();
   crumbSig = ""; queueCrumbs();
   try { World.dataChanged(); } catch (e) {}
@@ -2681,6 +2779,7 @@ function useText(text, source, fileName, { save = false } = {}) {
   render();
   setStatus(source === "built-in"
     ? `Showing the built-in export: <code>${esc(fileName)}</code>, ${recs.length} sightings.`
+    : source === "account" ? `Showing ${esc(fileName)}: ${recs.length} sightings.`
     : `Showing <code>${esc(fileName)}</code>, ${recs.length} sightings. It stays on this browser only.`);
 }
 function loadFile(file) {
@@ -3266,6 +3365,458 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "Escape" && viewMode === "world" && !document.body.classList.contains("panel-open") && $("help").hidden) setView("map");
 });
 
+/* ---------- bird avatars: low-poly 3D birds built from parts, matching Habitat world ---------- */
+const Avatar = (() => {
+  const OPTS = {
+    head: ["Round", "Crested", "Duck", "Owl", "Heron"], beak: ["Short", "Pointy", "Hooked", "Flat", "Long"], wing: ["Folded", "Spread", "Pointed", "Stubby"],
+    legs: ["Perching", "Wader", "Webbed", "Talons"], tail: ["Short", "Fan", "Long"], eyes: ["Round", "Sleepy", "Wink"],
+    cHead: ["#2f3a44", "#d0463a", "#3d8fd0", "#c9b83a", "#3f8a5a", "#8c6a4c", "#e8e2d6", "#7b5ea8"], cBody: ["#9a7454", "#5a5f66", "#3f6f8a", "#58b04a", "#d0703a", "#8f9aa3", "#c99aa4", "#e8e2d6"],
+    cWing: ["#5a4636", "#2f3a44", "#2f5f8a", "#3f7a3a", "#8a4a2a", "#6d7680", "#7b5ea8", "#b0603e"], cBelly: ["#f2e6d0", "#d0703a", "#e8d36a", "#ffffff", "#c9d8e6", "#e8b4bc", "#c9b8a0"],
+    extra: ["None", "Bobble hat", "Scarf", "Binoculars", "Crown"], bg: ["#dcefe4", "#dbe8f6", "#f6ead6", "#efe0f2", "#f2f0ea", "#2a3540"],
+  };
+  const LABELS = { head: "Head", beak: "Beak", wing: "Wings", legs: "Legs", tail: "Tail", eyes: "Eyes", cHead: "Head colour", cBody: "Body colour", cWing: "Wings and tail", cBelly: "Belly and face", extra: "Extra", bg: "Background" };
+  const DEF = { head: "Round", beak: "Short", wing: "Folded", legs: "Perching", tail: "Short", eyes: "Round", cHead: "#d0463a", cBody: "#9a7454", cWing: "#5a4636", cBelly: "#f2e6d0", extra: "Scarf", bg: "#dcefe4" };
+  const AUTOBEAK = { Round: "Short", Crested: "Pointy", Duck: "Flat", Owl: "Hooked", Heron: "Long" };
+  const norm = (a) => { const o = { ...DEF }; for (const k in OPTS) if (a && OPTS[k].includes(a[k])) o[k] = a[k]; return o; };
+  const random = () => { const o = {}; for (const k in OPTS) o[k] = OPTS[k][Math.floor(Math.random() * OPTS[k].length)]; o.beak = AUTOBEAK[o.head]; return o; };
+
+  function build(A) {
+    const T = THREE, M = (c) => new T.MeshLambertMaterial({ color: c });
+    const sph = (r, c, sx = 1, sy = 1, sz = 1) => { const m = new T.Mesh(new T.SphereGeometry(r, 14, 10), M(c)); m.scale.set(sx, sy, sz); return m; };
+    const cone = (r, h, c, seg = 8) => new T.Mesh(new T.ConeGeometry(r, h, seg), M(c));
+    const cyl = (r1, r2, h, c, seg = 8) => new T.Mesh(new T.CylinderGeometry(r1, r2, h, seg), M(c));
+    const at = (o, x, y, z, rx = 0, ry = 0, rz = 0) => { o.position.set(x, y, z); o.rotation.set(rx, ry, rz); return o; };
+    const bird = new T.Group(), parts = { wings: [], eyes: [], head: null };
+    const cB = A.cBody, cH = A.cHead, cW = A.cWing, cY = A.cBelly, orange = 0xe8a33a, leg = 0xc98a3a;
+    bird.add(sph(1, cB, 1.45, 0.95, 0.95));
+    bird.add(at(sph(0.75, cY, 1.05, 0.72, 0.82), 0.45, -0.28, 0));
+    const head = new T.Group(); let H;
+    if (A.head === "Owl") {
+      head.add(sph(0.82, cH));
+      [1, -1].forEach((z) => { head.add(at(sph(0.34, cY, 0.35, 1, 1), 0.62, 0.02, z * 0.3)); head.add(at(cone(0.14, 0.45, cH, 5), 0.05, 0.78, z * 0.42, z * 0.25, 0, 0)); });
+      H = { pos: [0.45, 1.0, 0], eyes: [[0.78, 0.04, 0.3], [0.78, 0.04, -0.3]], side: false, beak: [0.84, -0.18, 0], down: true, top: [0, 0.86, 0], neck: [0.25, -0.7, 0] };
+    } else if (A.head === "Heron") {
+      bird.add(at(cyl(0.2, 0.26, 1.5, cB, 10), 0.95, 0.95, 0, 0, 0, -0.45));
+      head.add(sph(0.36, cH)); head.add(at(cone(0.06, 0.7, cW, 5), -0.45, 0.12, 0, 0, 0, 1.9));
+      H = { pos: [1.35, 1.75, 0], eyes: [[0.18, 0.08, 0.27], [0.18, 0.08, -0.27]], side: true, beak: [0.3, -0.02, 0], top: [0, 0.34, 0], neck: [-0.45, -0.85, 0], small: true };
+    } else if (A.head === "Duck") {
+      head.add(sph(0.56, cH, 1.25, 0.86, 0.86));
+      H = { pos: [1.2, 0.62, 0], eyes: [[0.3, 0.14, 0.4], [0.3, 0.14, -0.4]], side: true, beak: [0.62, -0.08, 0], top: [-0.05, 0.46, 0], neck: [-0.25, -0.5, 0] };
+    } else {
+      head.add(sph(0.58, cH));
+      if (A.head === "Crested") [[-0.1, 0.6, 0.3], [-0.3, 0.5, 0.55], [-0.48, 0.36, 0.85]].forEach(([x, y, r]) => head.add(at(cone(0.13, 0.5, cH, 5), x, y, 0, 0, 0, r)));
+      H = { pos: [1.18, 0.58, 0], eyes: [[0.3, 0.12, 0.42], [0.3, 0.12, -0.42]], side: true, beak: [0.55, -0.04, 0], top: [0, 0.56, 0], neck: [-0.3, -0.55, 0] };
+    }
+    head.position.set(...H.pos); bird.add(head); parts.head = head;
+    const bk = new T.Group();
+    if (H.down) bk.add(at(cone(0.12, 0.3, 0xd48a2a, 6), 0, 0, 0, 0, 0, Math.PI));
+    else if (A.beak === "Short") bk.add(at(cone(0.13, 0.36, orange, 6), 0.16, 0, 0, 0, 0, -Math.PI / 2));
+    else if (A.beak === "Pointy") bk.add(at(cone(0.1, 0.62, orange, 6), 0.28, 0, 0, 0, 0, -Math.PI / 2));
+    else if (A.beak === "Long") bk.add(at(cone(0.08, 1.15, orange, 6), 0.55, 0, 0, 0, 0, -Math.PI / 2));
+    else if (A.beak === "Flat") bk.add(at(sph(0.3, 0xe8b23a, 1.3, 0.28, 0.62), 0.24, 0, 0));
+    else { bk.add(at(cone(0.13, 0.42, 0xd48a2a, 6), 0.18, 0.02, 0, 0, 0, -Math.PI / 2)); bk.add(at(cone(0.06, 0.2, 0xd48a2a, 6), 0.38, -0.08, 0, 0, 0, -2.6)); }
+    bk.position.set(...H.beak); head.add(bk);
+    H.eyes.forEach(([x, y, z], i) => {
+      const e = new T.Group(), sc = H.small ? 0.6 : 1;
+      e.add(sph(0.13 * sc, 0xffffff));
+      const p = sph(0.08 * sc, 0x1d1d1d); p.position.set((H.side ? 0.04 : 0.08) * sc, 0, (H.side ? Math.sign(z) * 0.07 : 0) * sc); e.add(p);
+      e.userData.base = A.eyes === "Sleepy" || (A.eyes === "Wink" && i === 0) ? 0.22 : 1; e.scale.y = e.userData.base;
+      e.position.set(x, y, z); head.add(e); parts.eyes.push(e);
+    });
+    [1, -1].forEach((z) => {
+      let w;
+      if (A.wing === "Folded") w = at(sph(0.72, cW, 1.35, 0.55, 0.2), -0.2, 0.12, z * 0.86, 0, 0, 0.12);
+      else if (A.wing === "Spread") { w = new T.Group(); const blade = sph(0.8, cW, 0.7, 0.14, 1.55); blade.position.set(0, 0, z * 1.0); w.add(blade); w.position.set(-0.1, 0.35, z * 0.55); w.rotation.x = -z * 0.55; w.userData.flap = z; }
+      else if (A.wing === "Pointed") w = at(sph(0.8, cW, 1.95, 0.14, 0.42), -0.75, 0.25, z * 0.85, 0, z * 0.28, 0.1);
+      else w = at(sph(0.5, cW, 0.95, 0.55, 0.2), 0, 0.08, z * 0.88, 0, 0, 0.25);
+      bird.add(w); parts.wings.push(w);
+    });
+    if (A.tail === "Short") bird.add(at(sph(0.5, cW, 1, 0.18, 0.55), -1.55, 0.15, 0, 0, 0, 0.25));
+    else if (A.tail === "Fan") [-0.5, 0, 0.5].forEach((a) => bird.add(at(sph(0.55, cW, 1.1, 0.12, 0.38), -1.6, 0.45, a * 0.35, a, 0, 0.85)));
+    else [0.12, -0.12].forEach((z) => bird.add(at(sph(0.9, cW, 1.6, 0.1, 0.32), -2.2, 0, z, 0, z / 2, 0.12)));
+    [0.32, -0.32].forEach((z) => {
+      if (A.legs === "Perching") { bird.add(at(cyl(0.05, 0.05, 0.55, leg), 0.15, -1.05, z)); [-0.3, 0, 0.3].forEach((a) => bird.add(at(cyl(0.035, 0.035, 0.32, leg, 5), 0.28, -1.32, z + a * 0.25, 0, a, Math.PI / 2))); }
+      else if (A.legs === "Wader") { bird.add(at(cyl(0.045, 0.045, 1.2, 0xc9a03a), 0.12, -1.35, z)); bird.add(at(cyl(0.045, 0.045, 1.1, 0xc9a03a), 0.04, -2.45, z, 0, 0, 0.12)); [-0.4, 0, 0.4].forEach((a) => bird.add(at(cyl(0.03, 0.03, 0.4, 0xc9a03a, 5), 0.18, -3.0, z + a * 0.3, 0, a, Math.PI / 2))); }
+      else if (A.legs === "Webbed") { bird.add(at(cyl(0.07, 0.07, 0.4, 0xe8933a), 0.15, -0.98, z)); bird.add(at(sph(0.3, 0xe8933a, 1.25, 0.12, 0.8), 0.35, -1.18, z)); }
+      else { bird.add(at(cyl(0.16, 0.13, 0.5, cB, 10), 0.12, -0.98, z)); [-0.3, 0, 0.3].forEach((a) => bird.add(at(cone(0.045, 0.22, 0x2f3a44, 5), 0.3, -1.25, z + a * 0.3, 0, 0, -2.3))); }
+    });
+    if (A.legs === "Perching" || A.legs === "Talons") bird.add(at(cyl(0.12, 0.12, 2.6, 0x8a6a4a, 8), 0.2, -1.42, 0, Math.PI / 2, 0, 0));
+    const top = new T.Vector3(...H.top).add(head.position), neck = new T.Vector3(...H.neck).add(head.position), ex = new T.Group();
+    if (A.extra === "Bobble hat") { const r = H.small ? 0.33 : 0.5; ex.add(at(sph(r, 0xc2417a, 1, 0.85, 1), 0, 0.05, 0)); ex.add(at(new T.Mesh(new T.TorusGeometry(r, 0.09, 8, 20), M(0xf2e6d0)), 0, 0, 0, Math.PI / 2, 0, 0)); ex.add(at(sph(0.17, 0xf2e6d0), 0, r + 0.05, 0)); ex.position.copy(top); ex.position.y -= 0.05; }
+    else if (A.extra === "Scarf") { ex.add(at(new T.Mesh(new T.TorusGeometry(0.5, 0.13, 8, 22), M(0x3a8fd1)), 0, 0, 0, Math.PI / 2, 0, 0)); ex.add(at(sph(0.22, 0x3a8fd1, 0.5, 1.6, 0.6), 0.4, -0.35, 0.3, 0, 0, 0.3)); ex.position.copy(neck); }
+    else if (A.extra === "Binoculars") { [0.16, -0.16].forEach((z) => ex.add(at(cyl(0.11, 0.11, 0.36, 0x33444b, 10), 0.55, -0.35, z, 0, 0, Math.PI / 2))); ex.add(at(new T.Mesh(new T.TorusGeometry(0.42, 0.025, 6, 20), M(0x33444b)), 0.2, -0.05, 0, 0, Math.PI / 2, 0.5)); ex.position.copy(neck); }
+    else if (A.extra === "Crown") { const r = H.small ? 0.24 : 0.36; ex.add(cyl(r, r, 0.22, 0xe8c23a, 12)); for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; ex.add(at(cone(0.07, 0.24, 0xe8c23a, 4), Math.cos(a) * r, 0.22, Math.sin(a) * r)); } ex.position.copy(top); ex.position.y += 0.05; }
+    bird.add(ex);
+    const box = new T.Box3().setFromObject(bird), size = new T.Vector3(), ctr = new T.Vector3(); box.getSize(size); box.getCenter(ctr);
+    const rig = new T.Group(); bird.position.set(-ctr.x, -ctr.y, -ctr.z); rig.add(bird); rig.scale.setScalar(3.3 / Math.max(size.y, size.x * 0.82, size.z * 0.9));
+    rig.userData.parts = parts;
+    return rig;
+  }
+  const dispose = (o) => o && o.traverse((x) => { if (x.geometry) x.geometry.dispose(); if (x.material) x.material.dispose(); });
+  function scene() {
+    const S = new THREE.Scene();
+    S.add(new THREE.HemisphereLight(0xffffff, 0xb7c7b0, 0.62));
+    const sun = new THREE.DirectionalLight(0xfff3e2, 0.72); sun.position.set(4, 8, 6); S.add(sun);
+    const C = new THREE.PerspectiveCamera(30, 1, 0.1, 100); C.position.set(0, 0.5, 9.4); C.lookAt(0, 0, 0);
+    return { S, C };
+  }
+  /* still pictures for buttons and lists, drawn once per look and cached */
+  let snapR = null, snapScene = null;
+  const cache = new Map();
+  function snapshot(a) {
+    if (typeof THREE === "undefined") return "";
+    const A = norm(a), key = JSON.stringify(A);
+    if (cache.has(key)) return cache.get(key);
+    try {
+      if (!snapR) { snapR = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); snapR.setPixelRatio(1); snapR.setSize(192, 192); snapScene = scene(); }
+      const rig = build(A); rig.rotation.y = 0.55; rig.scale.multiplyScalar(1.22); snapScene.S.add(rig);
+      snapR.setClearColor(0x000000, 0); snapR.render(snapScene.S, snapScene.C);
+      const url = snapR.domElement.toDataURL("image/png");
+      snapScene.S.remove(rig); dispose(rig);
+      cache.set(key, url); return url;
+    } catch (e) { return ""; }
+  }
+  const BIRDSVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 15.5c1.8-.2 3.2-1 4.2-2.3.9-3 3.3-5.2 6.4-5.2.6-1.8 2.2-3 4-3 1.5 0 2.7.8 3.3 2l1.6.6-1.6.7c0 3.9-2.4 7.2-6.3 8.2l-1.1 2.5h-1.6l.8-2.2c-1.6 0-3-.4-4.1-1.1-1.6.8-3.4 1.1-5.6.8z"/></svg>';
+  function html(a, label = "") {
+    if (!a) return `<span class="av" aria-hidden="true">${BIRDSVG}</span>`;
+    const A = norm(a), src = snapshot(A);
+    return `<span class="av" style="--avbg:${A.bg};--avrim:${A.cBody}">${src ? `<img src="${src}" alt="${esc(label)}">` : BIRDSVG}</span>`;
+  }
+  /* live turntable used by the builder */
+  function stage(host, a) {
+    const R = new THREE.WebGLRenderer({ antialias: true }); R.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+    const size = () => host.clientWidth || 230;
+    R.setSize(size(), size()); host.innerHTML = ""; host.appendChild(R.domElement);
+    const { S, C } = scene(); let rig = null, A = norm(a), rot = 0.6, drag = null, t = 0, idle = 0, last = performance.now(), raf = 0, alive = true;
+    const set = (na) => { A = norm(na); if (rig) { S.remove(rig); dispose(rig); } rig = build(A); S.add(rig); R.setClearColor(new THREE.Color(A.bg)); host.style.setProperty("--avrim", A.cBody); };
+    host.onpointerdown = (e) => { drag = { x: e.clientX, r: rot }; host.setPointerCapture(e.pointerId); };
+    host.onpointermove = (e) => { if (drag) { rot = drag.r + (e.clientX - drag.x) * 0.012; idle = 0; } };
+    host.onpointerup = host.onpointercancel = () => (drag = null);
+    const loop = (now) => {
+      if (!alive) return;
+      const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt; idle += dt;
+      if (!drag && idle > 1.5 && !REDUCE_MOTION) rot += dt * 0.45;
+      if (rig) {
+        rig.rotation.y = rot; rig.position.y = REDUCE_MOTION ? 0 : Math.sin(t * 2) * 0.05;
+        const p = rig.userData.parts;
+        if (p.head && !REDUCE_MOTION) p.head.rotation.z = Math.sin(t * 0.9) * 0.06;
+        p.wings.forEach((w) => { if (w.userData.flap) w.rotation.x = -w.userData.flap * (0.55 + (REDUCE_MOTION ? 0 : Math.sin(t * 3) * 0.25)); });
+        const blink = t % 4 < 0.12; p.eyes.forEach((e) => (e.scale.y = blink ? 0.1 : e.userData.base));
+      }
+      R.render(S, C); raf = requestAnimationFrame(loop);
+    };
+    set(A); raf = requestAnimationFrame(loop);
+    return { set, destroy() { alive = false; cancelAnimationFrame(raf); if (rig) dispose(rig); R.dispose(); try { R.forceContextLoss(); } catch (e) {} host.innerHTML = ""; } };
+  }
+  return { OPTS, LABELS, DEF, AUTOBEAK, norm, random, snapshot, html, stage };
+})();
+
+/* ---------- accounts: join, sign in, profile, flock and admin, stored on the site ---------- */
+const Acct = (() => {
+  const API = /^https?:$/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname) ? "/api" : null;
+  const TOKEN = "birb-token";
+  let token = ""; try { token = localStorage.getItem(TOKEN) || ""; } catch (e) {}
+  let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "";
+  const card = () => $("acct-card");
+  async function call(path, { method = "GET", body, raw, headers = {} } = {}) {
+    const h = { ...headers }; if (token) h.authorization = "Bearer " + token;
+    if (body !== undefined && !raw) { h["content-type"] = "application/json"; body = JSON.stringify(body); }
+    try {
+      const r = await fetch(API + "/" + path, { method, headers: h, body });
+      const type = r.headers.get("content-type") || "";
+      const data = type.includes("json") ? await r.json() : await r.text();
+      if (r.status === 401 && token && !/^(login|join)$/.test(path)) { setToken(""); me = null; }
+      return { ok: r.ok, status: r.status, data, error: (data && data.error) || (r.ok ? "" : "Something went wrong. Try again.") };
+    } catch (e) { return { ok: false, status: 0, error: "Couldn't reach the site. Check your connection." }; }
+  }
+  const setToken = (t) => { token = t || ""; try { t ? localStorage.setItem(TOKEN, t) : localStorage.removeItem(TOKEN); } catch (e) {} };
+  const ago = (iso) => { if (!iso) return ""; const d = Math.round((Date.now() - Date.parse(iso)) / 864e5); return d <= 0 ? "today" : d === 1 ? "yesterday" : d < 30 ? `${d} days ago` : fmtDate(iso.slice(0, 10)); };
+  const nameOf = (m) => (m && (m.name || m.u)) || "";
+
+  /* corner button and the "whose birds" chip */
+  function paintChrome() {
+    if (!API) return;
+    const b = $("me-btn"); b.hidden = false;
+    document.body.classList.add("has-me");
+    b.innerHTML = me ? `${Avatar.html(me.avatar, "")}<span class="me-txt"><small>${me.admin ? "You · admin" : "You"}</small><b>${esc(nameOf(me))}</b></span>`
+      : `${Avatar.html(null)}<span class="me-txt"><small>Flock</small><b>Join or sign in</b></span>`;
+    b.setAttribute("aria-label", me ? `Your profile, ${nameOf(me)}` : "Join BIRB or sign in");
+    const w = $("who");
+    document.body.classList.toggle("has-who", !!viewing);
+    if (viewing) { w.hidden = false; w.innerHTML = `${Avatar.html(viewing.avatar, "")}<span>${me && viewing.u === me.u ? "<b>Your birds</b>" : `<b>${esc(nameOf(viewing))}</b>'s birds`}</span>`; }
+    else w.hidden = true;
+  }
+
+  /* whose birds are on screen */
+  async function show(u, { quiet = false } = {}) {
+    if (!API || !u) return false;
+    const r = await call("birds?u=" + encodeURIComponent(u));
+    if (!r.ok) { if (!quiet) setStatus(esc(r.error), true); return false; }
+    const m = members.find((x) => x.u === u) || (me && me.u === u ? me : { u, name: u });
+    try { useText(r.data, "account", `${nameOf(m)}'s birds`); } catch (e) { setStatus(esc(e.message), true); return false; }
+    viewing = m;
+    const url = new URL(location.href);
+    if (owner && u === owner && (!me || me.u === owner)) url.searchParams.delete("who"); else url.searchParams.set("who", u);
+    history.replaceState(null, "", url.pathname + url.search + location.hash);
+    paintChrome(); try { fit(); } catch (e) {}
+    return true;
+  }
+
+  async function refresh() {
+    const r = await call("flock");
+    if (r.ok) { owner = r.data.owner; members = r.data.members || []; me = r.data.me; }
+    else if (r.status === 503) { $("me-btn").hidden = true; return false; }
+    return r.ok;
+  }
+
+  async function boot() {
+    if (!API) return;
+    paintChrome();
+    if (!(await refresh())) return;
+    paintChrome();
+    const q = new URLSearchParams(location.search), want = (q.get("who") || "").toLowerCase(), invite = q.get("invite");
+    let done = false;
+    if (want) done = await show(want);
+    if (!done && me && me.birds) done = await show(me.u, { quiet: true });
+    if (!done && state.source !== "file" && owner && members.some((m) => m.u === owner && m.birds)) done = await show(owner, { quiet: true });
+    if (invite && !me) open("join", { invite });
+    else if (me && me.mustChange) open("passcode");
+  }
+
+  /* ---------- dialog ---------- */
+  function open(v, opts = {}) {
+    if (!API) return;
+    view = v; if (opts.invite) draft = { ...(draft || {}), invite: opts.invite };
+    $("acct").hidden = false; render();
+  }
+  function close() {
+    if (live) { live.destroy(); live = null; }
+    $("acct").hidden = true; view = ""; notice = "";
+  }
+  const tabs = () => me ? `<nav class="acct-tabs" aria-label="Account">${[["profile", "Your profile"], ["flock", "Flock"], ...(me.admin ? [["admin", "Admin"]] : [])].map(([k, l]) => `<button type="button" data-acct="${k}" aria-current="${view === k ? "page" : "false"}">${l}</button>`).join("")}</nav>` : "";
+  const X = `<button type="button" class="acct-x" data-acct-close aria-label="Close">×</button>`;
+  const steps = (n) => `<div class="steps" aria-hidden="true">${[1, 2, 3].map((i) => `<span class="${i <= n ? "on" : ""}"></span>`).join("")}</div>`;
+
+  function builderHTML() {
+    const grp = (k) => {
+      const col = k[0] === "c" || k === "bg";
+      return `<div class="grp"><div class="lab">${Avatar.LABELS[k]}</div><div class="${col ? "sw" : "opt"}" data-avk="${k}">${Avatar.OPTS[k].map((v) => col
+        ? `<button type="button" data-v="${v}" aria-label="${Avatar.LABELS[k]} ${v}" aria-pressed="${draft.avatar[k] === v}" style="background:${v}"></button>`
+        : `<button type="button" data-v="${v}" aria-pressed="${draft.avatar[k] === v}">${v}</button>`).join("")}</div></div>`;
+    };
+    return `<div class="abld">
+      <div class="abld-left"><div class="abld-stage" id="abld-stage" aria-label="3D preview of your bird. Drag to turn it."></div>
+        <span class="hint">Drag to turn your bird</span>
+        <div style="display:flex;gap:6px"><button type="button" data-av-random>Surprise me</button><button type="button" class="ghost" data-av-reset>Reset</button></div></div>
+      <div><div class="sec">Shape</div>${["head", "beak", "wing", "legs", "tail", "eyes"].map(grp).join("")}
+        <div class="sec">Colours</div>${["cHead", "cBody", "cWing", "cBelly"].map(grp).join("")}
+        <div class="sec">Finishing touches</div>${["extra", "bg"].map(grp).join("")}</div></div>`;
+  }
+  const mountBuilder = () => { if (live) live.destroy(); live = typeof THREE !== "undefined" && $("abld-stage") ? Avatar.stage($("abld-stage"), draft.avatar) : null; };
+
+  function render() {
+    if (live) { live.destroy(); live = null; }
+    const el = card(); let h = "";
+    if (view === "join") {
+      draft = draft || {}; draft.avatar = draft.avatar || Avatar.norm(Avatar.random());
+      if (joinStep === 1) h = `${X}${steps(1)}<h2 id="acct-h">Join the flock</h2><p class="sub">Use the invite code Lee sent you, then pick a username and passcode.</p>
+        <form id="f-join" class="stack" novalidate>
+          <div class="fld"><label for="j-inv">Invite code</label><input id="j-inv" autocomplete="off" value="${esc(draft.invite || "")}" placeholder="BIRB-XXXX"></div>
+          <div class="fld"><label for="j-name">Your name</label><input id="j-name" autocomplete="nickname" maxlength="40" value="${esc(draft.name || "")}" placeholder="Sam"></div>
+          <div class="fld"><label for="j-user">Username</label><input id="j-user" autocomplete="username" maxlength="20" value="${esc(draft.username || "")}" placeholder="sam"><span class="hint">Your link will be ${esc(location.host)}/?who=<span id="j-userp">${esc(draft.username || "…")}</span></span></div>
+          <div class="fld"><label for="j-pass">Passcode</label><input id="j-pass" type="password" autocomplete="new-password" placeholder="At least 6 characters"><span class="hint">Don't reuse a password from somewhere else.</span></div>
+          <div class="err" id="acct-err" role="alert"></div>
+          <div class="acts"><span class="switch">Already joined? <button type="button" data-acct="signin">Sign in</button></span><button type="submit" class="primary">Next: build your bird</button></div></form>`;
+      else if (joinStep === 2) h = `${X}${steps(2)}<h2 id="acct-h">Build your bird</h2><p class="sub">This is you around BIRB. You can change it any time.</p>${builderHTML()}
+        <div class="err" id="acct-err" role="alert"></div><div class="acts"><span></span><button type="button" class="primary" data-av-save="join">Next: add your birds</button></div>`;
+      else h = `${X}${steps(3)}<div class="prof">${Avatar.html(me && me.avatar)}<div><h2 id="acct-h">Welcome, ${esc(nameOf(me))}</h2><p class="sub" style="margin:0">Last step: add the birds you've heard.</p></div></div>${uploadHTML()}
+        <div class="acts"><span></span><button type="button" class="ghost" data-acct="profile">Skip for now</button></div>`;
+    } else if (view === "signin") {
+      h = `${X}<h2 id="acct-h">Sign in</h2><p class="sub">Welcome back.</p>
+        <form id="f-signin" class="stack" novalidate>
+          <div class="fld"><label for="s-user">Username</label><input id="s-user" autocomplete="username"></div>
+          <div class="fld"><label for="s-pass">Passcode</label><input id="s-pass" type="password" autocomplete="current-password"></div>
+          <div class="err" id="acct-err" role="alert"></div>
+          <div class="acts"><span class="switch">New here? <button type="button" data-acct="join">Join with an invite code</button></span><button type="submit" class="primary">Sign in</button></div>
+          <p class="hint">Forgotten your passcode? Ask Lee to reset it.</p></form>
+        ${flockHTML(true)}`;
+    } else if (view === "passcode") {
+      h = `${X}${tabs()}<h2 id="acct-h">${me && me.mustChange ? "Choose a new passcode" : "Change your passcode"}</h2><p class="sub">${me && me.mustChange ? "Your passcode was reset. Pick a new one to keep using BIRB." : "You'll stay signed in on this device."}</p>
+        <form id="f-pass" class="stack" novalidate>
+          <div class="fld"><label for="p-old">${me && me.mustChange ? "Temporary passcode" : "Current passcode"}</label><input id="p-old" type="password" autocomplete="current-password"></div>
+          <div class="fld"><label for="p-new">New passcode</label><input id="p-new" type="password" autocomplete="new-password" placeholder="At least 6 characters"></div>
+          <div class="err" id="acct-err" role="alert"></div><div class="acts"><span></span><button type="submit" class="primary">Save passcode</button></div></form>`;
+    } else if (view === "avatar") {
+      if (!draft || !draft.avatar) draft = { avatar: Avatar.norm(me && me.avatar) };
+      h = `${X}${tabs()}<h2 id="acct-h">Edit your bird</h2>${builderHTML()}<div class="err" id="acct-err" role="alert"></div>
+        <div class="acts"><button type="button" class="ghost" data-acct="profile">Cancel</button><button type="button" class="primary" data-av-save="edit">Save my bird</button></div>`;
+    } else if (view === "profile" && me) {
+      const b = me.birds;
+      h = `${X}${tabs()}<div class="prof">${Avatar.html(me.avatar)}<div><h2 id="acct-h">${esc(nameOf(me))}</h2><p class="sub" style="margin:0">@${esc(me.u)}${me.admin ? '<span class="tag-owner">admin</span>' : ""}</p>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" data-acct="avatar">Edit my bird</button><button type="button" data-show-me ${b ? "" : "hidden"}>Show my birds</button></div></div></div>
+        ${notice ? `<p class="ok" role="status">${notice}</p>` : ""}
+        ${b ? `<div class="stats"><span><b>${b.species}</b>species</span><span><b>${b.places}</b>places</span><span><b>${b.rows}</b>sightings</span><span><b>${esc(ago(b.updated))}</b>last upload</span></div>` : `<p class="sub">You haven't added any birds yet.</p>`}
+        <div style="margin:14px 0">${uploadHTML()}</div>
+        <form id="f-prof" class="stack" novalidate>
+          <div class="fld"><label for="pr-name">Display name</label><input id="pr-name" maxlength="40" value="${esc(me.name || "")}"></div>
+          <div class="fld"><label for="pr-vis">Who can see your birds</label><select id="pr-vis">
+            ${[["public", "Anyone with your link"], ["group", "Only people in the flock"], ["private", "Only me"]].map(([v, l]) => `<option value="${v}" ${me.visibility === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+          <div class="fld"><label>Your link</label><div class="copybox"><code>${esc(location.origin)}/?who=${esc(me.u)}</code><button type="button" data-copy="${esc(location.origin)}/?who=${esc(me.u)}">Copy</button></div></div>
+          <div class="err" id="acct-err" role="alert"></div>
+          <div class="acts"><span style="display:flex;gap:4px"><button type="button" class="ghost" data-acct="passcode">Change passcode</button><button type="button" class="ghost" data-signout>Sign out</button></span><button type="submit" class="primary">Save</button></div></form>`;
+    } else if (view === "flock") {
+      h = `${X}${tabs()}<h2 id="acct-h">The flock</h2><p class="sub">Tap someone to see their birds on the map, in Habitat world and in their Collection.</p>${flockHTML(false)}
+        ${me ? "" : `<div class="acts"><span></span><span style="display:flex;gap:6px"><button type="button" data-acct="signin">Sign in</button><button type="button" class="primary" data-acct="join">Join</button></span></div>`}`;
+    } else if (view === "admin" && me && me.admin) {
+      h = `${X}${tabs()}<h2 id="acct-h">Admin</h2><p class="sub">Only you can see this.</p><div id="adm" class="stack"><p class="hint">Loading members…</p></div>`;
+    } else { view = me ? "profile" : "signin"; return render(); }
+    el.innerHTML = h;
+    if ($("abld-stage")) mountBuilder();
+    if (view === "admin") loadAdmin();
+    const first = el.querySelector("input:not([type=file]), select"); if (first && !("ontouchstart" in window)) first.focus();
+  }
+  function uploadHTML() {
+    return `<label class="drop" id="acct-drop"><input type="file" id="acct-file" accept=".csv,text/csv" hidden>
+      <b>${me && me.birds ? "Upload a newer eBird export" : "Add your eBird export"}</b>
+      <span class="hint">eBird → My eBird → Download My Data, then pick the CSV here. Home addresses are tidied to the nearest town before anything is saved.</span>
+      <span class="btn">Choose file</span></label><div class="err" id="up-err" role="alert"></div>`;
+  }
+  function flockHTML(compact) {
+    const list = members.filter((m) => m.birds || (me && m.u === me.u));
+    if (!list.length) return compact ? "" : `<p class="sub">No one has added birds yet.</p>`;
+    return `${compact ? '<div class="sec" style="margin:18px 0 8px;font-size:13px;font-weight:600">Or look around the flock</div>' : ""}<div class="flock">${list.map((m) => `
+      <button type="button" class="flock-row${viewing && viewing.u === m.u ? " cur" : ""}" data-view-u="${esc(m.u)}" ${m.birds ? "" : "disabled"}>
+        ${Avatar.html(m.avatar)}<span class="t"><b>${esc(nameOf(m))}${m.owner ? '<span class="tag-owner">founder</span>' : ""}${me && m.u === me.u ? '<span class="tag-owner">you</span>' : ""}</b>
+        <small>${m.birds ? `${m.birds.places} places · updated ${esc(ago(m.birds.updated))}` : "No birds yet"}${m.visibility === "private" ? " · private" : m.visibility === "group" ? " · flock only" : ""}</small></span>
+        <span class="n">${m.birds ? m.birds.species : "–"}<small>species</small></span></button>`).join("")}</div>`;
+  }
+  async function loadAdmin() {
+    const r = await call("admin/users"), box = $("adm"); if (!box) return;
+    if (!r.ok) { box.innerHTML = `<p class="err">${esc(r.error)}</p>`; return; }
+    const inv = r.data.invite;
+    const link = inv ? `${location.origin}/?invite=${encodeURIComponent(inv)}` : "";
+    box.innerHTML = `<div class="fld"><label>Invite link for friends</label>
+      ${inv ? `<div class="copybox"><code>${esc(link)}</code><button type="button" data-copy="${esc(link)}">Copy</button></div>
+      <span class="hint">Invite code: <b>${esc(inv)}</b>. Anyone with it can join, so share it only with people you know.</span>`
+      : `<span class="hint">You're using the first invite code Claude gave you. It's stored only as a scrambled fingerprint, so it can't be shown here. Set a new one below to get a shareable link.</span>`}</div>
+      <form id="f-invite" class="copybox" novalidate><input id="inv-new" maxlength="32" placeholder="New invite code, e.g. BIRB-SPRING" style="flex:1;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"><button type="submit">Set code</button></form>
+      <div class="err" id="inv-err" role="alert"></div>
+      <div><div class="lab" style="font-size:12px;color:var(--muted);margin:6px 0 2px">Members (${r.data.users.length})</div>
+      ${r.data.users.map((u) => `<div class="adm-row">${Avatar.html(u.avatar)}<span class="t"><b>${esc(nameOf(u))}</b> @${esc(u.u)}<small>${u.birds ? `${u.birds.species} species` : "no birds"} · joined ${esc(ago(u.joined))} · ${esc(u.visibility)}${u.locked ? " · locked out" : ""}</small></span>
+        ${u.owner ? "" : `<button type="button" data-adm-reset="${esc(u.u)}">Reset passcode</button><button type="button" class="danger" data-adm-remove="${esc(u.u)}">Remove</button>`}
+        <span class="ok" id="adm-${esc(u.u)}" style="width:100%"></span></div>`).join("")}</div>`;
+  }
+  const err = (msg, id = "acct-err") => { const e = $(id); if (e) e.textContent = msg || ""; };
+  async function upload(file) {
+    if (!file) return;
+    err("", "up-err");
+    const drop = $("acct-drop"); if (drop) drop.querySelector("b").textContent = "Uploading…";
+    let text; try { text = await file.text(); toRecords(text); } catch (e) { err(e.message || "That file couldn't be read.", "up-err"); if (drop) drop.querySelector("b").textContent = "Try another file"; return; }
+    let body = text, headers = { "content-type": "text/csv" };
+    if (typeof CompressionStream !== "undefined") {
+      try { body = await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob(); headers["content-encoding"] = "gzip"; } catch (e) { body = text; delete headers["content-encoding"]; }
+    }
+    const r = await call("birds", { method: "POST", body, raw: true, headers });
+    if (!r.ok) { err(r.error, "up-err"); if (drop) drop.querySelector("b").textContent = "Try again"; return; }
+    me = r.data.me; await refresh();
+    const s = r.data.stats;
+    notice = `Saved ${s.species} species from ${s.places} places.${s.privatePlaces ? ` ${s.privatePlaces} private ${s.privatePlaces === 1 ? "spot was" : "spots were"} tidied to the nearest town.` : ""}`;
+    await show(me.u);
+    joinStep = 1; view = "profile"; render(); paintChrome();
+  }
+  async function afterAuth(r) {
+    const url = new URL(location.href); if (url.searchParams.has("invite")) { url.searchParams.delete("invite"); history.replaceState(null, "", url.pathname + url.search + location.hash); }
+    setToken(r.data.token); me = r.data.me; await refresh(); paintChrome();
+  }
+
+  /* ---------- events ---------- */
+  document.addEventListener("click", async (e) => {
+    const t = e.target;
+    if (t.closest("#me-btn")) { open(me ? "profile" : "signin"); return; }
+    if (t.closest("#who")) { open("flock"); return; }
+    if ($("acct").hidden) return;
+    if (t === $("acct") || t.closest("[data-acct-close]")) { close(); return; }
+    const go = t.closest("[data-acct]"); if (go) { if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }
+    const vu = t.closest("[data-view-u]"); if (vu) { const ok = await show(vu.dataset.viewU); if (ok) close(); return; }
+    if (t.closest("[data-show-me]")) { if (await show(me.u)) close(); return; }
+    const cp = t.closest("[data-copy]"); if (cp) { try { await navigator.clipboard.writeText(cp.dataset.copy); cp.textContent = "Copied"; } catch (x) { cp.textContent = "Select and copy"; } return; }
+    if (t.closest("[data-signout]")) { setToken(""); me = null; await refresh(); paintChrome(); view = "signin"; render(); return; }
+    const avb = t.closest("[data-avk] button");
+    if (avb) { const k = avb.closest("[data-avk]").dataset.avk; draft.avatar[k] = avb.dataset.v; if (k === "head") draft.avatar.beak = Avatar.AUTOBEAK[draft.avatar.head]; avb.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === avb))); if (k === "head") { const bb = card().querySelector('[data-avk="beak"]'); bb && bb.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === draft.avatar.beak))); } live && live.set(draft.avatar); return; }
+    if (t.closest("[data-av-random]")) { draft.avatar = Avatar.random(); render(); return; }
+    if (t.closest("[data-av-reset]")) { draft.avatar = { ...Avatar.DEF }; render(); return; }
+    const sv = t.closest("[data-av-save]");
+    if (sv) {
+      sv.disabled = true;
+      const r = await call("me", { method: "PUT", body: { avatar: draft.avatar } });
+      sv.disabled = false;
+      if (!r.ok) { err(r.error); return; }
+      me = r.data.me; await refresh(); paintChrome();
+      if (sv.dataset.avSave === "join") { joinStep = 3; view = "join"; } else { view = "profile"; notice = "Your bird is saved."; }
+      render(); return;
+    }
+    const rs = t.closest("[data-adm-reset]");
+    if (rs) { const u = rs.dataset.admReset; const r = await call("admin/reset", { method: "POST", body: { u } }); $("adm-" + u).textContent = r.ok ? `Temporary passcode for ${u}: ${r.data.temp} (they'll be asked to change it)` : r.error; return; }
+    const rm = t.closest("[data-adm-remove]");
+    if (rm) {
+      if (!rm.dataset.sure) { rm.dataset.sure = "1"; rm.textContent = "Remove for good?"; return; }
+      const r = await call("admin/remove", { method: "POST", body: { u: rm.dataset.admRemove } });
+      if (r.ok) { await refresh(); loadAdmin(); } else $("adm-" + rm.dataset.admRemove).textContent = r.error;
+    }
+  });
+  document.addEventListener("change", (e) => { if (e.target.id === "acct-file") { upload(e.target.files[0]); e.target.value = ""; } });
+  document.addEventListener("input", (e) => {
+    if (e.target.id === "j-user") { const p = $("j-userp"); if (p) p.textContent = e.target.value.trim().toLowerCase() || "…"; }
+    if (e.target.closest && e.target.closest(".acct")) err("");
+  });
+  document.addEventListener("dragover", (e) => { const d = e.target.closest && e.target.closest("#acct-drop"); if (d) { e.preventDefault(); e.stopPropagation(); d.classList.add("on"); } }, true);
+  document.addEventListener("drop", (e) => { const d = e.target.closest && e.target.closest("#acct-drop"); if (d) { e.preventDefault(); e.stopPropagation(); d.classList.remove("on"); dragDepth = 0; $("overlay").classList.remove("on"); upload(e.dataTransfer?.files?.[0]); } }, true);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("acct").hidden) { e.stopPropagation(); close(); } }, true);
+  document.addEventListener("submit", async (e) => {
+    const f = e.target; if (!f.closest || !f.closest(".acct")) return;
+    e.preventDefault();
+    const btn = f.querySelector("[type=submit]");
+    if (f.id === "f-join") {
+      const invite = $("j-inv").value.trim(), name = $("j-name").value.trim(), username = $("j-user").value.trim().toLowerCase(), passcode = $("j-pass").value;
+      Object.assign(draft, { invite, name, username });
+      if (!invite) return err("Enter the invite code Lee sent you.");
+      if (!name) return err("Enter the name you'd like people to see.");
+      if (!/^[a-z0-9_-]{2,20}$/.test(username)) return err("Usernames are 2 to 20 letters, numbers, - or _.");
+      if (passcode.length < 6) return err("Passcodes need at least 6 characters.");
+      btn.disabled = true; const r = await call("join", { method: "POST", body: { invite, name, username, passcode, avatar: draft.avatar } }); btn.disabled = false;
+      if (!r.ok) return err(r.error);
+      await afterAuth(r); joinStep = 2; render();
+    } else if (f.id === "f-signin") {
+      const username = $("s-user").value.trim().toLowerCase(), passcode = $("s-pass").value;
+      if (!username || !passcode) return err("Enter your username and passcode.");
+      btn.disabled = true; const r = await call("login", { method: "POST", body: { username, passcode } }); btn.disabled = false;
+      if (!r.ok) return err(r.error);
+      await afterAuth(r);
+      if (me.mustChange) { view = "passcode"; render(); return; }
+      if (me.birds) await show(me.u, { quiet: true });
+      view = "profile"; render();
+    } else if (f.id === "f-pass") {
+      const old = $("p-old").value, passcode = $("p-new").value;
+      if (!old) return err("Enter your current passcode.");
+      if (passcode.length < 6) return err("Passcodes need at least 6 characters.");
+      btn.disabled = true; const r = await call("passcode", { method: "POST", body: { old, passcode } }); btn.disabled = false;
+      if (!r.ok) return err(r.error);
+      await afterAuth(r); notice = "Passcode changed."; view = "profile"; render();
+    } else if (f.id === "f-invite") {
+      const code = $("inv-new").value.trim().toUpperCase();
+      if (!/^[A-Z0-9-]{6,32}$/.test(code)) return err("Invite codes are 6 to 32 letters, numbers or dashes.", "inv-err");
+      const r = await call("admin/invite", { method: "POST", body: { code } });
+      if (!r.ok) return err(r.error, "inv-err");
+      loadAdmin();
+    } else if (f.id === "f-prof") {
+      btn.disabled = true; const r = await call("me", { method: "PUT", body: { name: $("pr-name").value.trim(), visibility: $("pr-vis").value } }); btn.disabled = false;
+      if (!r.ok) return err(r.error);
+      me = r.data.me; await refresh(); paintChrome(); notice = "Saved."; render();
+    }
+  });
+  return { boot, open, get me() { return me; }, get viewing() { return viewing; } };
+})();
+
 /* ---------- start ---------- */
 (function start() {
   let saved = null;
@@ -3273,6 +3824,7 @@ document.addEventListener("keydown", (e) => {
   let ok = false;
   if (saved && saved.text) { try { useText(saved.text, "file", saved.fileName || "your file"); ok = true; } catch (e) {} }
   if (!ok) useText($("embedded-csv").textContent, "built-in", $("embedded-meta").textContent.trim());
+  setTimeout(() => Acct.boot(), 50);
   if (typeof deck === "undefined") { $("map").innerHTML = `<div class="loading">The 3D map library didn't load. Check your connection and reload the page.</div>`; return; }
   const fontsReady = document.fonts ? Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]) : Promise.resolve();
   setTimeout(fetchWards, 300);
