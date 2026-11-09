@@ -58,11 +58,19 @@ const getUser = async (u) => (u && USERNAME.test(u) ? store().get(`users/${u}`, 
 const putUser = (user) => store().setJSON(`users/${user.u}`, user);
 const isAdmin = (u) => !!u && u === env("ADMIN_USER").toLowerCase();
 
+/* a renamed account leaves a pointer behind, so old links and signed-in devices keep working */
+async function findUser(u) {
+  const user = await getUser(u);
+  if (user) return user;
+  if (!u || !USERNAME.test(u)) return null;
+  const to = await store().get(`aliases/${u}`, { type: "text" });
+  return to ? getUser(to) : null;
+}
 async function sessionUser(req) {
   const auth = req.headers.get("authorization") || "";
   const p = verify(auth.replace(/^Bearer\s+/i, ""));
   if (!p) return null;
-  const user = await getUser(p.u);
+  const user = await findUser(p.u);
   return user && (user.v || 1) === p.v ? user : null;
 }
 
@@ -171,12 +179,13 @@ export default async (req) => {
       const salt = crypto.randomBytes(16).toString("base64");
       const user = { u, name: String(b.name || u).slice(0, 40), salt, hash: hashPass(String(b.passcode), salt), v: 1, joined: new Date().toISOString(), visibility: isAdmin(u) ? "public" : "group", avatar: cleanAvatar(b.avatar), fails: 0, lockUntil: 0 };
       await putUser(user);
+      await store().delete(`aliases/${u}`);
       return json({ token: tokenFor(user), me: publicMe(user) }, 201);
     }
 
     if (path === "login" && m === "POST") {
       const b = await jsonBody(req);
-      const user = await getUser(String(b.username || "").trim().toLowerCase());
+      const user = await findUser(String(b.username || "").trim().toLowerCase());
       if (!user) return fail(401, "That username and passcode don't match.");
       if (user.lockUntil > Date.now()) return fail(429, `Too many wrong tries. Try again in ${Math.ceil((user.lockUntil - Date.now()) / 60000)} minutes.`);
       if (hashPass(String(b.passcode || ""), user.salt) !== user.hash) {
@@ -204,6 +213,29 @@ export default async (req) => {
       }
     }
 
+    if (path === "username" && m === "POST") {
+      if (!me) return fail(401, "Please sign in.");
+      const b = await jsonBody(req);
+      const nu = String(b.username || "").trim().toLowerCase();
+      if (nu === me.u) return json({ token: tokenFor(me), me: publicMe(me) });
+      if (!USERNAME.test(nu) || RESERVED.has(nu)) return fail(400, "Usernames are 2 to 20 letters, numbers, - or _.");
+      if (await getUser(nu)) return fail(409, "That username is taken. Try another.");
+      const taken = await store().get(`aliases/${nu}`, { type: "text" });
+      if (taken && taken !== me.u) return fail(409, "That username is taken. Try another.");
+      const old = me.u, wasAdmin = isAdmin(old);
+      const csv = await store().get(`csv/${old}`, { type: "text" });
+      me.u = nu; me.v = me.v || 1;
+      await putUser(me);
+      if (csv) await store().set(`csv/${nu}`, csv);
+      if (wasAdmin) { cfg.ADMIN_USER = nu; await store().setJSON("config/settings", cfg); }
+      await store().set(`aliases/${old}`, nu);
+      await store().delete(`aliases/${nu}`);
+      const { blobs } = await store().list({ prefix: "aliases/" });
+      await Promise.all(blobs.map(async (a) => { if ((await store().get(a.key, { type: "text" })) === old) await store().set(a.key, nu); }));
+      await store().delete(`csv/${old}`); await store().delete(`users/${old}`);
+      return json({ token: tokenFor(me), me: publicMe(me) });
+    }
+
     if (path === "passcode" && m === "POST") {
       if (!me) return fail(401, "Please sign in.");
       const b = await jsonBody(req);
@@ -216,7 +248,7 @@ export default async (req) => {
 
     if (path === "birds") {
       if (m === "GET") {
-        const owner = await getUser(String(url.searchParams.get("u") || "").toLowerCase());
+        const owner = await findUser(String(url.searchParams.get("u") || "").toLowerCase());
         if (!owner || !owner.birds) return fail(404, "No birds uploaded yet.");
         if (!canSee(owner, me)) return fail(403, owner.visibility === "private" ? "These birds are private." : "Sign in to see these birds.");
         const csv = await store().get(`csv/${owner.u}`, { type: "text" });

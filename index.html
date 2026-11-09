@@ -3659,6 +3659,7 @@ const Acct = (() => {
         <div style="margin:14px 0">${uploadHTML()}</div>
         <form id="f-prof" class="stack" novalidate>
           <div class="fld"><label for="pr-name">Display name</label><input id="pr-name" maxlength="40" value="${esc(me.name || "")}"></div>
+          <div class="fld"><label for="pr-user">Username</label><input id="pr-user" maxlength="20" autocomplete="username" value="${esc(me.u)}"><span class="hint">Used to sign in and in your link. If you change it, your old link keeps working.</span></div>
           <div class="fld"><label for="pr-vis">Who can see your birds</label><select id="pr-vis">
             ${[["public", "Anyone with your link"], ["group", "Only people in the flock"], ["private", "Only me"]].map(([v, l]) => `<option value="${v}" ${me.visibility === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
           <div class="fld"><label>Your link</label><div class="copybox"><code>${esc(location.origin)}/?who=${esc(me.u)}</code><button type="button" data-copy="${esc(location.origin)}/?who=${esc(me.u)}">Copy</button></div></div>
@@ -3809,7 +3810,16 @@ const Acct = (() => {
       if (!r.ok) return err(r.error, "inv-err");
       loadAdmin();
     } else if (f.id === "f-prof") {
-      btn.disabled = true; const r = await call("me", { method: "PUT", body: { name: $("pr-name").value.trim(), visibility: $("pr-vis").value } }); btn.disabled = false;
+      const nu = $("pr-user").value.trim().toLowerCase();
+      if (!/^[a-z0-9_-]{2,20}$/.test(nu)) return err("Usernames are 2 to 20 letters, numbers, - or _.");
+      btn.disabled = true;
+      if (nu !== me.u) {
+        const was = me.u, rn = await call("username", { method: "POST", body: { username: nu } });
+        if (!rn.ok) { btn.disabled = false; return err(rn.error); }
+        setToken(rn.data.token); me = rn.data.me;
+        if (viewing && viewing.u === was) { viewing = { ...viewing, u: me.u }; const url = new URL(location.href); if (url.searchParams.get("who") === was) { url.searchParams.set("who", me.u); history.replaceState(null, "", url.pathname + url.search + location.hash); } }
+      }
+      const r = await call("me", { method: "PUT", body: { name: $("pr-name").value.trim(), visibility: $("pr-vis").value } }); btn.disabled = false;
       if (!r.ok) return err(r.error);
       me = r.data.me; await refresh(); paintChrome(); notice = "Saved."; render();
     }
