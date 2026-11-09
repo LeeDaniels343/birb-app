@@ -82,11 +82,12 @@ function cleanAvatar(a) {
   return out;
 }
 const VIS = new Set(["public", "group", "private"]);
+const cleanFav = (f) => (f && typeof f === "object" && typeof f.name === "string" && f.name.length <= 80 ? { name: f.name.slice(0, 80), sci: String(f.sci || "").slice(0, 80) } : null);
 const publicMe = (user) => ({
   u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: user.visibility || "group",
-  admin: isAdmin(user.u), birds: user.birds || null, joined: user.joined, mustChange: !!user.mustChange,
+  admin: isAdmin(user.u), birds: user.birds || null, joined: user.joined, mustChange: !!user.mustChange, favourite: user.favourite || null,
 });
-const card = (user) => ({ u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: user.visibility || "group", birds: user.birds || null, owner: isAdmin(user.u) });
+const card = (user) => ({ u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: user.visibility || "group", birds: user.birds || null, owner: isAdmin(user.u), favourite: user.favourite || null });
 const canSee = (owner, viewer) => {
   const vis = owner.visibility || "group";
   if (viewer && viewer.u === owner.u) return true;
@@ -208,6 +209,7 @@ export default async (req) => {
         if (b.name != null) me.name = String(b.name).trim().slice(0, 40) || me.u;
         if (b.avatar != null) me.avatar = cleanAvatar(b.avatar);
         if (b.visibility != null && VIS.has(b.visibility)) me.visibility = b.visibility;
+        if (b.favourite !== undefined) me.favourite = cleanFav(b.favourite);
         await putUser(me);
         return json({ me: publicMe(me) });
       }

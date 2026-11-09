@@ -297,6 +297,16 @@ body.night .scope button[aria-pressed="true"] { color: #0f191d; }
 .heard-by .hb .av { width: 28px; height: 28px; }
 .heard-by .hb small { color: var(--muted); font-size: 11.5px; }
 .latest-by { display: flex; align-items: center; gap: 6px; }
+/* favourite bird */
+.fav-pill .latest-thumb { position: relative; }
+.fav-heart { position: absolute; right: -3px; bottom: -3px; width: 17px; height: 17px; border-radius: 50%; background: #d6457a; display: grid; place-items: center; box-shadow: 0 0 0 2px var(--surface); }
+.fav-heart svg { width: 10px; height: 10px; fill: #fff; }
+.fav-pill.empty .latest-thumb .ph-thumb, .fav-empty { width: 34px; height: 34px; border-radius: 50%; border: 1.5px dashed var(--line); display: grid; place-items: center; background: var(--bg); }
+.fav-empty svg { width: 16px; height: 16px; fill: #d6457a; }
+button.fav-btn { display: inline-flex; align-items: center; gap: 6px; }
+button.fav-btn svg { width: 14px; height: 14px; fill: none; stroke: #d6457a; stroke-width: 2.2; }
+button.fav-btn[aria-pressed="true"] { background: #d6457a; color: #fff; }
+button.fav-btn[aria-pressed="true"] svg { fill: #fff; stroke: #fff; }
 .toast { position: absolute; z-index: 9; max-width: min(360px, calc(100vw - 24px)); padding: 10px 12px; border-radius: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0,0,0,.18); font-size: 13px; line-height: 1.4; display: grid; gap: 8px; animation: latestIn .2s ease; }
 .toast[hidden] { display: none; }
 .toast .acts { display: flex; gap: 8px; justify-content: flex-end; }
@@ -726,6 +736,12 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
         <svg class="latest-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="latest-card" id="latest-card" hidden></div>
+      <button type="button" class="latest-pill fav-pill" id="fav-pill" aria-expanded="false" aria-controls="fav-card" hidden>
+        <span class="latest-thumb" id="fav-thumb"></span>
+        <span class="latest-txt"><small id="fav-label">Favourite bird</small><b id="fav-name"></b></span>
+        <svg class="latest-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="latest-card" id="fav-card" hidden></div>
     </div>
   </div>
   <nav class="crumbs" id="crumbs" aria-label="Where you are on the map"></nav>
@@ -2636,6 +2652,7 @@ function render() {
   crumbSig = ""; queueCrumbs();
   try { World.dataChanged(); } catch (e) {}
   renderLatest();
+  renderFav();
   Coll.render();
 }
 
@@ -2812,6 +2829,72 @@ function setLatest(open) {
 $("latest-pill").addEventListener("click", () => setLatest($("latest-card").hidden));
 try { if (localStorage.getItem("birb-latest-open") === "1" && window.innerWidth >= 760) setLatest(true); } catch (e) {}
 
+/* ---------- favourite bird ---------- */
+const HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.4C.9 8.2 3 4.5 6.6 4.5c2.1 0 3.6 1.2 4.4 2.6.8-1.4 2.3-2.6 4.4-2.6 3.6 0 5.7 3.7 4.2 7.1C19.5 16.4 12 21 12 21z"/></svg>';
+const FAV_LOCAL = "birb-fav";
+function favContext() {
+  const me = Acct.me, sc = Acct.scope, v = Acct.viewing;
+  if (sc === "user" && v) return { fav: v.favourite || null, who: v.name || v.u, mine: false };
+  if (me) return { fav: me.favourite || null, who: "Your", mine: true };
+  if (v) return { fav: v.favourite || null, who: v.name || v.u, mine: false };
+  let f = null; try { f = JSON.parse(localStorage.getItem(FAV_LOCAL) || "null"); } catch (e) {}
+  return { fav: f, who: "Your", mine: true, local: true };
+}
+const isFav = (name) => { const c = favContext(); return !!(c.fav && c.fav.name === name); };
+async function setFavourite(bird) {
+  const c = favContext();
+  if (!c.mine) return;
+  if (c.local) { try { bird ? localStorage.setItem(FAV_LOCAL, JSON.stringify(bird)) : localStorage.removeItem(FAV_LOCAL); } catch (e) {} }
+  else if (!(await Acct.saveFavourite(bird))) return;
+  renderFav(true);
+}
+let favKey = "";
+function renderFav(force) {
+  const pill = $("fav-pill"), cardEl = $("fav-card");
+  const c = favContext();
+  const canPick = c.mine && (c.local ? true : !!Acct.me);
+  if (!c.fav && !canPick) { pill.hidden = true; cardEl.hidden = true; return; }
+  pill.hidden = false;
+  const label = c.mine ? "Favourite bird" : `${c.who}'s favourite`;
+  const key = JSON.stringify([c.fav, label, state.data.length, state.source]);
+  if (key === favKey && !force) return;
+  favKey = key;
+  $("fav-label").textContent = label;
+  if (!c.fav) {
+    pill.classList.add("empty"); pill.style.removeProperty("--bird");
+    $("fav-thumb").innerHTML = `<span class="fav-empty">${HEART}</span>`;
+    $("fav-name").textContent = "Pick a favourite";
+    cardEl.innerHTML = `<div class="body"><h3>Pick your favourite</h3><div class="where">Open any bird you've heard and tap <b>Make favourite</b> in its story.</div>
+      <div class="acts"><button type="button" data-fav-pick>Choose from my birds</button></div></div>`;
+    return;
+  }
+  pill.classList.remove("empty");
+  const f = c.fav, col = PLUMAGE[sci2(f.sci)];
+  pill.style.removeProperty("--bird"); if (col) pill.style.setProperty("--bird", col);
+  cardEl.style.removeProperty("--bird"); if (col) cardEl.style.setProperty("--bird", col);
+  $("fav-thumb").innerHTML = Photos.slot(f.sci, "ph-thumb", col || "var(--accent)") + `<span class="fav-heart">${HEART}</span>`;
+  $("fav-name").textContent = f.name;
+  const recs = state.data.filter((d) => d.name === f.name || (f.sci && sci2(d.sci) === sci2(f.sci)));
+  const days = new Set(recs.map((d) => d.date)), first = recs.map((d) => d.date).sort()[0];
+  cardEl.innerHTML = `${Photos.slot(f.sci, "ph-hero", col || "var(--accent)", true)}
+    <div class="body"><h3>${esc(f.name)}</h3>
+      <div class="where"><i>${esc(f.sci)}</i></div>
+      <div class="when">${recs.length ? `Heard on ${days.size} ${days.size === 1 ? "day" : "days"} · first ${esc(fmtDate(first))}` : "Not in the birds on screen"}</div>
+      <div class="acts">${recs.length ? `<button type="button" data-more="${esc(f.name)}">Its story</button>` : ""}${c.mine ? `<button type="button" class="ghost" data-fav-pick>Change</button>` : ""}</div></div>`;
+  Photos.fill($("fav-thumb")); Photos.fill(cardEl);
+}
+function setFavOpen(open) {
+  $("fav-card").hidden = !open; $("fav-pill").setAttribute("aria-expanded", String(open));
+  try { localStorage.setItem("birb-fav-open", open ? "1" : "0"); } catch (e) {}
+}
+$("fav-pill").addEventListener("click", () => setFavOpen($("fav-card").hidden));
+try { if (localStorage.getItem("birb-fav-open") === "1" && window.innerWidth >= 760) setFavOpen(true); } catch (e) {}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-fav]");
+  if (b) { const on = b.getAttribute("aria-pressed") === "true"; setFavourite(on ? null : { name: b.dataset.fav, sci: b.dataset.favSci || "" }).then(() => { b.setAttribute("aria-pressed", String(!on)); b.lastChild.textContent = !on ? " Your favourite" : " Make favourite"; }); return; }
+  if (e.target.closest("[data-fav-pick]")) { setFavOpen(false); closeDetail && closeDetail(); setPanel(true); const sp = $("species"); if (sp) sp.scrollIntoView({ behavior: "smooth", block: "start" }); }
+});
+
 /* ---------- loading data ---------- */
 function setStatus(msg, isError = false) { const s = $("status"); s.innerHTML = msg; s.classList.toggle("error", isError); }
 function useText(text, source, fileName, opts = {}) { useRecords(toRecords(text), source, fileName, { ...opts, text }); }
@@ -2944,6 +3027,7 @@ function openSpecies(name) {
     </div>
     ${flockOn() ? (() => { const hb = heardBy(pool); return hb.length ? `<div class="heard-by"><span class="lab">Heard by</span>${hb.map((x, i) => { const m = Acct.member(x.u); return `<span class="hb">${Avatar.html(m && m.avatar, "")}<b>${esc(byName(x.u))}</b><small>${i === 0 && hb.length > 1 ? "first, " : ""}${esc(fmtDate(x.first))}</small></span>`; }).join("")}</div>` : ""; })() : ""}
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      ${favContext().mine && (favContext().local || Acct.me) && (!flockOn() || pool.some((d) => Acct.me && d.by === Acct.me.u)) ? `<button type="button" class="fav-btn" data-fav="${esc(name)}" data-fav-sci="${esc(s0.sci)}" aria-pressed="${isFav(name)}">${HEART}<span>${isFav(name) ? " Your favourite" : " Make favourite"}</span></button>` : ""}
       <button type="button" data-only="${esc(name)}">Show only this bird on the map</button>
       <a href="${wikiLink(s0.sci)}" target="_blank" rel="noopener" style="font-size:13px;color:var(--accent)">Read about it</a>
       <a href="${xcLink(s0.sci)}" target="_blank" rel="noopener" style="font-size:13px;color:var(--accent)" title="Hear recordings of this bird on xeno-canto">Listen</a>
@@ -3610,6 +3694,7 @@ const Acct = (() => {
       h = `<span class="who-chip link" data-open-flock role="button" tabindex="0">${Avatar.html(viewing.avatar, "")}<span><b>${esc(nameOf(viewing))}</b>'s birds</span></span>`;
     }
     w.hidden = !h; w.innerHTML = h;
+    try { renderFav(true); } catch (e) {}
     document.body.classList.toggle("has-who", !!h);
   }
 
@@ -3927,7 +4012,13 @@ const Acct = (() => {
       me = r.data.me; await refresh(); paintChrome(); notice = "Saved."; render();
     }
   });
-  return { boot, open, member, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
+  async function saveFavourite(f) {
+    const r = await call("me", { method: "PUT", body: { favourite: f } });
+    if (!r.ok) { toast(`<span>${esc(r.error)}</span>`, $("fav-pill")); return false; }
+    me = r.data.me; const m = members.find((x) => x.u === me.u); if (m) m.favourite = me.favourite;
+    return true;
+  }
+  return { boot, open, member, saveFavourite, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
 })();
 
 /* ---------- start ---------- */
