@@ -3682,12 +3682,12 @@ const Acct = (() => {
       <span class="btn">Choose file</span></label><div class="err" id="up-err" role="alert"></div>`;
   }
   function flockHTML(compact) {
-    const list = members.filter((m) => m.birds || (me && m.u === me.u));
-    if (!list.length) return compact ? "" : `<p class="sub">No one has added birds yet.</p>`;
+    const list = members.slice().sort((a, b) => (b.owner - a.owner) || ((me && b.u === me.u) - (me && a.u === me.u)) || ((b.birds?.species || 0) - (a.birds?.species || 0)));
+    if (!list.length) return compact ? "" : `<p class="sub">No one has joined yet.</p>`;
     return `${compact ? '<div class="sec" style="margin:18px 0 8px;font-size:13px;font-weight:600">Or look around the flock</div>' : ""}<div class="flock">${list.map((m) => `
       <button type="button" class="flock-row${viewing && viewing.u === m.u ? " cur" : ""}" data-view-u="${esc(m.u)}" ${m.birds ? "" : "disabled"}>
         ${Avatar.html(m.avatar)}<span class="t"><b>${esc(nameOf(m))}${m.owner ? '<span class="tag-owner">founder</span>' : ""}${me && m.u === me.u ? '<span class="tag-owner">you</span>' : ""}</b>
-        <small>${m.birds ? `${m.birds.places} places · updated ${esc(ago(m.birds.updated))}` : "No birds yet"}${m.visibility === "private" ? " · private" : m.visibility === "group" ? " · flock only" : ""}</small></span>
+        <small>${m.birds ? `${m.birds.places} places · updated ${esc(ago(m.birds.updated))}` : me && m.u === me.u ? "No birds yet. Add your eBird export in Your profile" : "No birds yet"}${m.visibility === "private" ? " · private" : m.visibility === "group" ? " · flock only" : ""}</small></span>
         <span class="n">${m.birds ? m.birds.species : "–"}<small>species</small></span></button>`).join("")}</div>`;
   }
   async function loadAdmin() {
