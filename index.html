@@ -297,6 +297,10 @@ body.night .scope button[aria-pressed="true"] { color: #0f191d; }
 .heard-by .hb .av { width: 28px; height: 28px; }
 .heard-by .hb small { color: var(--muted); font-size: 11.5px; }
 .latest-by { display: flex; align-items: center; gap: 6px; }
+.toast { position: absolute; z-index: 9; max-width: min(360px, calc(100vw - 24px)); padding: 10px 12px; border-radius: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0,0,0,.18); font-size: 13px; line-height: 1.4; display: grid; gap: 8px; animation: latestIn .2s ease; }
+.toast[hidden] { display: none; }
+.toast .acts { display: flex; gap: 8px; justify-content: flex-end; }
+.scope button.busy { opacity: .6; }
 @media (min-width: 761px) {
   body.has-who:not(.panel-open) .coll-in { padding-top: 128px; }
   body.has-who:not(.panel-open) .coll-bar { top: 118px; }
@@ -821,6 +825,7 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
     <div class="world-msg" id="world-msg" hidden>The 3D scene couldn't load. Check your internet connection, then reload the page.</div>
   </section>
   <button type="button" class="me-btn" id="me-btn" hidden aria-haspopup="dialog"></button>
+  <div class="toast" id="toast" role="status" hidden></div>
   <div class="acct" id="acct" hidden role="dialog" aria-modal="true" aria-labelledby="acct-h"><div class="acct-card" id="acct-card"></div></div>
   <div class="help" id="help" role="dialog" aria-labelledby="help-h" hidden>
     <h2 id="help-h">Exploring the map</h2>
@@ -3562,6 +3567,13 @@ const Acct = (() => {
   const cache = new Map();
   const SCOPE_KEY = "birb-scope";
   const member = (u) => members.find((x) => x.u === u) || (me && me.u === u ? me : null);
+  let toastT = 0;
+  function toast(html, anchor) {
+    const t = $("toast"); t.innerHTML = html; t.hidden = false;
+    const a = anchor && anchor.getBoundingClientRect(), host = t.offsetParent ? t.offsetParent.getBoundingClientRect() : { left: 0, top: 0 };
+    if (a) { t.style.left = Math.max(12, a.left - host.left) + "px"; t.style.top = a.bottom - host.top + 8 + "px"; }
+    clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 7000);
+  }
   const card = () => $("acct-card");
   async function call(path, { method = "GET", body, raw, headers = {} } = {}) {
     const h = { ...headers }; if (token) h.authorization = "Bearer " + token;
@@ -3612,7 +3624,10 @@ const Acct = (() => {
   async function showFlock({ quiet = false } = {}) {
     if (!API) return false;
     const list = members.filter((m) => m.birds);
-    if (!list.length) { if (!quiet) setStatus("No one in the flock has added birds yet.", true); return false; }
+    if (!list.length) {
+      if (!quiet) toast(`<span>No one in the flock has added their birds yet, so there's nothing to combine.${me && !me.birds ? " Add your eBird export first." : ""}</span>${me && !me.birds ? '<span class="acts"><button type="button" data-acct-open="profile">Add my birds</button></span>' : ""}`, $("who"));
+      return false;
+    }
     setStatus("Gathering the flock's birds…");
     const got = await Promise.allSettled(list.map((m) => getRecs(m.u)));
     const recs = got.flatMap((g) => (g.status === "fulfilled" ? g.value : []));
@@ -3656,6 +3671,7 @@ const Acct = (() => {
     if (!done && me && pref === "flock") done = await showFlock({ quiet: true });
     if (!done && me && me.birds) done = await show(me.u, { quiet: true });
     if (!done && me) done = await showFlock({ quiet: true });
+    if (!done && me && !me.birds) setTimeout(() => toast(`<span>Welcome, ${esc(nameOf(me))}. You're seeing the app's built-in birds until you add your own eBird export.</span><span class="acts"><button type="button" data-acct-open="profile">Add my birds</button></span>`, $("who")), 800);
     if (!done && state.source !== "file" && owner && members.some((m) => m.u === owner && m.birds)) done = await show(owner, { quiet: true });
     if (invite && !me) open("join", { invite });
     else if (me && me.mustChange) open("passcode");
@@ -3814,13 +3830,14 @@ const Acct = (() => {
     if (t.closest("#me-btn")) { open(me ? "profile" : "signin"); return; }
     const sc = t.closest("[data-scope]");
     if (sc) {
-      if (sc.dataset.scope === "flock") { if (scope !== "flock") await showFlock(); }
+      if (sc.dataset.scope === "flock") { if (scope !== "flock") { sc.classList.add("busy"); await showFlock(); sc.classList.remove("busy"); } }
       else if (me && me.birds) { if (scope !== "me") await show(me.u); }
-      else { open("profile"); notice = ""; }
+      else toast(`<span>You haven't added your birds yet. What's on the map now is the app's built-in birds.</span><span class="acts"><button type="button" data-acct-open="profile">Add my birds</button></span>`, $("who"));
       return;
     }
     if (t.closest("[data-scope-back]")) { if (backTo === "flock") await showFlock(); else if (me && me.birds) await show(me.u); else await showFlock(); return; }
     if (t.closest("[data-open-flock]")) { open("flock"); return; }
+    const ao = t.closest("[data-acct-open]"); if (ao) { $("toast").hidden = true; open(ao.dataset.acctOpen); return; }
     if ($("acct").hidden) return;
     if (t === $("acct") || t.closest("[data-acct-close]")) { close(); return; }
     const go = t.closest("[data-acct]"); if (go) { if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }
