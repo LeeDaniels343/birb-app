@@ -376,6 +376,16 @@ body.night .acct .primary { color: #0f191d; }
 .flock-row .n { font-family: var(--font-display); font-size: 20px; font-weight: 700; text-align: right; }
 .flock-row .n small { display: block; font-family: var(--font-body, inherit); font-size: 10.5px; color: var(--muted); font-weight: 400; }
 .tag-owner { font-size: 10px; font-family: var(--font-mono); padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-left: 6px; vertical-align: 2px; }
+.mem-back { font-size: 13px; margin: -4px 0 12px; display: inline-block; }
+.mem-more { display: grid; gap: 14px; margin-top: 14px; }
+.mem-sec { display: grid; gap: 6px; }
+.mem-sec .lab { font-size: 12px; color: var(--muted); }
+.mem-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); text-align: left; }
+.mem-row:hover { border-color: var(--accent); }
+.mem-row .ph-thumb { width: 38px; height: 38px; }
+.mem-row span { display: grid; gap: 1px; min-width: 0; }
+.mem-row b { font-size: 14px; font-weight: 600; }
+.mem-row small { font-size: 12px; color: var(--muted); }
 .adm-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .adm-row .av { width: 34px; height: 34px; }
 .adm-row .t { flex: 1; min-width: 120px; font-size: 13px; }
@@ -3694,7 +3704,7 @@ const Acct = (() => {
   const TOKEN = "birb-token";
   let token = ""; try { token = localStorage.getItem(TOKEN) || ""; } catch (e) {}
   let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "";
-  let scope = "", backTo = "me";
+  let scope = "", backTo = "me", memberU = "";
   const cache = new Map();
   const SCOPE_KEY = "birb-scope";
   const member = (u) => members.find((x) => x.u === u) || (me && me.u === u ? me : null);
@@ -3894,12 +3904,23 @@ const Acct = (() => {
     } else if (view === "flock") {
       h = `${X}${tabs()}<h2 id="acct-h">The flock</h2><p class="sub">Tap someone to see their birds on the map, in Habitat world and in their Collection.</p>${flockHTML(false)}
         ${me ? "" : `<div class="acts"><span></span><span style="display:flex;gap:6px"><button type="button" data-acct="signin">Sign in</button><button type="button" class="primary" data-acct="join">Join</button></span></div>`}`;
+    } else if (view === "member" && member(memberU)) {
+      const m = member(memberU), b = m.birds, mine = me && m.u === me.u;
+      h = `${X}${tabs()}<button type="button" class="linkish mem-back" data-acct="flock">← Flock</button>
+        <div class="prof">${Avatar.html(m.avatar)}<div><h2 id="acct-h">${esc(nameOf(m))}</h2>
+          <p class="sub" style="margin:0">@${esc(m.u)}${m.owner ? '<span class="tag-owner">founder</span>' : ""}${mine ? '<span class="tag-owner">you</span>' : ""}</p>
+          <p class="hint" style="margin:4px 0 0">${m.joined ? `Joined ${esc(ago(m.joined))} · ` : ""}${m.visibility === "public" ? "Birds visible to anyone with the link" : m.visibility === "private" ? "Birds private" : "Birds visible to the flock"}</p></div></div>
+        ${b ? `<div class="stats"><span><b>${b.species}</b>species</span><span><b>${b.places}</b>places</span><span><b>${b.rows}</b>sightings</span><span><b>${esc(ago(b.updated))}</b>last upload</span></div>
+          <div id="mem-more" class="mem-more"><p class="hint">Loading ${mine ? "your" : "their"} birds…</p></div>`
+          : `<p class="sub">${mine ? "You haven't" : `${esc(nameOf(m))} hasn't`} added any birds yet.</p>`}
+        <div class="acts"><span></span>${b ? `<button type="button" class="primary" data-show-u="${esc(m.u)}">${mine ? "Show my birds" : `See ${esc(nameOf(m))}'s birds`}</button>` : ""}</div>`;
     } else if (view === "admin" && me && me.admin) {
       h = `${X}${tabs()}<h2 id="acct-h">Admin</h2><p class="sub">Only you can see this.</p><div id="adm" class="stack"><p class="hint">Loading members…</p></div>`;
     } else { view = me ? "profile" : "signin"; return render(); }
     el.innerHTML = h;
     if ($("abld-stage")) mountBuilder();
     if (view === "admin") loadAdmin();
+    if (view === "member") loadMember(memberU);
     const first = el.querySelector("input:not([type=file]), select"); if (first && !("ontouchstart" in window)) first.focus();
   }
   function uploadHTML() {
@@ -3915,10 +3936,37 @@ const Acct = (() => {
     const list = members.slice().sort((a, b) => (b.owner - a.owner) || ((me && b.u === me.u) - (me && a.u === me.u)) || ((b.birds?.species || 0) - (a.birds?.species || 0)));
     if (!list.length) return compact ? "" : `<p class="sub">No one has joined yet.</p>`;
     return `${compact ? '<div class="sec" style="margin:18px 0 8px;font-size:13px;font-weight:600">Or look around the flock</div>' : ""}<div class="flock">${list.map((m) => `
-      <button type="button" class="flock-row${viewing && viewing.u === m.u ? " cur" : ""}" data-view-u="${esc(m.u)}" ${m.birds ? "" : "disabled"}>
+      <button type="button" class="flock-row${viewing && viewing.u === m.u ? " cur" : ""}" data-view-u="${esc(m.u)}">
         ${Avatar.html(m.avatar)}<span class="t"><b>${esc(nameOf(m))}${m.owner ? '<span class="tag-owner">founder</span>' : ""}${me && m.u === me.u ? '<span class="tag-owner">you</span>' : ""}</b>
         <small>${m.birds ? `${m.birds.places} places · updated ${esc(ago(m.birds.updated))}` : me && m.u === me.u ? "No birds yet. Add your eBird export in Your profile" : "No birds yet"}${m.visibility === "private" ? " · private" : m.visibility === "group" ? " · flock only" : ""}</small></span>
         <span class="n">${m.birds ? m.birds.species : "–"}<small>species</small></span></button>`).join("")}</div>`;
+  }
+  async function loadMember(u) {
+    const box = $("mem-more"); if (!box) return;
+    const m = member(u), mine = me && u === me.u;
+    let recs;
+    try { recs = await getRecs(u); } catch (e) { if ($("mem-more")) box.innerHTML = `<p class="hint">${esc(e.message)}</p>`; return; }
+    if (!$("mem-more") || memberU !== u) return;
+    const by = new Map();
+    for (const d of recs) { const x = by.get(d.name) || { name: d.name, sci: d.sci, days: new Set(), first: d.date, last: d.date, lastT: "" }; x.days.add(d.date); if (d.date < x.first) x.first = d.date; if (d.date > x.last || (d.date === x.last && (d.time || "") > x.lastT)) { x.last = d.date; x.lastT = d.time || ""; } by.set(d.name, x); }
+    const all = [...by.values()];
+    const latest = all.slice().sort((a, b) => (b.last + b.lastT).localeCompare(a.last + a.lastT))[0];
+    const top = all.slice().sort((a, b) => b.days.size - a.days.size || a.name.localeCompare(b.name)).slice(0, 3);
+    const row = (x, note) => `<button type="button" class="mem-row" data-mem-bird="${esc(x.name)}" data-mem-u="${esc(u)}">${Photos.slot(x.sci, "ph-thumb", PLUMAGE[sci2(x.sci)] || famColour(familyOf(x.sci, x.name)))}<span><b>${esc(x.name)}</b><small>${note}</small></span></button>`;
+    let onlyThem = [], shared = 0;
+    if (me && !mine && me.birds) {
+      try { const myRecs = await getRecs(me.u); const myNames = new Set(myRecs.map((d) => d.name)); onlyThem = all.filter((x) => !myNames.has(x.name)).sort((a, b) => b.days.size - a.days.size); shared = all.length - onlyThem.length; } catch (e) {}
+    }
+    if (!$("mem-more") || memberU !== u) return;
+    const fav = m && m.favourite && all.find((x) => x.name === m.favourite.name);
+    box.innerHTML = `
+      ${fav ? `<div class="mem-sec"><span class="lab">${mine ? "Your" : "Their"} favourite</span>${row(fav, `♥ heard on ${fav.days.size} ${fav.days.size === 1 ? "day" : "days"}`)}</div>` : ""}
+      ${latest ? `<div class="mem-sec"><span class="lab">Latest bird</span>${row(latest, `heard ${esc(fmtDate(latest.last))}`)}</div>` : ""}
+      <div class="mem-sec"><span class="lab">Most heard</span>${top.map((x) => row(x, `${x.days.size} ${x.days.size === 1 ? "day" : "days"}`)).join("")}</div>
+      ${me && !mine && me.birds ? `<div class="mem-sec"><span class="lab">${onlyThem.length ? `Heard by ${esc(nameOf(m))}, not by you yet · ${onlyThem.length}` : "Nothing they've heard that you haven't"}</span>
+        ${onlyThem.slice(0, 4).map((x) => row(x, `first heard ${esc(fmtDate(x.first))}`)).join("")}${onlyThem.length > 4 ? `<p class="hint" style="margin:2px 0 0">and ${onlyThem.length - 4} more</p>` : ""}
+        <p class="hint" style="margin:4px 0 0">You've both heard ${shared} ${shared === 1 ? "species" : "species"}.</p></div>` : ""}`;
+    Photos.fill(box);
   }
   async function loadAdmin() {
     const r = await call("admin/users"), box = $("adm"); if (!box) return;
@@ -3980,7 +4028,9 @@ const Acct = (() => {
     if ($("acct").hidden) return;
     if (t === $("acct") || t.closest("[data-acct-close]")) { close(); return; }
     const go = t.closest("[data-acct]"); if (go) { if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }
-    const vu = t.closest("[data-view-u]"); if (vu) { const ok = await show(vu.dataset.viewU); if (ok) close(); return; }
+    const vu = t.closest("[data-view-u]"); if (vu) { memberU = vu.dataset.viewU; view = "member"; render(); return; }
+    const mb = t.closest("[data-mem-bird]"); if (mb) { const ok = await show(mb.dataset.memU); if (ok) { close(); openSpecies(mb.dataset.memBird); } return; }
+    const su = t.closest("[data-show-u]"); if (su) { su.disabled = true; const ok = await show(su.dataset.showU); su.disabled = false; if (ok) close(); return; }
     if (t.closest("[data-show-me]")) { if (await show(me.u)) close(); return; }
     const cp = t.closest("[data-copy]"); if (cp) { try { await navigator.clipboard.writeText(cp.dataset.copy); cp.textContent = "Copied"; } catch (x) { cp.textContent = "Select and copy"; } return; }
     if (t.closest("[data-signout]")) { setToken(""); me = null; scope = ""; cache.clear(); await refresh(); if (owner && members.some((m) => m.u === owner && m.birds)) await show(owner, { quiet: true }); paintChrome(); view = "signin"; render(); return; }

@@ -87,7 +87,7 @@ const publicMe = (user) => ({
   u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: user.visibility || "group",
   admin: isAdmin(user.u), birds: user.birds || null, joined: user.joined, mustChange: !!user.mustChange, favourite: user.favourite || null,
 });
-const card = (user) => ({ u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: user.visibility || "group", birds: user.birds || null, owner: isAdmin(user.u), favourite: user.favourite || null });
+const card = (user) => ({ u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: user.visibility || "group", birds: user.birds || null, owner: isAdmin(user.u), favourite: user.favourite || null, joined: user.joined || null });
 const canSee = (owner, viewer) => {
   const vis = owner.visibility || "group";
   if (viewer && viewer.u === owner.u) return true;
