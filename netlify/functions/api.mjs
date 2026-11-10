@@ -153,6 +153,34 @@ function cleanCSV(text) {
 }
 
 /* the app gzips uploads; some hosts unpack them on the way in, so look at the bytes, not the header */
+/* merge a newly cleaned upload into what's already stored: same sighting = same key, so only new ones are added */
+function rowKey(r) {
+  const sub = r["Submission ID"], name = r["Common Name"];
+  return sub ? `${sub}|${name}` : `${r["Location ID"] || r.Location}|${r.Date}|${r.Time || ""}|${name}`;
+}
+function toObjs(csv) {
+  const rows = parseCSV(csv); if (!rows.length) return { head: [], objs: [] };
+  const head = rows[0];
+  return { head, objs: rows.slice(1).map((r) => Object.fromEntries(head.map((h, i) => [h, r[i] || ""]))) };
+}
+function statsOf(objs, privatePlaces = 0) {
+  const species = new Set(), places = new Set(); let first = "", last = "";
+  for (const r of objs) { species.add(r["Common Name"]); places.add(r["Location ID"] || r.Location); const d = r.Date; if (d && (!first || d < first)) first = d; if (d && d > last) last = d; }
+  return { species: species.size, rows: objs.length, places: places.size, first, last, privatePlaces };
+}
+function mergeCSV(oldCsv, newCsv, privatePlaces) {
+  const a = toObjs(oldCsv), b = toObjs(newCsv);
+  const head = [...b.head, ...a.head.filter((h) => !b.head.includes(h))];
+  const map = new Map();
+  for (const r of a.objs) map.set(rowKey(r), r);
+  const before = new Set(a.objs.map((r) => r["Common Name"]));
+  let added = 0; const newSpecies = new Set();
+  for (const r of b.objs) { const k = rowKey(r); if (!map.has(k)) { added++; if (!before.has(r["Common Name"])) newSpecies.add(r["Common Name"]); } map.set(k, r); }
+  const objs = [...map.values()].sort((x, y) => (x.Date < y.Date ? -1 : x.Date > y.Date ? 1 : 0));
+  const csv = [head.join(","), ...objs.map((r) => head.map((h) => cell(r[h] || "")).join(","))].join("\n");
+  return { csv, stats: { ...statsOf(objs, privatePlaces), added, newSpecies: [...newSpecies] } };
+}
+
 async function readBody(req) {
   const buf = new Uint8Array(await req.arrayBuffer());
   if (buf.length > 2 && buf[0] === 0x1f && buf[1] === 0x8b) {
@@ -264,6 +292,9 @@ export default async (req) => {
         if (text.length > 60e6) return fail(413, "That file is too big.");
         let res;
         try { res = cleanCSV(text); } catch (e) { return fail(400, e.message); }
+        const old = url.searchParams.get("mode") === "replace" ? null : await store().get(`csv/${me.u}`, { type: "text" });
+        if (old) res = mergeCSV(old, res.csv, res.stats.privatePlaces);
+        else res.stats = { ...res.stats, added: res.stats.rows, newSpecies: [], replaced: true };
         await store().set(`csv/${me.u}`, res.csv);
         me.birds = { ...res.stats, updated: new Date().toISOString() };
         await putUser(me);

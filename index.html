@@ -3907,6 +3907,7 @@ const Acct = (() => {
       <b>${me && me.birds ? "Upload a newer eBird export" : "Add your eBird export"}</b>
       <span class="hint">Choose the .zip from eBird's email, or the MyEBirdData.csv inside it. Home addresses are tidied to the nearest town before anything is saved.</span>
       <span class="btn">Choose file</span></label>
+      ${me && me.birds ? `<label class="hint" style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:6px"><input type="checkbox" id="acct-replace"> Start fresh: replace all my birds with this file</label>` : ""}
       <p class="hint" style="margin:6px 0 0;text-align:center"><button type="button" class="linkish" data-guide>New to Merlin or eBird? See how to get your birds, step by step</button></p>
       <div class="err" id="up-err" role="alert"></div>`;
   }
@@ -3945,11 +3946,15 @@ const Acct = (() => {
     if (typeof CompressionStream !== "undefined") {
       try { body = await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob(); headers["content-type"] = "application/octet-stream"; } catch (e) { body = text; }
     }
-    const r = await call("birds", { method: "POST", body, raw: true, headers });
+    const replace = $("acct-replace") && $("acct-replace").checked;
+    const r = await call("birds" + (replace ? "?mode=replace" : ""), { method: "POST", body, raw: true, headers });
     if (!r.ok) { err(r.error, "up-err"); if (drop) drop.querySelector("b").textContent = "Try again"; return; }
     me = r.data.me; await refresh(); cache.delete(me.u);
     const s = r.data.stats;
-    notice = `Saved ${s.species} species from ${s.places} places.${s.privatePlaces ? ` ${s.privatePlaces} private ${s.privatePlaces === 1 ? "spot was" : "spots were"} tidied to the nearest town.` : ""}`;
+    const nn = (s.newSpecies || []).length;
+    notice = s.replaced ? `Saved ${s.species} species from ${s.places} places.${s.privatePlaces ? ` ${s.privatePlaces} private ${s.privatePlaces === 1 ? "spot was" : "spots were"} tidied to the nearest town.` : ""}`
+      : !s.added ? `You're up to date. Nothing new in that file, so your ${s.species} species are unchanged.`
+      : `Added ${s.added} new ${s.added === 1 ? "sighting" : "sightings"}${nn ? `, including ${nn} new ${nn === 1 ? "species" : "species"}: ${esc(s.newSpecies.slice(0, 4).join(", "))}${nn > 4 ? " and more" : ""}` : ""}. You're now on ${s.species} species.`;
     if (scope === "flock") await showFlock(); else await show(me.u);
     joinStep = 1; view = "profile"; render(); paintChrome();
   }
