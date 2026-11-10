@@ -269,6 +269,14 @@ export default async (req) => {
       return json({ token: tokenFor(user), me: publicMe(user) }, 201);
     }
 
+    /* who an invite link is from, so the welcome card can say so; shows only their name and bird */
+    if (path === "invite" && m === "GET") {
+      const inv = await inviteFrom(url.searchParams.get("code"));
+      const by = inv && (await findUser(inv.by));
+      if (!by) return fail(404, "That invite link isn't working any more. Ask your friend for a new one.");
+      return json({ by: mini(by) });
+    }
+
     if (path === "login" && m === "POST") {
       const b = await jsonBody(req);
       const user = await findUser(String(b.username || "").trim().toLowerCase());

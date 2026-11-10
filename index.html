@@ -399,6 +399,32 @@ body.night .fr-row .btns .primary { color: #0f191d; }
 .mem-pop[hidden] { display: none; }
 .mem-card { position: relative; width: min(420px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; background: var(--surface); color: var(--ink); border-radius: 22px; border: 2px solid var(--mrim, var(--line)); box-shadow: 0 30px 70px rgba(0,0,0,.35), 0 0 0 6px color-mix(in srgb, var(--mrim, transparent) 18%, transparent); animation: memPop .32s cubic-bezier(.2, 1.4, .4, 1); }
 @keyframes memPop { from { opacity: 0; transform: translateY(18px) scale(.86); } to { opacity: 1; transform: none; } }
+.wel-pop { background: rgba(12, 22, 26, .22); backdrop-filter: none; }
+.wel-card { width: min(440px, 100%); }
+.wel-card .mem-hero { height: 132px; }
+.wel-card .mem-stage { width: 150px; height: 150px; margin-bottom: -54px; }
+.wel-card .mem-body { padding-top: 62px; gap: 6px; }
+.wel-card .lede { margin: 2px 0 0; font-size: 15px; line-height: 1.5; color: var(--muted); }
+.wel-list { list-style: none; margin: 10px 0 2px; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left; }
+.wel-list li { display: grid; gap: 4px; align-content: start; padding: 10px 11px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); font-size: 12.5px; line-height: 1.35; color: var(--muted); }
+.wel-list li b { display: block; color: var(--ink); font-size: 14px; font-weight: 600; margin-bottom: 1px; }
+.wel-list .ic { flex: none; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+@media (max-width: 520px), (max-height: 760px) {
+  .wel-card .mem-hero { height: 104px; }
+  .wel-card .mem-stage { width: 118px; height: 118px; margin-bottom: -44px; }
+  .wel-card .mem-body { padding: 50px 16px 14px; }
+  .wel-card h2 { font-size: 21px !important; }
+  .wel-card .lede { font-size: 14px; }
+  .wel-list li { padding: 8px 9px; }
+}
+.wel-list .ic svg { width: 18px; height: 18px; }
+.wel-note { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
+.wel-warn { margin: 0 0 4px; padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, #d4537e 12%, var(--surface)); color: var(--ink); font-size: 13px; }
+.wel-acts { display: grid; gap: 8px; margin-top: 12px; }
+.wel-acts .primary { background: var(--accent); color: #fff; padding: 11px 18px; border-radius: 999px; font-size: 15px; font-weight: 600; }
+body.night .wel-acts .primary { color: #0f191d; }
+.wel-acts .row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.wel-from { font-size: 12px; font-family: var(--font-mono); color: var(--accent); letter-spacing: .04em; text-transform: uppercase; }
 @keyframes memFade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .mem-card, .mem-pop { animation: none; } }
 .mem-hero { height: 150px; background: radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--mrim) 45%, var(--mbg)) 0%, var(--mbg) 70%); display: grid; place-items: end center; }
@@ -939,6 +965,7 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
   </div>
   <div class="acct" id="acct" hidden role="dialog" aria-modal="true" aria-labelledby="acct-h"><div class="acct-card" id="acct-card"></div></div>
   <div class="mem-pop" id="mem-pop" hidden role="dialog" aria-modal="true" aria-labelledby="mem-h"><div class="mem-card" id="mem-card"></div></div>
+  <div class="mem-pop wel-pop" id="wel-pop" hidden role="dialog" aria-modal="true" aria-labelledby="wel-h"><div class="mem-card wel-card" id="wel-card"></div></div>
   <div class="help" id="help" role="dialog" aria-labelledby="help-h" hidden>
     <h2 id="help-h">Exploring the map</h2>
     <ol>
@@ -3027,7 +3054,7 @@ window.addEventListener("dragover", (e) => e.preventDefault());
 window.addEventListener("drop", (e) => { e.preventDefault(); dragDepth = 0; $("overlay").classList.remove("on"); loadFile(e.dataTransfer?.files?.[0]); });
 
 $("basemap-retry").addEventListener("click", () => location.reload());
-try { if (!localStorage.getItem("birdmap-helped")) setTimeout(() => setHelp(true), 1600); } catch (e) {}
+try { if (!localStorage.getItem("birdmap-helped")) setTimeout(() => { if (!document.body.classList.contains("welcoming")) setHelp(true); }, 1600); } catch (e) {}
 document.querySelectorAll("[data-theme-btn]").forEach((b) => b.addEventListener("click", () => setTheme(b.dataset.themeBtn)));
 if (themeName === "night") { document.body.classList.add("night"); document.querySelectorAll("[data-theme-btn]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.themeBtn === "night"))); }
 
@@ -3743,6 +3770,9 @@ const Acct = (() => {
   const API = /^https?:$/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname) ? "/api" : null;
   const TOKEN = "birb-token";
   let token = ""; try { token = localStorage.getItem(TOKEN) || ""; } catch (e) {}
+  const WELCOMED = "birb-welcomed";
+  let welLive = null, welInvite = null;
+  try { if (API && (new URLSearchParams(location.search).get("invite") || (!token && !localStorage.getItem(WELCOMED)))) document.body.classList.add("welcoming"); } catch (e) {}
   let requests = { in: [], out: [] }, findRes = null;
   let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "";
   let scope = "", backTo = "me", memberU = "";
@@ -3847,7 +3877,7 @@ const Acct = (() => {
   async function boot() {
     if (!API) return;
     paintChrome();
-    if (!(await refresh())) return;
+    if (!(await refresh())) { document.body.classList.remove("welcoming"); return; }
     paintChrome();
     const q = new URLSearchParams(location.search), want = (q.get("who") || "").toLowerCase(), invite = q.get("invite");
     let done = false, pref = ""; try { pref = localStorage.getItem(SCOPE_KEY) || ""; } catch (e) {}
@@ -3857,8 +3887,79 @@ const Acct = (() => {
     if (!done && me) done = await showFlock({ quiet: true });
     if (!done && me && !me.birds) setTimeout(() => toast(`<span>Welcome, ${esc(nameOf(me))}. You're seeing the app's built-in birds until you add your own eBird export.</span><span class="acts"><button type="button" data-acct-open="profile">Add my birds</button></span>`, $("who")), 800);
     if (!done && state.source !== "file" && owner && members.some((m) => m.u === owner && m.birds)) done = await show(owner, { quiet: true });
-    if (invite && !me) open("join", { invite });
-    else if (me && me.mustChange) open("passcode");
+    if (me && me.mustChange) { document.body.classList.remove("welcoming"); open("passcode"); }
+    else if (invite) await showInvite(invite);
+    else if (!me && !seen()) showWelcome();
+    else document.body.classList.remove("welcoming");
+  }
+
+  /* ---------- the front door: a welcome card on a first visit, an invite card from a friend's link ---------- */
+  const seen = () => { try { return !!localStorage.getItem(WELCOMED); } catch (e) { return true; } };
+  const ICON = {
+    map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>',
+    world: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-2 4-6 6-6 11a6 6 0 0 0 12 0c0-5-4-7-6-11z"/><path d="M12 21v-6"/></svg>',
+    wall: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>',
+    friends: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 4.8"/></svg>',
+  };
+  const listHTML = () => `<ul class="wel-list">
+      <li><span class="ic">${ICON.map}</span><span><b>Your map</b>Every bird you've heard, county by county</span></li>
+      <li><span class="ic">${ICON.world}</span><span><b>Habitat world</b>All your birds in one 3D scene</span></li>
+      <li><span class="ic">${ICON.wall}</span><span><b>Collection</b>Fill a wall of every UK species</span></li>
+      <li><span class="ic">${ICON.friends}</span><span><b>Your flock</b>See what your friends have heard</span></li></ul>`;
+  function popCard(avatar, html) {
+    const A = Avatar.norm(avatar), c = $("wel-card");
+    c.style.setProperty("--mbg", A.bg); c.style.setProperty("--mrim", A.cBody);
+    c.innerHTML = `<button type="button" class="acct-x mem-x" data-wel-close aria-label="Close">×</button>
+      <div class="mem-hero"><div class="mem-stage" id="wel-stage" aria-hidden="true"></div></div><div class="mem-body">${html}</div>`;
+    $("wel-pop").hidden = false;
+    if (welLive) { welLive.destroy(); welLive = null; }
+    if (typeof THREE !== "undefined") welLive = Avatar.stage($("wel-stage"), A); else $("wel-stage").innerHTML = Avatar.html(A);
+    const f = c.querySelector(".primary"); if (f) setTimeout(() => f.focus({ preventScroll: true }), 60);
+  }
+  function closeWel({ tour = true } = {}) {
+    if ($("wel-pop").hidden) return;
+    if (welLive) { welLive.destroy(); welLive = null; }
+    $("wel-pop").hidden = true;
+    try { localStorage.setItem(WELCOMED, "1"); } catch (e) {}
+    document.body.classList.remove("welcoming");
+    let helped = true; try { helped = !!localStorage.getItem("birdmap-helped"); } catch (e) {}
+    if (tour && !helped && $("acct").hidden) setTimeout(() => setHelp(true), 350);
+  }
+  function showWelcome(warn = "") {
+    const o = owner && member(owner);
+    popCard(Avatar.random(), `<span class="wel-from">Welcome</span>
+      <h2 id="wel-h">This is BIRB</h2>
+      <p class="lede">A living map of the birds you hear with Merlin Sound ID.</p>
+      ${warn ? `<p class="wel-warn" role="alert">${esc(warn)}</p>` : ""}
+      ${listHTML()}
+      ${o && state.source === "account" ? `<p class="wel-note">The birds behind this card are ${esc(nameOf(o))}'s, who made BIRB.</p>` : ""}
+      <div class="wel-acts"><button type="button" class="primary" data-wel="look">Have a look around</button>
+        <div class="row"><button type="button" class="ghost" data-wel="join">I have an invite code</button><button type="button" class="ghost" data-wel="signin">Sign in</button></div>
+        <button type="button" class="linkish" data-wel="guide">How do I get my birds into BIRB?</button></div>`);
+  }
+  async function showInvite(code) {
+    welInvite = { code };
+    const r = await call("invite?code=" + encodeURIComponent(code));
+    if (!r.ok) { welInvite = null; if (!me) showWelcome(r.error); else { document.body.classList.remove("welcoming"); toast(`<span>${esc(r.error)}</span>`, $("who")); } return; }
+    const by = r.data.by; welInvite.by = by;
+    const nm = esc(nameOf(by));
+    if (me) {
+      if (by.u === me.u) { document.body.classList.remove("welcoming"); return; }
+      if (members.some((m) => m.u === by.u)) { document.body.classList.remove("welcoming"); toast(`<span>You're already friends with ${nm}.</span>`, $("who")); return; }
+      const sent = requests.out.some((x) => x.u === by.u);
+      popCard(by.avatar, `<span class="wel-from">Invite from a friend</span>
+        <h2 id="wel-h">${nm} invited you</h2>
+        <p class="lede">You're already on BIRB${me ? ` as @${esc(me.u)}` : ""}. ${sent ? `Your friend request to ${nm} is waiting for them to say yes.` : `Send ${nm} a friend request and you'll see each other's birds once they say yes.`}</p>
+        <div class="wel-acts">${sent ? `<button type="button" class="primary" data-wel="look">OK</button>` : `<button type="button" class="primary" data-wel="befriend">Send ${nm} a friend request</button><div class="row"><button type="button" class="ghost" data-wel="look">Not now</button></div>`}</div>`);
+      return;
+    }
+    popCard(by.avatar, `<span class="wel-from">You're invited</span>
+      <h2 id="wel-h">${nm} invited you to BIRB</h2>
+      <p class="lede">A living map of the birds you hear with Merlin Sound ID. Join and you'll be friends with ${nm} straight away.</p>
+      ${listHTML()}
+      <div class="wel-acts"><button type="button" class="primary" data-wel="join">Join BIRB</button>
+        <div class="row"><button type="button" class="ghost" data-wel="signin">I already have an account</button><button type="button" class="ghost" data-wel="look">Just look around</button></div>
+        <button type="button" class="linkish" data-wel="guide">New to Merlin? See how it works first</button></div>`);
   }
 
   /* ---------- dialog ---------- */
@@ -4115,11 +4216,30 @@ const Acct = (() => {
   async function afterAuth(r) {
     const url = new URL(location.href); if (url.searchParams.has("invite")) { url.searchParams.delete("invite"); history.replaceState(null, "", url.pathname + url.search + location.hash); }
     setToken(r.data.token); me = r.data.me; await refresh(); paintChrome();
+    try { localStorage.setItem(WELCOMED, "1"); } catch (e) {}
   }
 
   /* ---------- events ---------- */
   document.addEventListener("click", async (e) => {
     const t = e.target;
+    if (!$("wel-pop").hidden) {
+      if (t === $("wel-pop") || t.closest("[data-wel-close]")) { closeWel(); return; }
+      const w = t.closest("[data-wel]"); if (!w) return;
+      const a = w.dataset.wel;
+      if (a === "look") closeWel();
+      else if (a === "join") { const inv = welInvite && welInvite.code; closeWel({ tour: false }); joinStep = 1; open("join", inv ? { invite: inv } : {}); }
+      else if (a === "signin") { closeWel({ tour: false }); open("signin"); }
+      else if (a === "guide") { closeWel({ tour: false }); Guide.open(); }
+      else if (a === "befriend") {
+        w.disabled = true;
+        const r = await call("friends/request", { method: "POST", body: { u: welInvite.by.u } });
+        closeWel({ tour: false });
+        if (r.ok) { await refresh(); paintChrome(); toast(`<span>${r.data.status === "friends" ? `You and ${esc(nameOf(welInvite.by))} are friends now.` : `Friend request sent to ${esc(nameOf(welInvite.by))}.`}</span>`, $("who")); if (r.data.status === "friends" && scope === "flock") await showFlock({ quiet: true }); }
+        else toast(`<span>${esc(r.error)}</span>`, $("who"));
+        const url = new URL(location.href); url.searchParams.delete("invite"); history.replaceState(null, "", url.pathname + url.search + location.hash);
+      }
+      return;
+    }
     if (!$("mem-pop").hidden) {
       if (t === $("mem-pop") || t.closest("[data-mem-close]")) { closeMember(); return; }
     }
@@ -4183,6 +4303,7 @@ const Acct = (() => {
   document.addEventListener("drop", (e) => { const d = e.target.closest && e.target.closest("#acct-drop"); if (d) { e.preventDefault(); e.stopPropagation(); d.classList.remove("on"); dragDepth = 0; $("overlay").classList.remove("on"); upload(e.dataTransfer?.files?.[0]); } }, true);
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
+    if (!$("wel-pop").hidden) { e.stopPropagation(); closeWel(); return; }
     if (!$("mem-pop").hidden) { e.stopPropagation(); closeMember(); return; }
     if (!$("acct").hidden) { e.stopPropagation(); close(); }
   }, true);
@@ -4208,6 +4329,7 @@ const Acct = (() => {
       await afterAuth(r);
       if (me.mustChange) { view = "passcode"; render(); return; }
       if (me.birds) await show(me.u, { quiet: true }); else await showFlock({ quiet: true });
+      if (welInvite && welInvite.by && welInvite.by.u !== me.u && !members.some((m) => m.u === welInvite.by.u)) { close(); await showInvite(welInvite.code); return; }
       view = "profile"; render();
     } else if (f.id === "f-pass") {
       const old = $("p-old").value, passcode = $("p-new").value;
