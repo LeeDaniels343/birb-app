@@ -695,7 +695,7 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
     <button type="button" class="close-panel" id="close-panel" aria-label="Close the bird panel" title="Close (Esc)">&times;</button>
     <h1>BIRB app</h1>
     <p class="sub">Where I've heard birds with Merlin Sound ID, from my eBird export</p>
-    <p class="updated">Last updated 8 Nov 2026</p>
+    <p class="updated">Last updated 10 Nov 2026</p>
     <div class="seg view-switch" role="group" aria-label="Choose a view">
       <button type="button" data-view="map" aria-pressed="true">Map</button>
       <button type="button" data-view="world" aria-pressed="false">Habitat world</button>
@@ -1025,6 +1025,7 @@ S408753383,Eurasian Wren,Nannus troglodytes,27418,X,GB-ENG,Manchester,L79440645,
 S408997746,Eurasian Wren,Nannus troglodytes,27418,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
 S408997854,Eurasian Wren,Nannus troglodytes,27418,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
 S409005469,Eurasian Wren,Nannus troglodytes,27418,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
+S409458230,European Starling,Sturnus vulgaris,27986,X,GB-ENG,Manchester,L79534683,Trafford Council,53.4588243,-2.2878492,2026-11-10,,eBird - Casual Observation,,0,,,1
 S408999226,Song Thrush,Turdus philomelos,28611,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
 S409005536,Redwing,Turdus iliacus,28675,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
 S408742966,Eurasian Blackbird,Turdus merula,28678,X,GB-ENG,Gloucestershire,L79439141,"Chedworth, England",51.8018036,-1.9230604,2026-09-11,,eBird - Casual Observation,,0,,,1
@@ -1066,7 +1067,7 @@ S409005443,Common Chaffinch,Fringilla coelebs,32187,X,GB-ENG,Manchester,L1235382
 S408753465,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
 S408998227,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
 S408998307,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1</script>
-<script type="text/plain" id="embedded-meta">MyEBirdData.csv (8 Nov 2026)</script>
+<script type="text/plain" id="embedded-meta">MyEBirdData.csv (10 Nov 2026)</script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -1089,7 +1090,7 @@ function prep(fc) {
 const COUNTIES = prep(GEO.counties);
 const REGIONS = prep(GEO.regions);
 /* Ward shapes are big, so the hosted site loads them just after the map appears. Ward names for your own spots ride along in WARD_HINTS. */
-const WARD_HINTS = {"-1.75000,51.89000": "Bourton-on-the-Water, Cotswold", "-1.86000,55.09000": "Ponteland North, Northumberland", "-1.92306,51.80180": "Chedworth, Cotswold", "-2.31251,53.49692": "Claremont, Salford", "-2.54518,53.48777": "Lowton East, Wigan"};
+const WARD_HINTS = {"-1.75000,51.89000": "Bourton-on-the-Water, Cotswold", "-1.86000,55.09000": "Ponteland North, Northumberland", "-1.92306,51.80180": "Chedworth, Cotswold", "-2.28785,53.45882": "Gorse Hill, Trafford", "-2.31251,53.49692": "Claremont, Salford", "-2.54518,53.48777": "Lowton East, Wigan"};
 let WARDS_FC = { type: "FeatureCollection", features: [] };
 function buildWards(topo) {
   const fc = topojson.feature(topo, Object.values(topo.objects)[0]);
@@ -3942,7 +3943,7 @@ const Acct = (() => {
     let text; try { text = await fileText(file); toRecords(text); } catch (e) { err(e.message || "That file couldn't be read.", "up-err"); if (drop) drop.querySelector("b").textContent = "Try another file"; return; }
     let body = text, headers = { "content-type": "text/csv" };
     if (typeof CompressionStream !== "undefined") {
-      try { body = await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob(); headers["content-encoding"] = "gzip"; } catch (e) { body = text; delete headers["content-encoding"]; }
+      try { body = await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob(); headers["content-type"] = "application/octet-stream"; } catch (e) { body = text; }
     }
     const r = await call("birds", { method: "POST", body, raw: true, headers });
     if (!r.ok) { err(r.error, "up-err"); if (drop) drop.querySelector("b").textContent = "Try again"; return; }

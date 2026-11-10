@@ -152,13 +152,14 @@ function cleanCSV(text) {
   return { csv: out.join("\n"), stats: { species: species.size, rows: out.length - 1, places: places.size, first, last, privatePlaces: priv.size } };
 }
 
+/* the app gzips uploads; some hosts unpack them on the way in, so look at the bytes, not the header */
 async function readBody(req) {
-  const enc = req.headers.get("content-encoding") || "";
-  if (/gzip/i.test(enc)) {
-    const ds = req.body.pipeThrough(new DecompressionStream("gzip"));
+  const buf = new Uint8Array(await req.arrayBuffer());
+  if (buf.length > 2 && buf[0] === 0x1f && buf[1] === 0x8b) {
+    const ds = new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"));
     return new Response(ds).text();
   }
-  return req.text();
+  return new TextDecoder("utf-8").decode(buf);
 }
 const jsonBody = async (req) => { try { return await req.json(); } catch { return {}; } };
 
