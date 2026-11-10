@@ -270,6 +270,45 @@ ul.species li button[aria-pressed="true"] { background: var(--accent-soft); bord
 .me-btn .me-txt small { font-size: 10px; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .07em; }
 .me-btn .me-txt b { font-size: 13px; font-weight: 600; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
 .me-btn[hidden] { display: none; }
+/* notifications bell, sits just left of your birb */
+.bell-btn { position: absolute; top: 14px; right: var(--bell-right, 190px); z-index: 8; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; padding: 0; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line); box-shadow: 0 2px 10px rgba(0,0,0,.1); color: var(--ink); }
+.bell-btn:hover, .bell-btn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.bell-btn[hidden] { display: none; }
+.bell-btn.ring svg { animation: bellRing 1s ease 2; transform-origin: 50% 10%; }
+@keyframes bellRing { 0%, 100% { transform: rotate(0); } 15% { transform: rotate(14deg); } 30% { transform: rotate(-12deg); } 45% { transform: rotate(8deg); } 60% { transform: rotate(-5deg); } }
+.bell-n { position: absolute; top: -3px; right: -3px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; background: #d4537e; color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--surface); }
+.bell-n.rare { background: var(--lilac, #a982e8); }
+.bell-n[hidden] { display: none; }
+.bell-card { position: absolute; top: 78px; right: 14px; z-index: 31; width: 360px; max-height: min(72vh, 620px); overflow-y: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 18px 50px rgba(0,0,0,.22); animation: latestIn .2s ease; }
+.bell-card[hidden] { display: none; }
+.bell-card header { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 10px; background: var(--surface); border-bottom: 1px solid var(--line); z-index: 1; }
+.bell-card header b { font-family: var(--font-display); font-size: 17px; }
+.bell-card header small { color: var(--muted); font-size: 12px; }
+.nt { display: flex; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); position: relative; }
+.nt:last-child { border-bottom: 0; }
+.nt.new { background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+.nt.new::before { content: ""; position: absolute; left: 5px; top: 22px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.nt > .av { width: 40px; height: 40px; flex: none; }
+.nt .tx { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.4; color: var(--ink); }
+.nt .tx small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; font-family: var(--font-mono); }
+.nt .tx .acts { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+.nt .tx .acts button { font-size: 12px; padding: 5px 11px; border-radius: 999px; }
+.nt .tx .acts .primary { background: var(--accent); color: #fff; }
+body.night .nt .tx .acts .primary { color: #0f191d; }
+.nt.rare { background: color-mix(in srgb, var(--lilac, #a982e8) 13%, var(--surface)); border-left: 3px solid var(--lilac, #a982e8); }
+.nt.rare .eyebrow { display: block; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: color-mix(in srgb, var(--lilac, #a982e8) 80%, var(--ink)); margin-bottom: 2px; }
+.nt .ph-thumb { width: 46px; height: 46px; flex: none; box-shadow: 0 0 0 2px var(--lilac, #a982e8); }
+.bell-empty { padding: 22px 18px; text-align: center; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.rare-card { --mrim: var(--lilac, #a982e8); --mbg: color-mix(in srgb, var(--lilac, #a982e8) 30%, var(--surface)); width: min(400px, 100%); }
+.rare-card .rare-hero { position: relative; }
+.rare-card .rare-hero .ph-hero { width: 100%; aspect-ratio: 4 / 3; margin: 0; border-radius: 0; }
+.rare-card .rare-hero .tag { position: absolute; left: 14px; bottom: 12px; padding: 4px 11px; border-radius: 999px; background: var(--lilac, #a982e8); color: #fff; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.rare-card .mem-body { padding: 16px 20px 18px; gap: 6px; }
+.rare-card .lede { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.rare-card .who-line { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.rare-card .who-line .av { width: 30px; height: 30px; }
+.rare-card .wel-acts { margin-top: 10px; }
+.rare-card .wel-acts .primary { background: var(--lilac, #a982e8); }
 @media (min-width: 761px) { body.has-me .map-tools { top: 76px; } }
 .av { position: relative; display: inline-grid; place-items: center; border-radius: 50%; overflow: hidden; flex: none; background: var(--avbg, var(--accent-soft)); box-shadow: inset 0 0 0 2px var(--avrim, transparent); }
 .av img { width: 100%; height: 100%; object-fit: contain; display: block; }
@@ -464,6 +503,10 @@ body.night .mem-acts .primary { color: #0f191d; }
   .me-btn .me-txt { display: none; }
   .me-btn .av { width: 40px; height: 40px; }
   .latest { top: calc(66px + env(safe-area-inset-top)) !important; }
+  body.has-bell .latest { top: calc(118px + env(safe-area-inset-top)) !important; }
+  .bell-btn { top: calc(64px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)) !important; width: 46px; height: 46px; }
+  .bell-card { position: fixed; top: calc(116px + env(safe-area-inset-top)); left: 12px; right: 12px; width: auto; max-height: calc(100dvh - 140px); }
+  body.panel-open .bell-btn { display: none; }
   body.has-who .crumbs { top: calc(116px + env(safe-area-inset-top)); }
   body.has-who.has-chips .crumbs { top: calc(154px + env(safe-area-inset-top)); }
   body.panel-open .me-btn { display: none; }
@@ -955,6 +998,9 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
     <div class="world-msg" id="world-msg" hidden>The 3D scene couldn't load. Check your internet connection, then reload the page.</div>
   </section>
   <button type="button" class="me-btn" id="me-btn" hidden aria-haspopup="dialog"></button>
+  <button type="button" class="bell-btn" id="bell-btn" hidden aria-expanded="false" aria-controls="bell-card" aria-label="Notifications"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="bell-n" id="bell-n" hidden></span></button>
+  <div class="bell-card" id="bell-card" hidden role="dialog" aria-label="Notifications"></div>
+  <div class="mem-pop rare-pop" id="rare-pop" hidden role="dialog" aria-modal="true" aria-labelledby="rare-h"><div class="mem-card rare-card" id="rare-card"></div></div>
   <div class="toast" id="toast" role="status" hidden></div>
   <div class="guide" id="guide" hidden role="dialog" aria-modal="true" aria-labelledby="guide-h">
     <div class="g-card">
@@ -3823,6 +3869,7 @@ const Acct = (() => {
   let welLive = null, welInvite = null;
   try { if (API && (new URLSearchParams(location.search).get("invite") || (!token && !localStorage.getItem(WELCOMED)))) document.body.classList.add("welcoming"); } catch (e) {}
   let requests = { in: [], out: [] }, findRes = null;
+  let inbox = { items: [], read: "", unread: 0 }, inboxShownRead = "", pollT = 0;
   let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "";
   let scope = "", backTo = "me", memberU = "";
   const cache = new Map();
@@ -3872,9 +3919,99 @@ const Acct = (() => {
       h = `<span class="who-chip link" data-open-flock role="button" tabindex="0">${Avatar.html(viewing.avatar, "")}<span><b>${esc(nameOf(viewing))}</b>'s birds</span></span>`;
     }
     w.hidden = !h; w.innerHTML = h;
+    paintBell();
     try { renderFav(true); } catch (e) {}
     document.body.classList.toggle("has-who", !!h);
   }
+
+  /* ---------- notifications ---------- */
+  const tAgo = (iso) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 24 * 60 ? `${Math.round(m / 60)} h ago` : ago(iso); };
+  const andList = (a, max = 3) => { const s = a.slice(0, max).map(esc); const more = a.length - s.length; if (more > 0) return `${s.join(", ")} and ${more} more`; return s.length > 1 ? `${s.slice(0, -1).join(", ")} and ${s.at(-1)}` : s[0] || ""; };
+  function paintBell() {
+    const b = $("bell-btn"); if (!b) return;
+    b.hidden = !me; document.body.classList.toggle("has-bell", !!me);
+    if (!me) { $("bell-card").hidden = true; return; }
+    if (innerWidth > 760) b.style.setProperty("--bell-right", 14 + $("me-btn").offsetWidth + 8 + "px");
+    const n = inbox.unread, rare = inbox.items.some((x) => x.kind === "rare" && x.t > inbox.read);
+    const bn = $("bell-n"); bn.hidden = !n; bn.textContent = n > 9 ? "9+" : String(n); bn.classList.toggle("rare", rare);
+    b.setAttribute("aria-label", n ? `Notifications, ${n} new` : "Notifications");
+  }
+  async function loadInbox() {
+    if (!API || !me) return;
+    const r = await call("inbox"); if (!r.ok) return;
+    const before = inbox.unread;
+    inbox = r.data; paintBell();
+    if (inbox.unread > before && before >= 0) { const b = $("bell-btn"); b.classList.remove("ring"); void b.offsetWidth; b.classList.add("ring"); }
+    if (!$("bell-card").hidden) renderBell();
+    celebrate();
+  }
+  function ntHTML(x) {
+    const by = x.by || {}, nm = `<b>${esc(nameOf(by))}</b>`, isNew = x.t > inboxShownRead;
+    const av = Avatar.html(by.avatar, nameOf(by)), when = `<small>${esc(tAgo(x.t))}</small>`;
+    const acts = (h) => (h ? `<div class="acts">${h}</div>` : "");
+    const btn = (k, label, extra = "", primary = false) => `<button type="button" ${primary ? 'class="primary"' : 'class="ghost"'} data-nt="${k}" data-u="${esc(by.u)}" ${extra}>${label}</button>`;
+    let tx = "", cls = "", lead = av;
+    if (x.kind === "request") {
+      const pending = requests.in.some((q) => q.u === by.u);
+      tx = `${nm} wants to be friends.${when}${acts(pending ? btn("accept", "Accept", "", true) + btn("decline", "Not now") : "")}`;
+    } else if (x.kind === "accepted") tx = `${nm} accepted your friend request. You can see each other's birds now.${when}${acts(btn("profile", `See ${esc(nameOf(by))}'s profile`))}`;
+    else if (x.kind === "joined") tx = `${nm} ${x.viaYou ? "joined BIRB with your invite" : "joined BIRB"}. You're friends now.${when}${acts(btn("profile", "Say hello"))}`;
+    else if (x.kind === "birds") {
+      const ns = x.newSpecies || [];
+      tx = x.first ? `${nm} added their birds: ${x.species} species from ${x.places} ${x.places === 1 ? "place" : "places"}.`
+        : `${nm} added ${x.added} new ${x.added === 1 ? "sighting" : "sightings"}${ns.length ? `, including ${ns.length === 1 ? "a new species" : `${ns.length} new species`}: ${andList(ns)}` : ""}.`;
+      tx += when + acts(btn("birds", `See ${esc(nameOf(by))}'s birds`));
+    } else if (x.kind === "rare") {
+      const b0 = (x.birds || [])[0] || {};
+      cls = " rare"; lead = Photos.slot(b0.sci, "ph-thumb", "#a982e8");
+      tx = `<span class="eyebrow">Rare find</span>${nm} heard ${/^[aeiou]/i.test(b0.name || "") ? "an" : "a"} <b>${esc(b0.name || "")}</b>${x.birds.length > 1 ? ` and ${x.birds.length - 1} more rare ${x.birds.length === 2 ? "bird" : "birds"}` : ""}.${when}${acts(btn("rare", "See it on the map", `data-bird="${esc(b0.name || "")}"`, true))}`;
+    } else return "";
+    return `<div class="nt${cls}${isNew ? " new" : ""}">${lead}<div class="tx">${tx}</div></div>`;
+  }
+  function renderBell() {
+    const c = $("bell-card"), items = inbox.items || [];
+    c.innerHTML = `<header><b>Notifications</b><small>${items.length ? "From your flock" : ""}</small></header>` +
+      (items.length ? items.map(ntHTML).join("") : `<div class="bell-empty">Nothing yet. When friends add birds, find something rare or accept your requests, you'll see it here.</div>`);
+    Photos.fill(c);
+  }
+  async function openBell() {
+    inboxShownRead = inbox.read || ""; renderBell();
+    $("bell-card").hidden = false; $("bell-btn").setAttribute("aria-expanded", "true");
+    if (inbox.unread) { const r = await call("inbox", { method: "POST" }); if (r.ok) { inbox.read = r.data.read; inbox.unread = 0; paintBell(); } }
+  }
+  function closeBell() { $("bell-card").hidden = true; $("bell-btn").setAttribute("aria-expanded", "false"); }
+  /* a friend's rare find gets its own moment, once */
+  const RSEEN = "birb-rare-seen";
+  function celebrate() {
+    if (!$("rare-pop").hidden || !$("acct").hidden || !$("wel-pop").hidden) return;
+    let seen = []; try { seen = JSON.parse(localStorage.getItem(RSEEN) || "[]"); } catch (e) {}
+    const x = (inbox.items || []).find((i) => i.kind === "rare" && i.t > (inbox.read || "") && !seen.includes(i.id));
+    if (!x) return;
+    seen.push(x.id); try { localStorage.setItem(RSEEN, JSON.stringify(seen.slice(-50))); } catch (e) {}
+    const b0 = x.birds[0], by = x.by, nm = esc(nameOf(by));
+    const c = $("rare-card");
+    c.innerHTML = `<button type="button" class="acct-x mem-x" data-rare-close aria-label="Close">×</button>
+      <div class="rare-hero">${Photos.slot(b0.sci, "ph-hero", "#a982e8")}<span class="tag">Rare find</span></div>
+      <div class="mem-body"><div class="who-line">${Avatar.html(by.avatar, "")}<span>${nm} just heard</span></div>
+        <h2 id="rare-h">${esc(b0.name)}</h2><p class="sub" style="margin:0;font-style:italic">${esc(b0.sci || "")}</p>
+        <p class="lede">One of the rarer visitors to the UK, in lilac on the Collection wall.${x.birds.length > 1 ? ` ${nm} found ${x.birds.length - 1} more rare ${x.birds.length === 2 ? "bird" : "birds"} too.` : ""}</p>
+        <div class="wel-acts"><button type="button" class="primary" data-nt="rare" data-u="${esc(by.u)}" data-bird="${esc(b0.name)}">See it on ${nm}'s map</button><div class="row"><button type="button" class="ghost" data-rare-close>Lovely</button></div></div></div>`;
+    $("rare-pop").hidden = false; Photos.fill(c);
+    setTimeout(() => c.querySelector(".primary").focus({ preventScroll: true }), 60);
+  }
+  async function ntAct(k, u, bird) {
+    closeBell(); $("rare-pop").hidden = true;
+    if (k === "birds") { await show(u); return; }
+    if (k === "rare") { if (await show(u)) { try { openSpecies(bird); } catch (e) {} } return; }
+    if (k === "profile") { if (!member(u)) await refresh(); open("flock"); if (member(u)) openMember(u); return; }
+    if (k === "accept" || k === "decline") {
+      const r = await call("friends/" + k, { method: "POST", body: { u } });
+      if (r.ok) { await refresh(); paintChrome(); if (k === "accept") toast(`<span>You and ${esc(nameOf(r.data.user))} are friends now.</span>`, $("who")); }
+      else toast(`<span>${esc(r.error)}</span>`, $("who"));
+    }
+  }
+  addEventListener("resize", () => { if (me) paintBell(); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && me) loadInbox(); });
 
   /* whose birds are on screen */
   async function getRecs(u) {
@@ -3936,6 +4073,7 @@ const Acct = (() => {
     if (!done && me) done = await showFlock({ quiet: true });
     if (!done && me && !me.birds) setTimeout(() => toast(`<span>Welcome, ${esc(nameOf(me))}. You're seeing the app's built-in birds until you add your own eBird export.</span><span class="acts"><button type="button" data-acct-open="profile">Add my birds</button></span>`, $("who")), 800);
     if (!done && state.source !== "file" && owner && members.some((m) => m.u === owner && m.birds)) done = await show(owner, { quiet: true });
+    if (me) { loadInbox(); clearInterval(pollT); pollT = setInterval(() => { if (me && !document.hidden) loadInbox(); }, 120000); }
     if (me && me.mustChange) { document.body.classList.remove("welcoming"); open("passcode"); }
     else if (invite) await showInvite(invite);
     else if (!me && !seen()) showWelcome();
@@ -4259,6 +4397,7 @@ const Acct = (() => {
     notice = s.replaced ? `Saved ${s.species} species from ${s.places} places.${s.privatePlaces ? ` ${s.privatePlaces} private ${s.privatePlaces === 1 ? "spot was" : "spots were"} tidied to the nearest town.` : ""}`
       : !s.added ? `You're up to date. Nothing new in that file, so your ${s.species} species are unchanged.`
       : `Added ${s.added} new ${s.added === 1 ? "sighting" : "sightings"}${nn ? `, including ${nn} new ${nn === 1 ? "species" : "species"}: ${esc(s.newSpecies.slice(0, 4).join(", "))}${nn > 4 ? " and more" : ""}` : ""}. You're now on ${s.species} species.`;
+    if (s.rare && s.rare.length) notice += ` ${andList(s.rare)} ${s.rare.length === 1 ? "is a rare find" : "are rare finds"}, so ${s.rare.length === 1 ? "it's" : "they're"} in lilac on your Collection wall. Your friends will see a special note.`;
     if (scope === "flock") await showFlock(); else await show(me.u);
     joinStep = 1; view = "profile"; render(); paintChrome();
   }
@@ -4266,11 +4405,18 @@ const Acct = (() => {
     const url = new URL(location.href); if (url.searchParams.has("invite")) { url.searchParams.delete("invite"); history.replaceState(null, "", url.pathname + url.search + location.hash); }
     setToken(r.data.token); me = r.data.me; await refresh(); paintChrome();
     try { localStorage.setItem(WELCOMED, "1"); } catch (e) {}
+    inbox = { items: [], read: "", unread: 0 }; loadInbox(); clearInterval(pollT); pollT = setInterval(() => { if (me && !document.hidden) loadInbox(); }, 120000);
   }
 
   /* ---------- events ---------- */
   document.addEventListener("click", async (e) => {
     const t = e.target;
+    if (!$("rare-pop").hidden) {
+      if (t === $("rare-pop") || t.closest("[data-rare-close]")) { $("rare-pop").hidden = true; return; }
+    }
+    if (t.closest("#bell-btn")) { $("bell-card").hidden ? openBell() : closeBell(); return; }
+    const nt = t.closest("[data-nt]"); if (nt) { nt.disabled = true; await ntAct(nt.dataset.nt, nt.dataset.u, nt.dataset.bird); return; }
+    if (!$("bell-card").hidden && !t.closest("#bell-card")) closeBell();
     if (!$("wel-pop").hidden) {
       if (t === $("wel-pop") || t.closest("[data-wel-close]")) { closeWel(); return; }
       const w = t.closest("[data-wel]"); if (!w) return;
@@ -4319,7 +4465,7 @@ const Acct = (() => {
     const su = t.closest("[data-show-u]"); if (su) { su.disabled = true; const ok = await show(su.dataset.showU); su.disabled = false; if (ok) close(); return; }
     if (t.closest("[data-show-me]")) { if (await show(me.u)) close(); return; }
     const cp = t.closest("[data-copy]"); if (cp) { try { await navigator.clipboard.writeText(cp.dataset.copy); cp.textContent = "Copied"; } catch (x) { cp.textContent = "Select and copy"; } return; }
-    if (t.closest("[data-signout]")) { setToken(""); me = null; scope = ""; cache.clear(); await refresh(); if (owner && members.some((m) => m.u === owner && m.birds)) await show(owner, { quiet: true }); paintChrome(); view = "signin"; render(); return; }
+    if (t.closest("[data-signout]")) { setToken(""); me = null; scope = ""; cache.clear(); inbox = { items: [], read: "", unread: 0 }; clearInterval(pollT); await refresh(); if (owner && members.some((m) => m.u === owner && m.birds)) await show(owner, { quiet: true }); paintChrome(); view = "signin"; render(); return; }
     const avb = t.closest("[data-avk] button");
     if (avb) { const k = avb.closest("[data-avk]").dataset.avk; draft.avatar[k] = avb.dataset.v; if (k === "head") draft.avatar.beak = Avatar.AUTOBEAK[draft.avatar.head]; avb.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === avb))); if (k === "head") { const bb = card().querySelector('[data-avk="beak"]'); bb && bb.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === draft.avatar.beak))); } live && live.set(draft.avatar); return; }
     if (t.closest("[data-av-random]")) { const turn = live ? live.turn : draft.avatar.turn; draft.avatar = { ...Avatar.random(), turn }; render(); return; }
@@ -4353,6 +4499,8 @@ const Acct = (() => {
   document.addEventListener("drop", (e) => { const d = e.target.closest && e.target.closest("#acct-drop"); if (d) { e.preventDefault(); e.stopPropagation(); d.classList.remove("on"); dragDepth = 0; $("overlay").classList.remove("on"); upload(e.dataTransfer?.files?.[0]); } }, true);
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
+    if (!$("rare-pop").hidden) { e.stopPropagation(); $("rare-pop").hidden = true; return; }
+    if (!$("bell-card").hidden) { e.stopPropagation(); closeBell(); $("bell-btn").focus(); return; }
     if (!$("wel-pop").hidden) { e.stopPropagation(); closeWel(); return; }
     if (!$("mem-pop").hidden) { e.stopPropagation(); closeMember(); return; }
     if (!$("acct").hidden) { e.stopPropagation(); close(); }

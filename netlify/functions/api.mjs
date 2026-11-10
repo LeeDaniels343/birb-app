@@ -3,6 +3,7 @@
 import { getStore } from "@netlify/blobs";
 import crypto from "node:crypto";
 import towns from "./towns.mjs";
+import RARE from "./rare.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -147,6 +148,28 @@ const card = (user, viewer) => {
 };
 const mini = (user) => ({ u: user.u, name: user.name || user.u, avatar: user.avatar || null, owner: isAdmin(user.u) });
 
+/* ---------- notifications: a short inbox per person ---------- */
+const INBOX_MAX = 60;
+const getInbox = async (u) => (await store().get(`inbox/${u}`, { type: "json" })) || { items: [], read: "" };
+/* adds one item; a run of uploads from the same friend while unread is merged into one item */
+async function notify(u, item, mergeBirds = false) {
+  if (!u) return;
+  const box = await getInbox(u), now = new Date().toISOString();
+  item = { id: crypto.randomBytes(6).toString("base64url"), t: now, ...item };
+  if (mergeBirds) {
+    const i = box.items.findIndex((x) => x.kind === "birds" && x.by.u === item.by.u && x.t > (box.read || "") && Date.now() - Date.parse(x.t) < 6 * 3600e3);
+    if (i >= 0) {
+      const old = box.items.splice(i, 1)[0];
+      item = { ...old, t: now, added: (old.added || 0) + (item.added || 0), species: item.species || old.species, places: item.places || old.places, first: old.first || item.first, newSpecies: [...new Set([...(old.newSpecies || []), ...(item.newSpecies || [])])] };
+    }
+  }
+  box.items.unshift(item);
+  box.items = box.items.slice(0, INBOX_MAX);
+  await store().setJSON(`inbox/${u}`, box);
+}
+const speciesIn = (csv) => { const m = new Map(); for (const r of toObjs(csv).objs) if (r["Common Name"]) m.set(r["Common Name"], r["Scientific Name"] || ""); return m; };
+const isRare = (sci) => RARE.has(String(sci || "").split(" ").slice(0, 2).join(" "));
+
 /* ---------- CSV clean-up ---------- */
 function parseCSV(text) {
   const rows = []; let row = [], f = "", q = false;
@@ -263,8 +286,10 @@ export default async (req) => {
       await store().delete(`aliases/${u}`);
       /* the person who invited you, plus Lee, who starts as everyone's friend (you can remove him) */
       const firsts = [...new Set([inv.by, env("ADMIN_USER").toLowerCase()])].filter((x) => x && x !== u);
-      for (const f of firsts) { const other = await findUser(f); if (other) { befriend(user, other); await putUser(other); } }
+      const told = [];
+      for (const f of firsts) { const other = await findUser(f); if (other) { befriend(user, other); await putUser(other); told.push(other.u); } }
       await putUser(user);
+      for (const t of told) await notify(t, { kind: "joined", by: mini(user), viaYou: t === inv.by });
       await ensureInvite(user);
       return json({ token: tokenFor(user), me: publicMe(user) }, 201);
     }
@@ -322,6 +347,7 @@ export default async (req) => {
       me.u = nu; me.v = me.v || 1;
       await putUser(me);
       if (csv) await store().set(`csv/${nu}`, csv);
+      const ib = await store().get(`inbox/${old}`, { type: "json" }); if (ib) { await store().setJSON(`inbox/${nu}`, ib); await store().delete(`inbox/${old}`); }
       if (wasAdmin) { cfg.ADMIN_USER = nu; await store().setJSON("config/settings", cfg); }
       await store().set(`aliases/${old}`, nu);
       await store().delete(`aliases/${nu}`);
@@ -364,12 +390,26 @@ export default async (req) => {
         if (text.length > 60e6) return fail(413, "That file is too big.");
         let res;
         try { res = cleanCSV(text); } catch (e) { return fail(400, e.message); }
-        const old = url.searchParams.get("mode") === "replace" ? null : await store().get(`csv/${me.u}`, { type: "text" });
-        if (old) res = mergeCSV(old, res.csv, res.stats.privatePlaces);
+        const prev = await store().get(`csv/${me.u}`, { type: "text" });
+        const replace = url.searchParams.get("mode") === "replace";
+        const before = prev ? speciesIn(prev) : new Map();
+        if (prev && !replace) res = mergeCSV(prev, res.csv, res.stats.privatePlaces);
         else res.stats = { ...res.stats, added: res.stats.rows, newSpecies: [], replaced: true };
         await store().set(`csv/${me.u}`, res.csv);
+        const after = speciesIn(res.csv), first = !prev;
+        const fresh = [...after.keys()].filter((n) => !before.has(n));
+        const rare = fresh.filter((n) => isRare(after.get(n)));
+        res.stats.rare = rare;
         me.birds = { ...res.stats, updated: new Date().toISOString() };
         await putUser(me);
+        /* tell friends who can see these birds: one note per upload, plus a special one for rare finds */
+        if (res.stats.added > 0 && fresh.length + (first ? 1 : 0) + res.stats.added > 0) {
+          const friends = (await Promise.all((me.friends || []).map(findUser))).filter((f) => f && canSee(me, f));
+          for (const f of friends) {
+            await notify(f.u, { kind: "birds", by: mini(me), added: res.stats.added, newSpecies: first ? [] : fresh.slice(0, 30), first, species: res.stats.species, places: res.stats.places }, true);
+            if (rare.length) await notify(f.u, { kind: "rare", by: mini(me), birds: rare.map((n) => ({ name: n, sci: after.get(n) })) });
+          }
+        }
         return json({ me: publicMe(me), stats: res.stats });
       }
       if (m === "DELETE") {
@@ -377,6 +417,13 @@ export default async (req) => {
         me.birds = null; await putUser(me);
         return json({ me: publicMe(me) });
       }
+    }
+
+    if (path === "inbox") {
+      if (!me) return fail(401, "Please sign in.");
+      const box = await getInbox(me.u);
+      if (m === "POST") { box.read = new Date().toISOString(); await store().setJSON(`inbox/${me.u}`, box); return json({ read: box.read, unread: 0 }); }
+      return json({ items: box.items, read: box.read || "", unread: box.items.filter((x) => x.t > (box.read || "")).length });
     }
 
     if (path === "flock" && m === "GET") {
@@ -416,18 +463,21 @@ export default async (req) => {
       if (other.u === me.u) return fail(400, "That's you.");
       lists(me); lists(other);
       const act = path.slice(8);
+      let note = null;
       if (act === "request") {
         if (isFriend(me, other)) { /* already friends */ }
-        else if (me.reqIn.includes(other.u)) befriend(me, other); /* they'd already asked you, so this counts as yes */
-        else { me.reqOut = withOne(me.reqOut, other.u); other.reqIn = withOne(other.reqIn, me.u); }
+        else if (me.reqIn.includes(other.u)) { befriend(me, other); note = "accepted"; } /* they'd already asked you, so this counts as yes */
+        else { if (!other.reqIn.includes(me.u)) note = "request"; me.reqOut = withOne(me.reqOut, other.u); other.reqIn = withOne(other.reqIn, me.u); }
       } else if (act === "accept") {
         if (!me.reqIn.includes(other.u) && !isFriend(me, other)) return fail(400, "That request has been withdrawn.");
+        if (!isFriend(me, other)) note = "accepted";
         befriend(me, other);
       } else if (act === "decline" || act === "cancel" || act === "remove") {
         /* declining, withdrawing and unfriending are all silent: nobody gets told */
         unlink(me, other);
       } else return fail(404, "Not found.");
       await putUser(other); await putUser(me);
+      if (note) await notify(other.u, { kind: note, by: mini(me) });
       return json({ status: relation(me, other), user: mini(other), me: publicMe(me) });
     }
 
@@ -456,7 +506,7 @@ export default async (req) => {
       }
       if (path === "admin/remove" && m === "POST") {
         if (target.u === me.u) return fail(400, "You can't remove yourself.");
-        await store().delete(`csv/${target.u}`); await store().delete(`users/${target.u}`);
+        await store().delete(`csv/${target.u}`); await store().delete(`users/${target.u}`); await store().delete(`inbox/${target.u}`);
         if (target.invite) await store().delete(`invites/${target.invite}`);
         await Promise.all((await allUsers()).map((x) => { if ([x.friends, x.reqIn, x.reqOut].some((a) => (a || []).includes(target.u))) { x.friends = without(x.friends, target.u); x.reqIn = without(x.reqIn, target.u); x.reqOut = without(x.reqOut, target.u); return putUser(x); } }));
         return json({ removed: target.u });
