@@ -3629,9 +3629,11 @@ const Avatar = (() => {
     extra: ["None", "Bobble hat", "Scarf", "Binoculars", "Crown"], bg: ["#dcefe4", "#dbe8f6", "#f6ead6", "#efe0f2", "#f2f0ea", "#2a3540"],
   };
   const LABELS = { head: "Head", beak: "Beak", wing: "Wings", legs: "Legs", tail: "Tail", eyes: "Eyes", cHead: "Head colour", cBody: "Body colour", cWing: "Wings and tail", cBelly: "Belly and face", extra: "Extra", bg: "Background" };
-  const DEF = { head: "Round", beak: "Short", wing: "Folded", legs: "Perching", tail: "Short", eyes: "Round", cHead: "#d0463a", cBody: "#9a7454", cWing: "#5a4636", cBelly: "#f2e6d0", extra: "Scarf", bg: "#dcefe4" };
+  const DEF = { head: "Round", beak: "Short", wing: "Folded", legs: "Perching", tail: "Short", eyes: "Round", cHead: "#d0463a", cBody: "#9a7454", cWing: "#5a4636", cBelly: "#f2e6d0", extra: "Scarf", bg: "#dcefe4", turn: "325" };
   const AUTOBEAK = { Round: "Short", Crested: "Pointy", Duck: "Flat", Owl: "Hooked", Heron: "Long" };
-  const norm = (a) => { const o = { ...DEF }; for (const k in OPTS) if (a && OPTS[k].includes(a[k])) o[k] = a[k]; return o; };
+  /* turn is the way the birb faces, in degrees: 0 is side-on looking right, 325 is three-quarters towards you */
+  const norm = (a) => { const o = { ...DEF }; for (const k in OPTS) if (a && OPTS[k].includes(a[k])) o[k] = a[k]; if (a && /^\d{1,3}$/.test(String(a.turn ?? ""))) o.turn = String(Number(a.turn) % 360); return o; };
+  const turnRad = (A) => (Number(A.turn) * Math.PI) / 180;
   const random = () => { const o = {}; for (const k in OPTS) o[k] = OPTS[k][Math.floor(Math.random() * OPTS[k].length)]; o.beak = AUTOBEAK[o.head]; return o; };
 
   function build(A) {
@@ -3723,7 +3725,7 @@ const Avatar = (() => {
     if (cache.has(key)) return cache.get(key);
     try {
       if (!snapR) { snapR = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); snapR.setPixelRatio(1); snapR.setSize(192, 192); snapScene = scene(); }
-      const rig = build(A); rig.rotation.y = 0.55; rig.scale.multiplyScalar(1.22); snapScene.S.add(rig);
+      const rig = build(A); rig.rotation.y = turnRad(A); rig.scale.multiplyScalar(1.22); snapScene.S.add(rig);
       snapR.setClearColor(0x000000, 0); snapR.render(snapScene.S, snapScene.C);
       const url = snapR.domElement.toDataURL("image/png");
       snapScene.S.remove(rig); dispose(rig);
@@ -3737,19 +3739,20 @@ const Avatar = (() => {
     return `<span class="av" style="--avbg:${A.bg};--avrim:${A.cBody}">${src ? `<img src="${src}" alt="${esc(label)}">` : BIRDSVG}</span>`;
   }
   /* live turntable used by the builder */
-  function stage(host, a) {
+  function stage(host, a, { edit = false } = {}) {
     const R = new THREE.WebGLRenderer({ antialias: true }); R.setPixelRatio(Math.min(2, devicePixelRatio || 1));
     const size = () => host.clientWidth || 230;
     R.setSize(size(), size()); host.innerHTML = ""; host.appendChild(R.domElement);
-    const { S, C } = scene(); let rig = null, A = norm(a), rot = 0.6, drag = null, t = 0, idle = 0, last = performance.now(), raf = 0, alive = true;
+    const { S, C } = scene(); let rig = null, A = norm(a), base = turnRad(A), rot = base, drag = null, t = 0, idle = 0, last = performance.now(), raf = 0, alive = true;
     const set = (na) => { A = norm(na); if (rig) { S.remove(rig); dispose(rig); } rig = build(A); S.add(rig); R.setClearColor(new THREE.Color(A.bg)); host.style.setProperty("--avrim", A.cBody); };
     host.onpointerdown = (e) => { drag = { x: e.clientX, r: rot }; host.setPointerCapture(e.pointerId); };
     host.onpointermove = (e) => { if (drag) { rot = drag.r + (e.clientX - drag.x) * 0.012; idle = 0; } };
-    host.onpointerup = host.onpointercancel = () => (drag = null);
+    /* in the builder, wherever you let go is the way it faces; elsewhere it drifts back to the owner's chosen pose */
+    host.onpointerup = host.onpointercancel = () => { if (drag && edit) base = rot; drag = null; };
     const loop = (now) => {
       if (!alive) return;
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt; idle += dt;
-      if (!drag && idle > 1.5 && !REDUCE_MOTION) rot += dt * 0.45;
+      if (!drag) { const want = base + (REDUCE_MOTION ? 0 : Math.sin(t * 0.7) * 0.16); rot += (want - rot) * Math.min(1, dt * (idle > 1.2 ? 2.5 : 0.8)); }
       if (rig) {
         rig.rotation.y = rot; rig.position.y = REDUCE_MOTION ? 0 : Math.sin(t * 2) * 0.05;
         const p = rig.userData.parts;
@@ -3760,7 +3763,8 @@ const Avatar = (() => {
       R.render(S, C); raf = requestAnimationFrame(loop);
     };
     set(A); raf = requestAnimationFrame(loop);
-    return { set, destroy() { alive = false; cancelAnimationFrame(raf); if (rig) dispose(rig); R.dispose(); try { R.forceContextLoss(); } catch (e) {} host.innerHTML = ""; } };
+    const deg = () => String(Math.round((((base * 180) / Math.PI) % 360 + 360) % 360));
+    return { set, get turn() { return deg(); }, destroy() { alive = false; cancelAnimationFrame(raf); if (rig) dispose(rig); R.dispose(); try { R.forceContextLoss(); } catch (e) {} host.innerHTML = ""; } };
   }
   return { OPTS, LABELS, DEF, AUTOBEAK, norm, random, snapshot, html, stage };
 })();
@@ -3986,14 +3990,14 @@ const Acct = (() => {
         : `<button type="button" data-v="${v}" aria-pressed="${draft.avatar[k] === v}">${v}</button>`).join("")}</div></div>`;
     };
     return `<div class="abld">
-      <div class="abld-left"><div class="abld-stage" id="abld-stage" aria-label="3D preview of your bird. Drag to turn it."></div>
-        <span class="hint">Drag to turn your bird</span>
+      <div class="abld-left"><div class="abld-stage" id="abld-stage" aria-label="3D preview of your birb. Drag to turn it, and it saves facing that way."></div>
+        <span class="hint">Drag to turn your birb. It saves facing that way.</span>
         <div style="display:flex;gap:6px"><button type="button" data-av-random>Surprise me</button><button type="button" class="ghost" data-av-reset>Reset</button></div></div>
       <div><div class="sec">Shape</div>${["head", "beak", "wing", "legs", "tail", "eyes"].map(grp).join("")}
         <div class="sec">Colours</div>${["cHead", "cBody", "cWing", "cBelly"].map(grp).join("")}
         <div class="sec">Finishing touches</div>${["extra", "bg"].map(grp).join("")}</div></div>`;
   }
-  const mountBuilder = () => { if (live) live.destroy(); live = typeof THREE !== "undefined" && $("abld-stage") ? Avatar.stage($("abld-stage"), draft.avatar) : null; };
+  const mountBuilder = () => { if (live) live.destroy(); live = typeof THREE !== "undefined" && $("abld-stage") ? Avatar.stage($("abld-stage"), draft.avatar, { edit: true }) : null; };
 
   function render() {
     if (live) { live.destroy(); live = null; }
@@ -4007,8 +4011,8 @@ const Acct = (() => {
           <div class="fld"><label for="j-user">Username</label><input id="j-user" autocomplete="username" maxlength="20" value="${esc(draft.username || "")}" placeholder="sam"><span class="hint">Your link will be ${esc(location.host)}/?who=<span id="j-userp">${esc(draft.username || "…")}</span></span></div>
           <div class="fld"><label for="j-pass">Passcode</label><input id="j-pass" type="password" autocomplete="new-password" placeholder="At least 6 characters"><span class="hint">Don't reuse a password from somewhere else.</span></div>
           <div class="err" id="acct-err" role="alert"></div>
-          <div class="acts"><span class="switch">Already joined? <button type="button" data-acct="signin">Sign in</button></span><button type="submit" class="primary">Next: build your bird</button></div></form>`;
-      else if (joinStep === 2) h = `${X}${steps(2)}<h2 id="acct-h">Build your bird</h2><p class="sub">This is you around BIRB. You can change it any time.</p>${builderHTML()}
+          <div class="acts"><span class="switch">Already joined? <button type="button" data-acct="signin">Sign in</button></span><button type="submit" class="primary">Next: build your birb</button></div></form>`;
+      else if (joinStep === 2) h = `${X}${steps(2)}<h2 id="acct-h">Build your birb</h2><p class="sub">Your birb is you around BIRB. You can change it any time.</p>${builderHTML()}
         <div class="err" id="acct-err" role="alert"></div><div class="acts"><span></span><button type="button" class="primary" data-av-save="join">Next: add your birds</button></div>`;
       else h = `${X}${steps(3)}<div class="prof">${Avatar.html(me && me.avatar)}<div><h2 id="acct-h">Welcome, ${esc(nameOf(me))}</h2><p class="sub" style="margin:0">Last step: add the birds you've heard.</p></div></div>${uploadHTML()}
         <div class="acts"><button type="button" data-guide>Show me how, step by step</button><button type="button" class="ghost" data-acct="profile">Skip for now</button></div>`;
@@ -4029,12 +4033,12 @@ const Acct = (() => {
           <div class="err" id="acct-err" role="alert"></div><div class="acts"><span></span><button type="submit" class="primary">Save passcode</button></div></form>`;
     } else if (view === "avatar") {
       if (!draft || !draft.avatar) draft = { avatar: Avatar.norm(me && me.avatar) };
-      h = `${X}${tabs()}<h2 id="acct-h">Edit your bird</h2>${builderHTML()}<div class="err" id="acct-err" role="alert"></div>
-        <div class="acts"><button type="button" class="ghost" data-acct="profile">Cancel</button><button type="button" class="primary" data-av-save="edit">Save my bird</button></div>`;
+      h = `${X}${tabs()}<h2 id="acct-h">Edit your birb</h2>${builderHTML()}<div class="err" id="acct-err" role="alert"></div>
+        <div class="acts"><button type="button" class="ghost" data-acct="profile">Cancel</button><button type="button" class="primary" data-av-save="edit">Save my birb</button></div>`;
     } else if (view === "profile" && me) {
       const b = me.birds;
       h = `${X}${tabs()}<div class="prof">${Avatar.html(me.avatar)}<div><h2 id="acct-h">${esc(nameOf(me))}</h2><p class="sub" style="margin:0">@${esc(me.u)}${me.admin ? '<span class="tag-owner">admin</span>' : ""}</p>
-          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" data-acct="avatar">Edit my bird</button><button type="button" data-show-me ${b ? "" : "hidden"}>Show my birds</button></div></div></div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" data-acct="avatar">Edit my birb</button><button type="button" data-show-me ${b ? "" : "hidden"}>Show my birds</button></div></div></div>
         ${notice ? `<p class="ok" role="status">${notice}</p>` : ""}
         ${b ? `<div class="stats"><span><b>${b.species}</b>species</span><span><b>${b.places}</b>places</span><span><b>${b.rows}</b>sightings</span><span><b>${esc(ago(b.updated))}</b>last upload</span></div>` : `<p class="sub">You haven't added any birds yet.</p>`}
         <div style="margin:14px 0">${uploadHTML()}</div>
@@ -4112,7 +4116,7 @@ const Acct = (() => {
     const card = $("mem-card");
     card.style.setProperty("--mbg", A.bg); card.style.setProperty("--mrim", A.cBody);
     card.innerHTML = `<button type="button" class="acct-x mem-x" data-mem-close aria-label="Close">×</button>
-      <div class="mem-hero"><div class="mem-stage" id="mem-stage" aria-label="${esc(nameOf(m))}'s bird. Drag to turn it.">${m.avatar ? "" : Avatar.html(null)}</div></div>
+      <div class="mem-hero"><div class="mem-stage" id="mem-stage" aria-label="${esc(nameOf(m))}'s birb. Drag to turn it.">${m.avatar ? "" : Avatar.html(null)}</div></div>
       <div class="mem-body">
         <h2 id="mem-h">${esc(nameOf(m))}</h2>
         <p class="sub" style="margin:0">@${esc(m.u)}${m.owner ? '<span class="tag-owner">founder</span>' : ""}${mine ? '<span class="tag-owner">you</span>' : ""}</p>
@@ -4273,16 +4277,17 @@ const Acct = (() => {
     if (t.closest("[data-signout]")) { setToken(""); me = null; scope = ""; cache.clear(); await refresh(); if (owner && members.some((m) => m.u === owner && m.birds)) await show(owner, { quiet: true }); paintChrome(); view = "signin"; render(); return; }
     const avb = t.closest("[data-avk] button");
     if (avb) { const k = avb.closest("[data-avk]").dataset.avk; draft.avatar[k] = avb.dataset.v; if (k === "head") draft.avatar.beak = Avatar.AUTOBEAK[draft.avatar.head]; avb.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === avb))); if (k === "head") { const bb = card().querySelector('[data-avk="beak"]'); bb && bb.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === draft.avatar.beak))); } live && live.set(draft.avatar); return; }
-    if (t.closest("[data-av-random]")) { draft.avatar = Avatar.random(); render(); return; }
+    if (t.closest("[data-av-random]")) { const turn = live ? live.turn : draft.avatar.turn; draft.avatar = { ...Avatar.random(), turn }; render(); return; }
     if (t.closest("[data-av-reset]")) { draft.avatar = { ...Avatar.DEF }; render(); return; }
     const sv = t.closest("[data-av-save]");
     if (sv) {
       sv.disabled = true;
+      if (live) draft.avatar.turn = live.turn;
       const r = await call("me", { method: "PUT", body: { avatar: draft.avatar } });
       sv.disabled = false;
       if (!r.ok) { err(r.error); return; }
       me = r.data.me; await refresh(); paintChrome();
-      if (sv.dataset.avSave === "join") { joinStep = 3; view = "join"; } else { view = "profile"; notice = "Your bird is saved."; }
+      if (sv.dataset.avSave === "join") { joinStep = 3; view = "join"; } else { view = "profile"; notice = "Your birb is saved."; }
       render(); return;
     }
     const rs = t.closest("[data-adm-reset]");

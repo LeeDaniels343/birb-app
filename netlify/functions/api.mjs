@@ -118,7 +118,7 @@ async function sessionUser(req) {
   return user && (user.v || 1) === p.v ? user : null;
 }
 
-const AVATAR_KEYS = new Set(["head", "beak", "wing", "legs", "tail", "eyes", "cHead", "cBody", "cWing", "cBelly", "extra", "bg"]);
+const AVATAR_KEYS = new Set(["head", "beak", "wing", "legs", "tail", "eyes", "cHead", "cBody", "cWing", "cBelly", "extra", "bg", "turn"]);
 function cleanAvatar(a) {
   if (!a || typeof a !== "object") return null;
   const out = {};
