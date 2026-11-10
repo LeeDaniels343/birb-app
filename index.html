@@ -370,11 +370,30 @@ body.night .acct .primary { color: #0f191d; }
 .flock-row:hover { border-color: var(--accent); }
 .flock-row.cur { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .flock-row .av { width: 48px; height: 48px; }
-.flock-row .t { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.flock-row .t { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; }
+.flock-row .t small, .flock-row .t b { white-space: normal; overflow-wrap: anywhere; }
 .flock-row .t b { font-size: 15px; font-weight: 600; }
 .flock-row .t small { color: var(--muted); font-size: 12px; }
 .flock-row .n { font-family: var(--font-display); font-size: 20px; font-weight: 700; text-align: right; }
 .flock-row .n small { display: block; font-family: var(--font-body, inherit); font-size: 10.5px; color: var(--muted); font-weight: 400; }
+.req-dot { position: absolute; top: -3px; left: -3px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #d4537e; color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--surface); line-height: 1; }
+.tab-n { display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 5px; margin-left: 5px; border-radius: 999px; background: #d4537e; color: #fff; font-size: 10.5px; font-weight: 700; vertical-align: 1px; }
+.acct form.fr-add { display: flex; gap: 6px; }
+.fr-add button { flex: none; padding: 0 16px; }
+.fr-add input { flex: 1; min-width: 0; font: inherit; font-size: 15px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
+.fr-sec { margin: 16px 0 6px; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
+.fr-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); margin-bottom: 6px; }
+.fr-row.new { border-color: #d4537e; box-shadow: 0 0 0 1px #d4537e inset; }
+.fr-row .av { width: 40px; height: 40px; flex: none; }
+.fr-row .t { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.fr-row .t b { font-size: 14.5px; font-weight: 600; }
+.fr-row .t small { color: var(--muted); font-size: 12px; }
+.fr-row .btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.fr-row .btns .primary { background: var(--accent); color: #fff; border-radius: 999px; padding: 6px 14px; }
+body.night .fr-row .btns .primary { color: #0f191d; }
+.fr-res { min-height: 0; margin-top: 8px; }
+.mem-unfriend { margin-top: 10px; font-size: 12.5px; color: var(--muted); background: none; border: 0; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.mem-unfriend.sure { color: #b4234f; font-weight: 600; }
 .tag-owner { font-size: 10px; font-family: var(--font-mono); padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-left: 6px; vertical-align: 2px; }
 .mem-pop { position: fixed; inset: 0; z-index: 42; display: grid; place-items: center; padding: 20px; background: rgba(12, 22, 26, .35); backdrop-filter: blur(2px); animation: memFade .18s ease; }
 .mem-pop[hidden] { display: none; }
@@ -3724,6 +3743,7 @@ const Acct = (() => {
   const API = /^https?:$/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname) ? "/api" : null;
   const TOKEN = "birb-token";
   let token = ""; try { token = localStorage.getItem(TOKEN) || ""; } catch (e) {}
+  let requests = { in: [], out: [] }, findRes = null;
   let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "";
   let scope = "", backTo = "me", memberU = "";
   const cache = new Map();
@@ -3757,9 +3777,10 @@ const Acct = (() => {
     if (!API) return;
     const b = $("me-btn"); b.hidden = false;
     document.body.classList.add("has-me");
-    b.innerHTML = me ? `${Avatar.html(me.avatar, "")}<span class="me-txt"><small>${me.admin ? "You · admin" : "You"}</small><b>${esc(nameOf(me))}</b></span>`
+    const nReq = me ? requests.in.length : 0;
+    b.innerHTML = me ? `${nReq ? `<span class="req-dot" aria-hidden="true">${nReq}</span>` : ""}${Avatar.html(me.avatar, "")}<span class="me-txt"><small>${me.admin ? "You · admin" : "You"}</small><b>${esc(nameOf(me))}</b></span>`
       : `${Avatar.html(null)}<span class="me-txt"><small>Flock</small><b>Join or sign in</b></span>`;
-    b.setAttribute("aria-label", me ? `Your profile, ${nameOf(me)}` : "Join BIRB or sign in");
+    b.setAttribute("aria-label", me ? `Your profile, ${nameOf(me)}${nReq ? `. ${nReq} friend ${nReq === 1 ? "request" : "requests"}` : ""}` : "Join BIRB or sign in");
     const w = $("who");
     const flockers = members.filter((m) => m.birds);
     let h = "";
@@ -3788,7 +3809,7 @@ const Acct = (() => {
     if (!API) return false;
     const list = members.filter((m) => m.birds);
     if (!list.length) {
-      if (!quiet) toast(`<span>No one in the flock has added their birds yet, so there's nothing to combine.${me && !me.birds ? " Add your eBird export first." : ""}</span>${me && !me.birds ? '<span class="acts"><button type="button" data-acct-open="profile">Add my birds</button></span>' : ""}`, $("who"));
+      if (!quiet) toast(`<span>${members.length > 1 ? "None of your friends have added their birds yet, so there's nothing to combine." : "You haven't any friends on BIRB yet. Add some from Flock."}${me && !me.birds ? " Add your eBird export first." : ""}</span>${me && !me.birds ? '<span class="acts"><button type="button" data-acct-open="profile">Add my birds</button></span>' : ""}`, $("who"));
       return false;
     }
     setStatus("Gathering the flock's birds…");
@@ -3818,7 +3839,7 @@ const Acct = (() => {
 
   async function refresh() {
     const r = await call("flock");
-    if (r.ok) { owner = r.data.owner; members = r.data.members || []; me = r.data.me; }
+    if (r.ok) { owner = r.data.owner; members = r.data.members || []; me = r.data.me; requests = r.data.requests || { in: [], out: [] }; }
     else if (r.status === 503) { $("me-btn").hidden = true; return false; }
     return r.ok;
   }
@@ -3843,15 +3864,16 @@ const Acct = (() => {
   /* ---------- dialog ---------- */
   function open(v, opts = {}) {
     if (!API) return;
-    view = v; if (opts.invite) draft = { ...(draft || {}), invite: opts.invite };
+    view = v; findRes = null; if (opts.invite) draft = { ...(draft || {}), invite: opts.invite };
     $("acct").hidden = false; render();
+    if (me && v !== "join") refresh().then((ok) => { if (ok && !$("acct").hidden && view === v && !document.activeElement?.closest?.(".acct form")) { render(); paintChrome(); } });
   }
   function close() {
     closeMember();
     if (live) { live.destroy(); live = null; }
     $("acct").hidden = true; view = ""; notice = "";
   }
-  const tabs = () => me ? `<nav class="acct-tabs" aria-label="Account">${[["profile", "Your profile"], ["flock", "Flock"], ...(me.admin ? [["admin", "Admin"]] : [])].map(([k, l]) => `<button type="button" data-acct="${k}" aria-current="${view === k ? "page" : "false"}">${l}</button>`).join("")}</nav>` : "";
+  const tabs = () => me ? `<nav class="acct-tabs" aria-label="Account">${[["profile", "Your profile"], ["flock", "Flock"], ...(me.admin ? [["admin", "Admin"]] : [])].map(([k, l]) => `<button type="button" data-acct="${k}" aria-current="${view === k ? "page" : "false"}">${l}${k === "flock" && requests.in.length ? `<span class="tab-n" aria-label="${requests.in.length} new">${requests.in.length}</span>` : ""}</button>`).join("")}</nav>` : "";
   const X = `<button type="button" class="acct-x" data-acct-close aria-label="Close">×</button>`;
   const steps = (n) => `<div class="steps" aria-hidden="true">${[1, 2, 3].map((i) => `<span class="${i <= n ? "on" : ""}"></span>`).join("")}</div>`;
 
@@ -3877,7 +3899,7 @@ const Acct = (() => {
     const el = card(); let h = "";
     if (view === "join") {
       draft = draft || {}; draft.avatar = draft.avatar || Avatar.norm(Avatar.random());
-      if (joinStep === 1) h = `${X}${steps(1)}<h2 id="acct-h">Join the flock</h2><p class="sub">Use the invite code Lee sent you, then pick a username and passcode.</p>
+      if (joinStep === 1) h = `${X}${steps(1)}<h2 id="acct-h">Join BIRB</h2><p class="sub">Use the invite code a friend sent you, then pick a username and passcode. You'll start out as friends with them.</p>
         <form id="f-join" class="stack" novalidate>
           <div class="fld"><label for="j-inv">Invite code</label><input id="j-inv" autocomplete="off" value="${esc(draft.invite || "")}" placeholder="BIRB-XXXX"></div>
           <div class="fld"><label for="j-name">Your name</label><input id="j-name" autocomplete="nickname" maxlength="40" value="${esc(draft.name || "")}" placeholder="Sam"></div>
@@ -3919,12 +3941,14 @@ const Acct = (() => {
           <div class="fld"><label for="pr-name">Display name</label><input id="pr-name" maxlength="40" value="${esc(me.name || "")}"></div>
           <div class="fld"><label for="pr-user">Username</label><input id="pr-user" maxlength="20" autocomplete="username" value="${esc(me.u)}"><span class="hint">Used to sign in and in your link. If you change it, your old link keeps working.</span></div>
           <div class="fld"><label for="pr-vis">Who can see your birds</label><select id="pr-vis">
-            ${[["public", "Anyone with your link"], ["group", "Only people in the flock"], ["private", "Only me"]].map(([v, l]) => `<option value="${v}" ${me.visibility === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
-          <div class="fld"><label>Your link</label><div class="copybox"><code>${esc(location.origin)}/?who=${esc(me.u)}</code><button type="button" data-copy="${esc(location.origin)}/?who=${esc(me.u)}">Copy</button></div></div>
+            ${[["friends", "Only my friends"], ["public", "Anyone with your link"], ["private", "Only me"]].map(([v, l]) => `<option value="${v}" ${me.visibility === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+          ${inviteHTML()}
+          <div class="fld"><label>Your link</label><div class="copybox"><code>${esc(location.origin)}/?who=${esc(me.u)}</code><button type="button" data-copy="${esc(location.origin)}/?who=${esc(me.u)}">Copy</button></div><span class="hint">Shows your birds to friends, or to anyone if you pick "Anyone with your link" above.</span></div>
           <div class="err" id="acct-err" role="alert"></div>
           <div class="acts"><span style="display:flex;gap:4px"><button type="button" class="ghost" data-acct="passcode">Change passcode</button><button type="button" class="ghost" data-signout>Sign out</button></span><button type="submit" class="primary">Save</button></div></form>`;
     } else if (view === "flock") {
-      h = `${X}${tabs()}<h2 id="acct-h">The flock</h2><p class="sub">Tap someone to see their birds on the map, in Habitat world and in their Collection.</p>${flockHTML(false)}
+      h = `${X}${tabs()}<h2 id="acct-h">${me ? "Your flock" : "The flock"}</h2><p class="sub">${me ? "Your friends on BIRB. Tap someone to see their profile and birds." : "Tap someone to see their birds on the map, in Habitat world and in their Collection."}</p>
+        ${me ? friendsHTML() : ""}${me ? `<div class="fr-sec">Friends</div>` : ""}${flockHTML(false)}
         ${me ? "" : `<div class="acts"><span></span><span style="display:flex;gap:6px"><button type="button" data-acct="signin">Sign in</button><button type="button" class="primary" data-acct="join">Join</button></span></div>`}`;
     } else if (view === "admin" && me && me.admin) {
       h = `${X}${tabs()}<h2 id="acct-h">Admin</h2><p class="sub">Only you can see this.</p><div id="adm" class="stack"><p class="hint">Loading members…</p></div>`;
@@ -3943,13 +3967,40 @@ const Acct = (() => {
       <p class="hint" style="margin:6px 0 0;text-align:center"><button type="button" class="linkish" data-guide>New to Merlin or eBird? See how to get your birds, step by step</button></p>
       <div class="err" id="up-err" role="alert"></div>`;
   }
+  function inviteHTML() {
+    if (!me || !me.invite) return "";
+    const link = `${location.origin}/?invite=${encodeURIComponent(me.invite)}`;
+    return `<div class="fld"><label>Your invite link</label><div class="copybox"><code>${esc(link)}</code><button type="button" data-copy="${esc(link)}">Copy</button></div>
+      <span class="hint">Anyone who joins with it becomes your friend. Code <b>${esc(me.invite)}</b>. <button type="button" class="linkish" data-new-code>Make a new code</button> if it's been passed around: the old one stops working.</span></div>`;
+  }
+  const frRow = (x, sub, btns, cls = "") => `<div class="fr-row ${cls}">${Avatar.html(x.avatar)}<span class="t"><b>${esc(nameOf(x))}${x.owner ? '<span class="tag-owner">founder</span>' : ""}</b><small>@${esc(x.u)}${sub ? ` · ${sub}` : ""}</small></span><span class="btns">${btns}</span></div>`;
+  const frBtn = (act, u, label, primary) => `<button type="button" ${primary ? 'class="primary"' : 'class="ghost"'} data-fr="${act}" data-u="${esc(u)}">${label}</button>`;
+  function findResHTML() {
+    if (!findRes) return "";
+    if (findRes.error) return `<p class="err" style="margin:0">${esc(findRes.error)}</p>`;
+    const x = findRes.user, st = findRes.status;
+    const btn = st === "me" ? `<span class="hint">That's you</span>`
+      : st === "friends" ? `<span class="hint">Already friends</span>`
+      : st === "sent" ? `<span class="hint">Request sent</span>${frBtn("cancel", x.u, "Cancel")}`
+      : st === "received" ? frBtn("accept", x.u, "Accept their request", true)
+      : frBtn("request", x.u, "Send friend request", true);
+    return frRow(x, st === "sent" ? "waiting for them to say yes" : "", btn);
+  }
+  function friendsHTML() {
+    const rin = requests.in, rout = requests.out;
+    return `<form id="f-find" class="fr-add" novalidate role="search"><input id="fr-u" maxlength="21" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Add a friend by username" aria-label="Friend's username"><button type="submit">Find</button></form>
+      <div class="fr-res" id="fr-res" aria-live="polite">${findResHTML()}</div>
+      ${rin.length ? `<div class="fr-sec">Friend requests · ${rin.length}</div>${rin.map((x) => frRow(x, "wants to be friends", frBtn("accept", x.u, "Accept", true) + frBtn("decline", x.u, "Not now"), "new")).join("")}` : ""}
+      ${rout.length ? `<div class="fr-sec">Waiting for a reply</div>${rout.map((x) => frRow(x, "request sent", frBtn("cancel", x.u, "Cancel"))).join("")}` : ""}`;
+  }
   function flockHTML(compact) {
     const list = members.slice().sort((a, b) => (b.owner - a.owner) || ((me && b.u === me.u) - (me && a.u === me.u)) || ((b.birds?.species || 0) - (a.birds?.species || 0)));
     if (!list.length) return compact ? "" : `<p class="sub">No one has joined yet.</p>`;
-    return `${compact ? '<div class="sec" style="margin:18px 0 8px;font-size:13px;font-weight:600">Or look around the flock</div>' : ""}<div class="flock">${list.map((m) => `
+    if (me && !compact && list.length === 1 && list[0].u === me.u) return `<p class="sub">No friends yet. Share your invite link from Your profile, or add someone by their username above.</p>`;
+    return `${compact ? '<div class="sec" style="margin:18px 0 8px;font-size:13px;font-weight:600">Or have a look around</div>' : ""}<div class="flock">${list.map((m) => `
       <button type="button" class="flock-row${viewing && viewing.u === m.u ? " cur" : ""}" data-view-u="${esc(m.u)}">
         ${Avatar.html(m.avatar)}<span class="t"><b>${esc(nameOf(m))}${m.owner ? '<span class="tag-owner">founder</span>' : ""}${me && m.u === me.u ? '<span class="tag-owner">you</span>' : ""}</b>
-        <small>${m.birds ? `${m.birds.places} places · updated ${esc(ago(m.birds.updated))}` : me && m.u === me.u ? "No birds yet. Add your eBird export in Your profile" : "No birds yet"}${m.visibility === "private" ? " · private" : m.visibility === "group" ? " · flock only" : ""}</small></span>
+        <small>${m.birds ? `${m.birds.places} places · updated ${esc(ago(m.birds.updated))}` : m.hidden ? "Birds private" : me && m.u === me.u ? "No birds yet. Add your eBird export in Your profile" : "No birds yet"}${m.hidden || m.visibility === "private" ? " · keeps birds private" : ""}</small></span>
         <span class="n">${m.birds ? m.birds.species : "–"}<small>species</small></span></button>`).join("")}</div>`;
   }
   let memLive = null;
@@ -3964,11 +4015,12 @@ const Acct = (() => {
       <div class="mem-body">
         <h2 id="mem-h">${esc(nameOf(m))}</h2>
         <p class="sub" style="margin:0">@${esc(m.u)}${m.owner ? '<span class="tag-owner">founder</span>' : ""}${mine ? '<span class="tag-owner">you</span>' : ""}</p>
-        <p class="hint" style="margin:2px 0 0">${m.joined ? `Joined ${esc(ago(m.joined))} · ` : ""}${m.visibility === "public" ? "Birds visible to anyone with the link" : m.visibility === "private" ? "Birds private" : "Birds visible to the flock"}</p>
+        <p class="hint" style="margin:2px 0 0">${m.joined ? `Joined ${esc(ago(m.joined))} · ` : ""}${m.hidden || m.visibility === "private" ? "Keeps their birds private" : m.visibility === "public" ? "Birds visible to anyone with the link" : "Birds visible to friends"}</p>
         ${b ? `<div class="mem-stats"><span><b>${b.species}</b>species</span><span><b>${b.places}</b>places</span><span><b>${b.rows}</b>sightings</span><span><b>${esc(ago(b.updated))}</b>last upload</span></div>
           <div id="mem-more" class="mem-more"><p class="hint">Loading ${mine ? "your" : "their"} birds…</p></div>`
-          : `<p class="sub" style="margin-top:12px">${mine ? "You haven't" : `${esc(nameOf(m))} hasn't`} added any birds yet.</p>`}
+          : `<p class="sub" style="margin-top:12px">${m.hidden ? `${esc(nameOf(m))} keeps their birds to themselves for now.` : `${mine ? "You haven't" : `${esc(nameOf(m))} hasn't`} added any birds yet.`}</p>`}
         ${b ? `<div class="mem-acts"><button type="button" class="primary" data-show-u="${esc(m.u)}">${mine ? "Show my birds" : `See ${esc(nameOf(m))}'s birds`}</button></div>` : ""}
+        ${me && !mine ? `<button type="button" class="mem-unfriend" data-unfriend="${esc(m.u)}">Remove ${esc(nameOf(m))} as a friend</button>` : ""}
       </div>`;
     $("mem-pop").hidden = false;
     if (memLive) { memLive.destroy(); memLive = null; }
@@ -4012,16 +4064,31 @@ const Acct = (() => {
     if (!r.ok) { box.innerHTML = `<p class="err">${esc(r.error)}</p>`; return; }
     const inv = r.data.invite;
     const link = inv ? `${location.origin}/?invite=${encodeURIComponent(inv)}` : "";
-    box.innerHTML = `<div class="fld"><label>Invite link for friends</label>
+    box.innerHTML = `<div class="fld"><label>Back-door invite code</label>
       ${inv ? `<div class="copybox"><code>${esc(link)}</code><button type="button" data-copy="${esc(link)}">Copy</button></div>
-      <span class="hint">Invite code: <b>${esc(inv)}</b>. Anyone with it can join, so share it only with people you know.</span>`
-      : `<span class="hint">You're using the first invite code Claude gave you. It's stored only as a scrambled fingerprint, so it can't be shown here. Set a new one below to get a shareable link.</span>`}</div>
+      <span class="hint">Invite code: <b>${esc(inv)}</b>. People who join with it start as friends with you only. Your personal code in Your profile does the same thing.</span>`
+      : `<span class="hint">The first code (BIRB-89B6) still works and makes people friends with you only. Set a new one below to retire it.</span>`}</div>
       <form id="f-invite" class="copybox" novalidate><input id="inv-new" maxlength="32" placeholder="New invite code, e.g. BIRB-SPRING" style="flex:1;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"><button type="submit">Set code</button></form>
       <div class="err" id="inv-err" role="alert"></div>
       <div><div class="lab" style="font-size:12px;color:var(--muted);margin:6px 0 2px">Members (${r.data.users.length})</div>
-      ${r.data.users.map((u) => `<div class="adm-row">${Avatar.html(u.avatar)}<span class="t"><b>${esc(nameOf(u))}</b> @${esc(u.u)}<small>${u.birds ? `${u.birds.species} species` : "no birds"} · joined ${esc(ago(u.joined))} · ${esc(u.visibility)}${u.locked ? " · locked out" : ""}</small></span>
+      ${r.data.users.map((u) => `<div class="adm-row">${Avatar.html(u.avatar)}<span class="t"><b>${esc(nameOf(u))}</b> @${esc(u.u)}<small>${u.birds ? `${u.birds.species} species` : "no birds"} · joined ${esc(ago(u.joined))}${u.invitedBy && !u.owner ? ` via @${esc(u.invitedBy)}` : ""} · ${esc(u.visibility)}${u.owner ? "" : u.friend ? " · your friend" : " · not your friend"}${u.locked ? " · locked out" : ""}</small></span>
         ${u.owner ? "" : `<button type="button" data-adm-reset="${esc(u.u)}">Reset passcode</button><button type="button" class="danger" data-adm-remove="${esc(u.u)}">Remove</button>`}
         <span class="ok" id="adm-${esc(u.u)}" style="width:100%"></span></div>`).join("")}</div>`;
+  }
+  async function friendAct(act, u) {
+    const r = await call("friends/" + act, { method: "POST", body: { u } });
+    if (!r.ok) { findRes = { error: r.error }; render(); return; }
+    findRes = null;
+    const wasFriend = members.some((m) => m.u === u);
+    await refresh();
+    const isFriendNow = members.some((m) => m.u === u);
+    if (wasFriend !== isFriendNow) {
+      cache.delete(u);
+      if (scope === "flock") await showFlock({ quiet: true });
+      else if (scope === "user" && viewing && viewing.u === u && !isFriendNow && me) { if (me.birds) await show(me.u, { quiet: true }); }
+    }
+    paintChrome(); view = "flock";
+    notice = ""; render();
   }
   const err = (msg, id = "acct-err") => { const e = $(id); if (e) e.textContent = msg || ""; };
   async function upload(file) {
@@ -4056,7 +4123,7 @@ const Acct = (() => {
     if (!$("mem-pop").hidden) {
       if (t === $("mem-pop") || t.closest("[data-mem-close]")) { closeMember(); return; }
     }
-    if (t.closest("#me-btn")) { open(me ? "profile" : "signin"); return; }
+    if (t.closest("#me-btn")) { open(me ? (requests.in.length ? "flock" : "profile") : "signin"); return; }
     const sc = t.closest("[data-scope]");
     if (sc) {
       if (sc.dataset.scope === "flock") { if (scope !== "flock") { sc.classList.add("busy"); await showFlock(); sc.classList.remove("busy"); } }
@@ -4072,6 +4139,13 @@ const Acct = (() => {
     if (!$("mem-pop").hidden && !t.closest("#mem-pop")) return;
     const go = t.closest("[data-acct]"); if (go) { if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }
     const vu = t.closest("[data-view-u]"); if (vu) { openMember(vu.dataset.viewU); return; }
+    const fr = t.closest("[data-fr]"); if (fr) { fr.disabled = true; await friendAct(fr.dataset.fr, fr.dataset.u); return; }
+    const uf = t.closest("[data-unfriend]");
+    if (uf) {
+      if (!uf.classList.contains("sure")) { uf.classList.add("sure"); uf.textContent = `Tap again to remove ${nameOf(member(uf.dataset.unfriend))}`; return; }
+      closeMember(); await friendAct("remove", uf.dataset.unfriend); return;
+    }
+    if (t.closest("[data-new-code]")) { const r = await call("invite/new", { method: "POST" }); if (r.ok) { me = r.data.me; notice = "New invite code made. The old one no longer works."; render(); } return; }
     const mb = t.closest("[data-mem-bird]"); if (mb) { const ok = await show(mb.dataset.memU); if (ok) { close(); openSpecies(mb.dataset.memBird); } return; }
     const su = t.closest("[data-show-u]"); if (su) { su.disabled = true; const ok = await show(su.dataset.showU); su.disabled = false; if (ok) close(); return; }
     if (t.closest("[data-show-me]")) { if (await show(me.u)) close(); return; }
@@ -4119,7 +4193,7 @@ const Acct = (() => {
     if (f.id === "f-join") {
       const invite = $("j-inv").value.trim(), name = $("j-name").value.trim(), username = $("j-user").value.trim().toLowerCase(), passcode = $("j-pass").value;
       Object.assign(draft, { invite, name, username });
-      if (!invite) return err("Enter the invite code Lee sent you.");
+      if (!invite) return err("Enter the invite code your friend sent you.");
       if (!name) return err("Enter the name you'd like people to see.");
       if (!/^[a-z0-9_-]{2,20}$/.test(username)) return err("Usernames are 2 to 20 letters, numbers, - or _.");
       if (passcode.length < 6) return err("Passcodes need at least 6 characters.");
@@ -4142,6 +4216,12 @@ const Acct = (() => {
       btn.disabled = true; const r = await call("passcode", { method: "POST", body: { old, passcode } }); btn.disabled = false;
       if (!r.ok) return err(r.error);
       await afterAuth(r); notice = "Passcode changed."; view = "profile"; render();
+    } else if (f.id === "f-find") {
+      const q = $("fr-u").value.trim().toLowerCase().replace(/^@/, "");
+      if (!q) return;
+      btn.disabled = true; const r = await call("find?u=" + encodeURIComponent(q)); btn.disabled = false;
+      findRes = r.ok ? r.data : { error: r.error };
+      const box = $("fr-res"); if (box) box.innerHTML = findResHTML();
     } else if (f.id === "f-invite") {
       const code = $("inv-new").value.trim().toUpperCase();
       if (!/^[A-Z0-9-]{6,32}$/.test(code)) return err("Invite codes are 6 to 32 letters, numbers or dashes.", "inv-err");

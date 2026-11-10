@@ -16,16 +16,40 @@ let cfg = null;
 async function settings() {
   let c = (await store().get("config/settings", { type: "json" })) || {};
   if (!c.SESSION_SECRET) { c.SESSION_SECRET = crypto.randomBytes(48).toString("base64url"); await store().setJSON("config/settings", c); }
-  cfg = c; return c;
+  cfg = c;
+  if (!c.FRIENDS_V1) {
+    /* before friendships existed everyone shared one flock, so the people already here start as friends with each other */
+    const all = await allUsers();
+    await Promise.all(all.map((x) => { if (!x.friends) { x.friends = all.filter((y) => y.u !== x.u).map((y) => y.u); x.reqIn = []; x.reqOut = []; return putUser(x); } }));
+    c.FRIENDS_V1 = true; await store().setJSON("config/settings", c);
+  }
+  return c;
 }
 const env = (k) => envRaw(k) || (cfg && cfg[k]) || DEFAULTS[k] || "";
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
-function inviteOk(code) {
-  const c = String(code || "").trim().toUpperCase();
-  if (!c) return false;
+function adminCodeOk(c) {
   if (envRaw("INVITE_CODE")) return c === envRaw("INVITE_CODE").toUpperCase();
   if (cfg && cfg.INVITE_CODE) return c === cfg.INVITE_CODE.toUpperCase();
   return sha(c) === DEFAULTS.INVITE_HASH;
+}
+/* returns who the code belongs to: a member's personal code makes you friends with them; the admin's code with the admin */
+async function inviteFrom(code) {
+  const c = String(code || "").trim().toUpperCase();
+  if (!c || !/^[A-Z0-9-]{4,32}$/.test(c)) return null;
+  const to = await store().get(`invites/${c}`, { type: "text" });
+  if (to) { const by = await findUser(to); if (by && by.invite === c) return { by: by.u }; }
+  if (adminCodeOk(c)) return { by: env("ADMIN_USER").toLowerCase() };
+  return null;
+}
+const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const newCode = () => "BIRB-" + Array.from(crypto.randomBytes(6), (b) => CODE_CHARS[b % CODE_CHARS.length]).join("");
+async function ensureInvite(user, fresh = false) {
+  if (user.invite && !fresh) return user;
+  if (user.invite) await store().delete(`invites/${user.invite}`);
+  user.invite = newCode();
+  await store().set(`invites/${user.invite}`, user.u);
+  await putUser(user);
+  return user;
 }
 
 const json = (data, status = 200, headers = {}) =>
@@ -57,6 +81,26 @@ const RESERVED = new Set(["admin", "api", "birb", "root", "flock", "me", "null",
 const getUser = async (u) => (u && USERNAME.test(u) ? store().get(`users/${u}`, { type: "json" }) : null);
 const putUser = (user) => store().setJSON(`users/${user.u}`, user);
 const isAdmin = (u) => !!u && u === env("ADMIN_USER").toLowerCase();
+async function allUsers() {
+  const { blobs } = await store().list({ prefix: "users/" });
+  return (await Promise.all(blobs.map((b) => store().get(b.key, { type: "json" })))).filter(Boolean);
+}
+
+/* ---------- friends: both people keep the same list, so a friendship is always two-way ---------- */
+const lists = (x) => { x.friends = x.friends || []; x.reqIn = x.reqIn || []; x.reqOut = x.reqOut || []; return x; };
+const without = (arr, u) => (arr || []).filter((v) => v !== u);
+const withOne = (arr, u) => ((arr || []).includes(u) ? arr : [...(arr || []), u]);
+const isFriend = (a, b) => !!a && !!b && (a.friends || []).includes(b.u);
+function befriend(a, b) {
+  lists(a); lists(b);
+  a.friends = withOne(a.friends, b.u); b.friends = withOne(b.friends, a.u);
+  for (const [x, y] of [[a, b], [b, a]]) { x.reqIn = without(x.reqIn, y.u); x.reqOut = without(x.reqOut, y.u); }
+}
+function unlink(a, b) {
+  lists(a); lists(b);
+  for (const [x, y] of [[a, b], [b, a]]) { x.friends = without(x.friends, y.u); x.reqIn = without(x.reqIn, y.u); x.reqOut = without(x.reqOut, y.u); }
+}
+const relation = (me, x) => (me.u === x.u ? "me" : isFriend(me, x) ? "friends" : (me.reqOut || []).includes(x.u) ? "sent" : (me.reqIn || []).includes(x.u) ? "received" : "none");
 
 /* a renamed account leaves a pointer behind, so old links and signed-in devices keep working */
 async function findUser(u) {
@@ -81,20 +125,27 @@ function cleanAvatar(a) {
   for (const [k, v] of Object.entries(a)) if (AVATAR_KEYS.has(k) && typeof v === "string" && v.length <= 24 && /^[#\w ]+$/.test(v)) out[k] = v;
   return out;
 }
-const VIS = new Set(["public", "group", "private"]);
+const VIS = new Set(["public", "friends", "private"]);
+const visOf = (x) => (!x.visibility || x.visibility === "group" ? "friends" : x.visibility);
 const cleanFav = (f) => (f && typeof f === "object" && typeof f.name === "string" && f.name.length <= 80 ? { name: f.name.slice(0, 80), sci: String(f.sci || "").slice(0, 80) } : null);
 const publicMe = (user) => ({
-  u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: user.visibility || "group",
+  u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: visOf(user),
   admin: isAdmin(user.u), birds: user.birds || null, joined: user.joined, mustChange: !!user.mustChange, favourite: user.favourite || null,
+  invite: user.invite || null, requests: (user.reqIn || []).length, friends: (user.friends || []).length,
 });
-const card = (user) => ({ u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: user.visibility || "group", birds: user.birds || null, owner: isAdmin(user.u), favourite: user.favourite || null, joined: user.joined || null });
 const canSee = (owner, viewer) => {
-  const vis = owner.visibility || "group";
+  const vis = visOf(owner);
   if (viewer && viewer.u === owner.u) return true;
   if (vis === "public") return true;
-  if (vis === "group") return !!viewer;
+  if (vis === "friends") return isFriend(owner, viewer);
   return false;
 };
+/* what other people see of an account; their birds only if they're allowed to */
+const card = (user, viewer) => {
+  const ok = canSee(user, viewer);
+  return { u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: visOf(user), birds: ok ? user.birds || null : null, hidden: !ok && !!user.birds, owner: isAdmin(user.u), favourite: ok ? user.favourite || null : null, joined: user.joined || null };
+};
+const mini = (user) => ({ u: user.u, name: user.name || user.u, avatar: user.avatar || null, owner: isAdmin(user.u) });
 
 /* ---------- CSV clean-up ---------- */
 function parseCSV(text) {
@@ -202,14 +253,19 @@ export default async (req) => {
     if (path === "join" && m === "POST") {
       const b = await jsonBody(req);
       const u = String(b.username || "").trim().toLowerCase();
-      if (!inviteOk(b.invite)) return fail(403, "That invite code isn't right. Check it with Lee.");
+      const inv = await inviteFrom(b.invite);
+      if (!inv) return fail(403, "That invite code isn't right. Check it with whoever sent it.");
       if (!USERNAME.test(u) || RESERVED.has(u)) return fail(400, "Usernames are 2 to 20 letters, numbers, - or _.");
       if (String(b.passcode || "").length < 6) return fail(400, "Passcodes need at least 6 characters.");
       if (await getUser(u)) return fail(409, "That username is taken. Try another.");
       const salt = crypto.randomBytes(16).toString("base64");
-      const user = { u, name: String(b.name || u).slice(0, 40), salt, hash: hashPass(String(b.passcode), salt), v: 1, joined: new Date().toISOString(), visibility: isAdmin(u) ? "public" : "group", avatar: cleanAvatar(b.avatar), fails: 0, lockUntil: 0 };
-      await putUser(user);
+      const user = { u, name: String(b.name || u).slice(0, 40), salt, hash: hashPass(String(b.passcode), salt), v: 1, joined: new Date().toISOString(), visibility: isAdmin(u) ? "public" : "friends", avatar: cleanAvatar(b.avatar), fails: 0, lockUntil: 0, friends: [], reqIn: [], reqOut: [], invitedBy: inv.by };
       await store().delete(`aliases/${u}`);
+      /* the person who invited you, plus Lee, who starts as everyone's friend (you can remove him) */
+      const firsts = [...new Set([inv.by, env("ADMIN_USER").toLowerCase()])].filter((x) => x && x !== u);
+      for (const f of firsts) { const other = await findUser(f); if (other) { befriend(user, other); await putUser(other); } }
+      await putUser(user);
+      await ensureInvite(user);
       return json({ token: tokenFor(user), me: publicMe(user) }, 201);
     }
 
@@ -232,12 +288,12 @@ export default async (req) => {
 
     if (path === "me") {
       if (!me) return fail(401, "Please sign in.");
-      if (m === "GET") return json({ me: publicMe(me) });
+      if (m === "GET") { await ensureInvite(me); return json({ me: publicMe(me) }); }
       if (m === "PUT") {
         const b = await jsonBody(req);
         if (b.name != null) me.name = String(b.name).trim().slice(0, 40) || me.u;
         if (b.avatar != null) me.avatar = cleanAvatar(b.avatar);
-        if (b.visibility != null && VIS.has(b.visibility)) me.visibility = b.visibility;
+        if (b.visibility != null) { const v = b.visibility === "group" ? "friends" : b.visibility; if (VIS.has(v)) me.visibility = v; }
         if (b.favourite !== undefined) me.favourite = cleanFav(b.favourite);
         await putUser(me);
         return json({ me: publicMe(me) });
@@ -261,6 +317,14 @@ export default async (req) => {
       if (wasAdmin) { cfg.ADMIN_USER = nu; await store().setJSON("config/settings", cfg); }
       await store().set(`aliases/${old}`, nu);
       await store().delete(`aliases/${nu}`);
+      if (me.invite) await store().set(`invites/${me.invite}`, nu);
+      const swap = (arr) => (arr || []).map((v) => (v === old ? nu : v));
+      await Promise.all((await allUsers()).filter((x) => x.u !== nu).map((x) => {
+        const before = JSON.stringify([x.friends, x.reqIn, x.reqOut]);
+        x.friends = swap(x.friends); x.reqIn = swap(x.reqIn); x.reqOut = swap(x.reqOut);
+        if (x.invitedBy === old) x.invitedBy = nu;
+        return JSON.stringify([x.friends, x.reqIn, x.reqOut]) !== before ? putUser(x) : null;
+      }));
       const { blobs } = await store().list({ prefix: "aliases/" });
       await Promise.all(blobs.map(async (a) => { if ((await store().get(a.key, { type: "text" })) === old) await store().set(a.key, nu); }));
       await store().delete(`csv/${old}`); await store().delete(`users/${old}`);
@@ -308,19 +372,62 @@ export default async (req) => {
     }
 
     if (path === "flock" && m === "GET") {
-      const { blobs } = await store().list({ prefix: "users/" });
-      const users = (await Promise.all(blobs.map((b) => store().get(b.key, { type: "json" })))).filter(Boolean);
-      const members = users.filter((x) => canSee(x, me) || (me && (x.visibility || "group") !== "private")).map(card);
+      const ownerU = env("ADMIN_USER").toLowerCase() || null;
+      if (!me) {
+        /* signed out: only the founder's public birds, so the site still has something to show */
+        const o = ownerU && (await getUser(ownerU));
+        return json({ owner: ownerU, me: null, members: o && visOf(o) === "public" ? [card(o, null)] : [], requests: { in: [], out: [] } });
+      }
+      await ensureInvite(me);
+      const load = async (arr) => (await Promise.all((arr || []).map(findUser))).filter(Boolean);
+      const [friends, rin, rout] = await Promise.all([load(me.friends), load(me.reqIn), load(me.reqOut)]);
+      const members = [card(me, me), ...friends.filter((x) => x.u !== me.u).map((x) => card(x, me))];
       members.sort((a, b) => (b.owner - a.owner) || ((b.birds?.species || 0) - (a.birds?.species || 0)));
-      return json({ owner: env("ADMIN_USER").toLowerCase() || null, me: me ? publicMe(me) : null, members });
+      return json({ owner: ownerU, me: publicMe(me), members, requests: { in: rin.map(mini), out: rout.map(mini) } });
+    }
+
+    if (path === "find" && m === "GET") {
+      if (!me) return fail(401, "Please sign in.");
+      const q = String(url.searchParams.get("u") || "").trim().toLowerCase().replace(/^@/, "");
+      const x = USERNAME.test(q) ? await findUser(q) : null;
+      if (!x) return fail(404, `No one is called @${q.slice(0, 20)} on BIRB. Check the spelling with them.`);
+      return json({ user: mini(x), status: relation(me, x) });
+    }
+
+    if (path === "invite/new" && m === "POST") {
+      if (!me) return fail(401, "Please sign in.");
+      await ensureInvite(me, true);
+      return json({ me: publicMe(me) });
+    }
+
+    if (path.startsWith("friends/") && m === "POST") {
+      if (!me) return fail(401, "Please sign in.");
+      const b = await jsonBody(req);
+      const other = await findUser(String(b.u || "").trim().toLowerCase().replace(/^@/, ""));
+      if (!other) return fail(404, "No one has that username.");
+      if (other.u === me.u) return fail(400, "That's you.");
+      lists(me); lists(other);
+      const act = path.slice(8);
+      if (act === "request") {
+        if (isFriend(me, other)) { /* already friends */ }
+        else if (me.reqIn.includes(other.u)) befriend(me, other); /* they'd already asked you, so this counts as yes */
+        else { me.reqOut = withOne(me.reqOut, other.u); other.reqIn = withOne(other.reqIn, me.u); }
+      } else if (act === "accept") {
+        if (!me.reqIn.includes(other.u) && !isFriend(me, other)) return fail(400, "That request has been withdrawn.");
+        befriend(me, other);
+      } else if (act === "decline" || act === "cancel" || act === "remove") {
+        /* declining, withdrawing and unfriending are all silent: nobody gets told */
+        unlink(me, other);
+      } else return fail(404, "Not found.");
+      await putUser(other); await putUser(me);
+      return json({ status: relation(me, other), user: mini(other), me: publicMe(me) });
     }
 
     if (path.startsWith("admin/")) {
       if (!me || !isAdmin(me.u)) return fail(404, "Not found.");
       if (path === "admin/users" && m === "GET") {
-        const { blobs } = await store().list({ prefix: "users/" });
-        const users = (await Promise.all(blobs.map((b) => store().get(b.key, { type: "json" })))).filter(Boolean);
-        return json({ users: users.map((x) => ({ ...card(x), joined: x.joined, locked: x.lockUntil > Date.now() })), invite: envRaw("INVITE_CODE") || cfg.INVITE_CODE || "" });
+        const users = await allUsers();
+        return json({ users: users.map((x) => ({ ...card(x, me), birds: x.birds || null, joined: x.joined, locked: x.lockUntil > Date.now(), friend: isFriend(me, x), invitedBy: x.invitedBy || null })), invite: envRaw("INVITE_CODE") || cfg.INVITE_CODE || "" });
       }
       if (path === "admin/invite" && m === "POST") {
         const b = await jsonBody(req);
@@ -342,6 +449,8 @@ export default async (req) => {
       if (path === "admin/remove" && m === "POST") {
         if (target.u === me.u) return fail(400, "You can't remove yourself.");
         await store().delete(`csv/${target.u}`); await store().delete(`users/${target.u}`);
+        if (target.invite) await store().delete(`invites/${target.invite}`);
+        await Promise.all((await allUsers()).map((x) => { if ([x.friends, x.reqIn, x.reqOut].some((a) => (a || []).includes(target.u))) { x.friends = without(x.friends, target.u); x.reqIn = without(x.reqIn, target.u); x.reqOut = without(x.reqOut, target.u); return putUser(x); } }));
         return json({ removed: target.u });
       }
     }
