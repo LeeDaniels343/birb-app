@@ -1769,9 +1769,13 @@ function tooltip({ object, layer }) {
     if (!a) return null;
     return { html: head + `<div style="color:#5c6d72;margin-bottom:6px">${a.n} species · out on ${a.visits} ${a.visits === 1 ? "day" : "days"}</div>` + speciesLines(a.species) + `<div style="color:#1d6b86;margin-top:6px;font-size:12px">${state.area === name && state.areaLevel === lvl ? "Click to show everywhere" : "Click to show only this area"}</div>`, style: TIP_STYLE };
   }
-  if (layer.id === "viz-totem") {
-    const sw = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${famColour(object.fam)};margin-right:6px"></span>`;
-    return { html: `<div style="font-weight:600">${sw}${esc(famName(object.fam))}</div><div style="color:#5c6d72;margin:2px 0 6px">${object.species.size} species · heard ${object.times} ${object.times === 1 ? "time" : "times"}</div>` + speciesLines(object.species, 8) + `<div style="font-size:12px;margin-top:6px">${object.places.map(esc).join("<br>")}</div><div style="color:#1d6b86;margin-top:6px;font-size:12px">Click for details</div>`, style: TIP_STYLE };
+  if (layer.id === "viz-totem" || layer.id === "viz-totem-cap") {
+    const cap = layer.id === "viz-totem-cap", b = cap ? object.latest : object.b;
+    if (!b) return null;
+    const places = cap ? object.placeNames : object.places, col = PLUMAGE[sci2(b.sci)] || famColour(b.fam);
+    const sw = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${col};margin-right:6px"></span>`;
+    const ph = Photos.peek(b.sci);
+    return { html: `${ph ? `<img src="${ph.sq}" alt="" referrerpolicy="no-referrer" style="float:right;width:52px;height:52px;border-radius:50%;object-fit:cover;margin:0 0 4px 10px">` : ""}${cap ? `<div style="color:#5c6d72;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Latest bird here</div>` : ""}<div style="font-weight:600">${sw}${esc(b.name)}</div><div style="color:#5c6d72;margin:2px 0 4px">${esc(famName(b.fam))} · heard here on ${b.days} ${b.days === 1 ? "day" : "days"}${cap && b.last ? ` · last ${esc(fmtDate(b.last.slice(0, 10)))}` : ""}</div><div style="font-size:12px">${places.map(esc).join("<br>")}</div><div style="color:#1d6b86;margin-top:6px;font-size:12px">Click for details</div>`, style: TIP_STYLE };
   }
   if (layer.id === "viz-hab-pads") {
     const sw = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${habColour(object.hab)};margin-right:6px"></span>`;
@@ -1879,23 +1883,34 @@ function buildViz(groups, zoom) {
       if (!fams.has(d.family)) fams.set(d.family, { fam: d.family, recs: new Set(), species: new Map() });
       const f = fams.get(d.family); f.recs.add(d.name + "|" + d.date + "|" + d.locId);
       if (!f.species.has(d.name)) f.species.set(d.name, new Set()); f.species.get(d.name).add(d.date);
-      if (!birds.has(d.name)) birds.set(d.name, { name: d.name, fam: d.family, hab: d.hab.id, tax: d.tax, days: new Set() });
-      birds.get(d.name).days.add(d.date);
+      if (!birds.has(d.name)) birds.set(d.name, { name: d.name, sci: d.sci, fam: d.family, hab: d.hab.id, tax: d.tax, days: new Set(), last: "" });
+      const bb = birds.get(d.name); bb.days.add(d.date);
+      const when = d.date + " " + (d.time || ""); if (when > bb.last) bb.last = when;
     }
     c.fams = [...fams.values()].map((f) => ({ fam: f.fam, times: f.recs.size, species: new Map([...f.species].map(([n, s]) => [n, s.size])) })).sort((a, b) => b.times - a.times);
     c.birds = [...birds.values()].map((b) => ({ ...b, days: b.days.size })).sort((a, b) => (FAMILY_BY_ID.get(a.fam)?.order ?? 99) - (FAMILY_BY_ID.get(b.fam)?.order ?? 99) || a.tax - b.tax);
     c.placeNames = c.places.map((p) => p.loc);
   }
-  // Song totem: stacked discs, one per family, widest and thickest for the families heard most
-  const totem = [];
+  /* Song totem: one layer per bird in its plumage colour, the birds heard on most days at the base.
+     Thickness grows with the square root of days heard, so a 50-day regular is about three times a one-day visitor, never 50.
+     Very busy spots are squashed to a set height, but no layer gets thinner than something you can tap. */
+  const totem = [], TOTEM_MAX = 190, TOTEM_MIN = 6, GAP = 1.5;
   clusters.forEach((c, ci) => {
+    const L = c.birds.slice().sort((a, b) => b.days - a.days || a.tax - b.tax);
+    const raw = L.map((b) => 6 + Math.sqrt(b.days) * 5);
+    const k = Math.min(1, TOTEM_MAX / raw.reduce((n, h) => n + h + GAP, 0));
     let z = 0;
-    c.fams.forEach((f, i) => {
-      const r = mpp * (11 + Math.sqrt(f.times) * 9), h = mpp * (8 + f.times * 2.4);
-      totem.push({ kind: "totem", pos: [c.lng, c.lat, z], r, h, colour: hexRGB(famColour(f.fam)), ...f, places: c.placeNames, i, ci });
-      z += h + mpp * 2.4;
+    L.forEach((b, i) => {
+      /* wider for birds heard more, and a gentle taper from base to top so it always reads as a totem */
+      const hp = Math.max(TOTEM_MIN, raw[i] * k), rp = (13 + Math.sqrt(b.days) * 3.4) * (1.2 - (0.5 * i) / Math.max(1, L.length - 1));
+      const col = PLUMAGE[sci2(b.sci)] || famColour(b.fam);
+      totem.push({ kind: "totem", pos: [c.lng, c.lat, z], r: mpp * rp, h: mpp * hp, rp, mid: z + (mpp * hp) / 2, colour: hexRGB(col), hex: col, b, name: b.name, fam: b.fam, days: b.days, places: c.placeNames, i, ci });
+      z += mpp * (hp + GAP);
     });
     c.totemTop = z;
+    c.totemLayers = totem.filter((t) => t.ci === ci);
+    c.latest = c.birds.reduce((a, b) => (!a || b.last > a.last ? b : a), null);
+    c.label = c.places.length === 1 ? c.places[0].loc : `${c.places.length} spots`;
   });
   // Habitat diorama: a pond, perch trees and a hedgerow standing straight on the map, no bases
   const hab = { flats: [], pads: [], top: [], cyl: [], ball: [], sway: [], crowns: [], birds: [], labels: [] };
@@ -2053,9 +2068,35 @@ function vizLayers(t) {
       onClick: ({ object }) => object && openDetail({ fam: object.fam, cluster: viz.clusters[object.ci] }),
       updateTriggers: { getOrientation: t },
     }));
+    /* the cap is the latest bird heard here, in its colours */
     L.push(new deck.SimpleMeshLayer({
-      id: "viz-totem-cap", data: viz.clusters, mesh: MESH.ball,
-      getPosition: (c) => [c.lng, c.lat, c.totemTop + mpp * 9], getScale: [mpp * 9, mpp * 9, mpp * 9], getColor: [250, 251, 249], material: VIZ_MAT,
+      id: "viz-totem-cap", data: viz.clusters, mesh: MESH.ball, pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 110],
+      getPosition: (c) => [c.lng, c.lat, c.totemTop + mpp * 10], getScale: [mpp * 10, mpp * 10, mpp * 10],
+      getColor: (c) => (c.latest ? hexRGB(PLUMAGE[sci2(c.latest.sci)] || famColour(c.latest.fam)) : [250, 251, 249]), material: VIZ_MAT,
+      onClick: ({ object }) => object && object.latest && openDetail({ fam: object.latest.fam, cluster: object, focus: object.latest.name }),
+    }));
+    /* a name pill above each totem; the one nearest the middle of the screen also labels its top three birds */
+    const W = deckgl && deckgl.width ? deckgl.width : innerWidth, Hh = deckgl && deckgl.height ? deckgl.height : innerHeight;
+    let near = null, nd = Infinity;
+    try {
+      const vp = new deck.WebMercatorViewport({ ...viewState, width: W, height: Hh });
+      for (const c of viz.clusters) { const [x, y] = vp.project([c.lng, c.lat]); const d = Math.hypot(x - W / 2, y - Hh / 2); if (d < nd) { nd = d; near = c; } }
+    } catch (e) {}
+    /* up to three labels, most heard first, kept far enough apart that they never overlap */
+    const side = [];
+    if (near && nd < Math.min(W, Hh) * 0.45) for (const t of near.totemLayers) { if (side.length >= 3) break; if (side.every((s) => Math.abs(s.mid - t.mid) / mpp >= 20)) side.push(t); }
+    const dark = themeName === "night";
+    const LBL = { fontFamily: "'IBM Plex Sans', Helvetica, Arial, sans-serif", characterSet: "auto", billboard: true, background: true, getBackgroundColor: dark ? [19, 32, 42, 235] : [255, 255, 255, 235], getColor: dark ? [231, 238, 243] : [27, 42, 47], getBorderColor: dark ? [44, 66, 82] : [184, 194, 196], getBorderWidth: 1, updateTriggers: { getBackgroundColor: themeName, getColor: themeName, getBorderColor: themeName } };
+    L.push(new deck.TextLayer({
+      ...LBL, id: "viz-totem-name", data: viz.clusters,
+      getPosition: (c) => [c.lng, c.lat, c.totemTop + mpp * 22], getText: (c) => `${c.label} · ${c.birds.length} species`,
+      getSize: 12, fontWeight: 600, backgroundPadding: [8, 4, 8, 4], getTextAnchor: "middle", getAlignmentBaseline: "bottom", getPixelOffset: [0, -6],
+    }));
+    if (side.length) L.push(new deck.TextLayer({
+      ...LBL, id: "viz-totem-side", data: side,
+      getPosition: (d) => [d.pos[0], d.pos[1], d.mid], getText: (d) => `${d.name} · ${d.days} ${d.days === 1 ? "day" : "days"}`,
+      getSize: 11, fontWeight: 500, backgroundPadding: [6, 3, 6, 3], getTextAnchor: "start", getAlignmentBaseline: "center", getPixelOffset: (d) => [d.rp + 10, 0],
+      updateTriggers: { ...LBL.updateTriggers, getPixelOffset: side.map((d) => d.name).join() },
     }));
   }
   if (vizMode === "flock") {
@@ -2616,15 +2657,15 @@ function updateLegend(pm, pb) {
   const who = state.selected.size === 1 ? ` (${[...state.selected][0]} only)` : state.selected.size ? " (picked birds only)" : "";
   if (pm) {
     const titles = {
-      totem: "Song totems: each layer is a bird family, wider and taller the more often you heard it",
+      totem: "Song totems: each layer is a bird in its own colours, thicker the more days you heard it, with your latest bird on top",
       flock: "Flocks: one bird per species, flying higher the more days you heard it",
       habitat: "Habitats: every bird in its pond, woodland or hedgerow scene, in a shade of its family colour",
     };
     $("legend-title").textContent = titles[vizMode];
     const shown = [...new Set((pb.clusters || []).flatMap((c) => c.birds.map((b) => b.fam)))]
       .sort((a, b) => (FAMILY_BY_ID.get(a)?.order ?? 99) - (FAMILY_BY_ID.get(b)?.order ?? 99)).slice(0, 10);
-    $("legend-swatches").innerHTML = shown.map((id) => `<span class="fam" title="${esc(famName(id))}"><i style="background:${famColour(id)}"></i>${esc(famName(id).split(/,| & /)[0])}</span>`).join("");
-    $("legend-note").textContent = vizMode === "totem" ? "Hover a layer to see its birds, click it for details." : vizMode === "habitat" ? "Click a scene or a bird for details." : "Hover a bird for its name, click it for details.";
+    $("legend-swatches").innerHTML = vizMode === "totem" ? "" : shown.map((id) => `<span class="fam" title="${esc(famName(id))}"><i style="background:${famColour(id)}"></i>${esc(famName(id).split(/,| & /)[0])}</span>`).join("");
+    $("legend-note").textContent = vizMode === "totem" ? "Hover or tap a layer to see which bird it is, and the top for the latest bird here." : vizMode === "habitat" ? "Click a scene or a bird for details." : "Hover a bird for its name, click it for details.";
   } else {
     const wardView = viewState.zoom >= PLACE_ZOOM;
     $("legend-title").textContent = wardView ? `Raised wards: species heard per ward${who}` : `Height and colour: species heard per ${unit}${who}`;
