@@ -3800,6 +3800,7 @@ const World = (() => {
   let R = null, S = null, C = null, sun = null, hemi = null, host = null;
   let visible = false, dirty = true, raf = 0, last = 0, T = 0, idle = 0, rebuildTimer = 0;
   let light = "day", spin = !REDUCE_MOTION;
+  let haloTex = null;
   let birds = [], sway = [], song = [], swim = [], flyers = [], peckers = [], ripples = [], notes = [], leaves = [], clouds = [], flies = [], climbers = [], labels = [];
   let PX = -6, PZ = 1.5, PR = 1;
   const tgt = { x: 1, y: 0, z: -1 }, tgtGo = { x: 1, y: 0, z: -1 };
@@ -3927,10 +3928,19 @@ const World = (() => {
       g.userData.wings = [1, -1].map((sd) => { const w = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 6), wm); w.scale.set(1.3, 0.35, 0.55); w.position.set(-0.03, 0.04, sd * 0.12); g.add(w); return w; });
       g.scale.setScalar(big || 1); return g;
     };
-    const addBird = (sp, big, par) => {
+    const addBird = (sp, big, par, flying = false) => {
       let g = null;
-      try { g = BirdLook.three(sp.n, sp.s, sp.fam, big || 1, (c) => M(c)); } catch (e) { g = null; }
+      try { g = BirdLook.three(sp.n, sp.s, sp.fam, big || 1, (c) => M(c), flying); } catch (e) { g = null; }
       if (!g) g = birdMesh(sp.col, big);
+      /* at dusk and night the birbs glow softly in their own colours, so they stand out */
+      if (light !== "day") g.traverse((o) => { if (o.isMesh && o.material && o.material.emissive) { o.material.emissive.copy(o.material.color).lerp(new THREE.Color(0xffffff), 0.35).multiplyScalar(light === "night" ? 0.6 : 0.2); } });
+      /* and at night a soft lantern halo sits behind each one */
+      if (light === "night") {
+        if (!haloTex) { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const x = cv.getContext("2d"), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,240,190,0.75)"); gr.addColorStop(0.45, "rgba(255,226,150,0.28)"); gr.addColorStop(1, "rgba(255,220,140,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); haloTex = new THREE.CanvasTexture(cv); }
+        const h = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+        const bx = new THREE.Box3().setFromObject(g), sz = new THREE.Vector3(), mid = new THREE.Vector3(); bx.getSize(sz); bx.getCenter(mid);
+        h.scale.setScalar(Math.max(0.7, Math.max(sz.x, sz.y) * 1.5)); h.position.copy(mid); h.renderOrder = -1; g.add(h);
+      }
       g.userData.sp = sp; g.userData.s = big || 1;
       g.traverse((o) => { if (o !== g) o.userData.root = g; }); g.userData.root = g;
       birds.push(g); (par || S).add(g); song.push({ g, next: 2 + (rnd() * 12) / sp.d, rate: sp.d }); return g;
@@ -3947,7 +3957,11 @@ const World = (() => {
     for (let i = 0; i < 90; i++) { const x = (rnd() - 0.5) * 30, z = (rnd() - 0.5) * 20; if (Math.hypot((x + 6) / 4, (z - 1.5) / 3) < 1.15 || Math.hypot((x - 1.8) / 6, (z + 4.6) / 4.4) < 1) continue; const h = 0.15 + rnd() * 0.15; add(new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.01, h, 4), M(0x86a46a)), x, h / 2, z); add(new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 4), M(FLW[i % 5])), x, h, z); }
 
     // pond
-    const swimmers = by.pond.filter((b) => b.fam === "water"), pondFly = by.pond.filter((b) => b.fam === "coastal" || b.fam === "aerial"), edge = by.pond.filter((b) => !swimmers.includes(b) && !pondFly.includes(b));
+    /* waterbirds swim; herons and waders stand still in the shallows; gulls, swallows and the like fly over */
+    const habitOf = (b) => { try { return BirdLook.habit(b.n, b.s, b.fam); } catch (e) { return b.fam === "water" ? "swim" : "fly"; } };
+    const swimmers = by.pond.filter((b) => habitOf(b) === "swim"), waders = by.pond.filter((b) => habitOf(b) === "stand");
+    const pondFly = by.pond.filter((b) => !swimmers.includes(b) && !waders.includes(b) && (b.fam === "coastal" || b.fam === "aerial"));
+    const edge = by.pond.filter((b) => !swimmers.includes(b) && !waders.includes(b) && !pondFly.includes(b));
     const pr = 0.85 + Math.min(1, swimmers.length / 10) * 0.25; PR = pr;
     const pw = (a) => 1 + 0.13 * Math.sin(a * 3) + 0.08 * Math.cos(a * 5);
     blob(PX, PZ, 3.6 * pr, 2.75 * pr, 0.012, 0xc8dbc2, pw); blob(PX, PZ, 3.25 * pr, 2.45 * pr, 0.02, 0xa6d1e3, pw); blob(PX, PZ, 2.9 * pr, 2.15 * pr, 0.026, 0x86bfd9, pw);
@@ -3973,9 +3987,11 @@ const World = (() => {
     const bench = new THREE.Group(), bm = M(0xa88c6c);
     [[0, 0.38, 0, 1.4, 0.06, 0.4], [0, 0.68, -0.19, 1.4, 0.28, 0.05]].forEach(([x, y, z, w, h, d]) => { const p = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bm); p.position.set(x, y, z); p.castShadow = true; bench.add(p); });
     [-0.6, 0.6].forEach((x) => { const l = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.38, 0.38), M(0x55606a)); l.position.set(x, 0.19, 0); bench.add(l); });
-    bench.position.set(-2.1, 0, 5.6); bench.rotation.y = -0.35; S.add(bench);
+    /* beside the path, not on it, looking across to the pond */
+    bench.position.set(-5.6, 0, 7.75); bench.rotation.y = Math.PI + 0.1; S.add(bench);
     swimmers.forEach((b, i) => { const big = /Swan|Goose/.test(b.n) ? 1.4 : 1; swim.push({ g: addBird(b, big), r: 0.35 + ((i * 0.618) % 1) * 0.6, a: i * 2.4, sp: (i % 2 ? 1 : -1) * (0.1 + (i % 3) * 0.04) }); });
-    pondFly.forEach((b, i) => flyers.push({ g: addBird(b, 1.1), cx: PX, cz: PZ, r: 3.2 + i * 0.9, h: 4.2 + (i % 3) * 0.8, a: i * 3, sp: 0.32 + (i % 3) * 0.08 }));
+    waders.forEach((b, i) => { const [x, z] = rim(0.9 + i * 0.75, 0.84); const g = addBird(b); g.position.set(x, 0.1, z); g.rotation.y = 2.8 - i * 0.9; g.userData.home = g.position.clone(); });
+    pondFly.forEach((b, i) => flyers.push({ g: addBird(b, 1.1, null, true), cx: PX, cz: PZ, r: 3.2 + i * 0.9, h: 4.2 + (i % 3) * 0.8, a: i * 3, sp: 0.32 + (i % 3) * 0.08 }));
     edge.forEach((b, i) => { const [x, z] = rim(-0.45 + i * 0.45, 1.06); const g = addBird(b); g.position.set(x, 0.12, z); g.rotation.y = 2.4 - i; g.userData.home = g.position.clone(); });
     label("Pond and wetland", `${by.pond.length}`, PX, 2.6, PZ + 2.9 * pr);
 
@@ -4022,11 +4038,11 @@ const World = (() => {
     const field = new THREE.Mesh(new THREE.PlaneGeometry(7, 3), M(0xece3c6)); field.rotation.x = -Math.PI / 2; field.position.set(0, 0.012, 2.1); field.receiveShadow = true; hedge.add(field);
     for (let i = 0; i < 9; i++) { const fr = new THREE.Mesh(new THREE.PlaneGeometry(6.8, 0.05), M(0xdcd1ae)); fr.rotation.x = -Math.PI / 2; fr.position.set(0, 0.016, 0.8 + i * 0.32); hedge.add(fr); }
     for (let i = 0; i < 30; i++) { const x = -3 + rnd() * 6, z = 0.55 + rnd() * 0.4, h = 0.14 + rnd() * 0.16; const st = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.009, h, 4), M(0x86a46a)); st.position.set(x, h / 2, z); hedge.add(st); const fh = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), M(FLW[i % 4])); fh.position.set(x, h, z); hedge.add(fh); }
-    const fGround = by.farm.filter((b) => b.fam === "corvids" || b.fam === "pigeons" || b.fam === "game"), fAir = by.farm.filter((b) => b.fam === "aerial");
+    const fGround = by.farm.filter((b) => b.fam === "corvids" || b.fam === "pigeons" || b.fam === "game" || habitOf(b) === "stand"), fAir = by.farm.filter((b) => b.fam === "aerial");
     const fPerch = by.farm.filter((b) => !fGround.includes(b) && !fAir.includes(b));
     fPerch.forEach((b, i) => { const n = fPerch.length, row = i % 2 && n > 6 ? -0.25 : 0; const g = addBird(b, 1, hedge); g.position.set(n === 1 ? 0 : -2.4 + (i / (n - 1)) * 4.8, 1.02 + (row ? -0.08 : 0), row); g.rotation.y = i % 2 ? 0.5 : -0.5; g.userData.home = g.position.clone(); });
     fGround.forEach((b, i) => { const g = addBird(b, 1, hedge); g.position.set(-1.6 + ((i * 0.618) % 1) * 3.2, 0.15, 1.5 + (i % 3) * 0.45); g.rotation.y = i * 2; peckers.push({ g, ph: i * 2 }); });
-    fAir.forEach((b, i) => flyers.push({ g: addBird(b), cx: HX, cz: HZ + 1.5, r: 2.4 + i * 0.6, h: 2.6 + (i % 2) * 0.6, a: i * 2, sp: 0.6 + (i % 2) * 0.15 }));
+    fAir.forEach((b, i) => flyers.push({ g: addBird(b, 1, null, true), cx: HX, cz: HZ + 1.5, r: 2.4 + i * 0.6, h: 2.6 + (i % 2) * 0.6, a: i * 2, sp: 0.6 + (i % 2) * 0.15 }));
     label("Farmland and hedgerow", `${by.farm.length}`, HX + 0.6, 2.5, HZ + 3.6);
 
     // sky, leaves and fireflies
