@@ -2224,8 +2224,13 @@ const BirdLook = (() => {
     cache.set(key, out); return out;
   }
   /* builds the bird as a Three.js group: x forward, y up, feet 0.15 below the origin (or sitting on the water) */
-  function three(name, sci, fam, big = 1, mat) {
-    const T = THREE, L = look(name, sci, fam), f = L.F, c = L.P;
+  const SWIM = new Set(["duck", "goose", "swan", "coot", "grebe"]), STAND = new Set(["heron", "wader", "curlew", "plover", "cormorant"]);
+  /* how a bird spends its time at street level: swimming in the pond circle, standing at its edge, or flying overhead */
+  const habit = (name, sci, fam) => { const f = look(name, sci, fam).form; return SWIM.has(f) ? "swim" : STAND.has(f) ? "stand" : "fly"; };
+  function three(name, sci, fam, big = 1, mat, flying = false) {
+    const T = THREE, L = look(name, sci, fam), c = L.P;
+    /* in flight: body level, legs tucked away, head forward */
+    const f = flying ? { ...L.F, pitch: 0, legs: 0, float: 0, hp: [L.F.body[0] * 0.95 + L.F.head * 0.3, L.F.body[1] * 0.45], neck: L.F.neck && L.form !== "heron" ? 1 : 0 } : L.F;
     const M = mat || ((col) => new T.MeshLambertMaterial({ color: col }));
     const root = new T.Group(), g = new T.Group(); root.add(g);
     const ell = (rx, ry, rz, col, x, y, z, parent = g, seg = 12) => { if (LITE) seg = Math.min(seg, 7); const m = new T.Mesh(new T.SphereGeometry(1, seg, Math.max(5, seg - 4)), M(col)); m.scale.set(rx, ry, rz); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
@@ -2291,12 +2296,15 @@ const BirdLook = (() => {
     return root;
   }
   /* the same bird as a single coloured mesh for deck.gl (z up), cached per species */
-  function deckMesh(name, sci, fam) {
-    const key = name + "|" + sci;
+  function deckMesh(name, sci, fam, flying = false) {
+    const key = name + "|" + sci + (flying ? "|fly" : "");
     if (meshCache.has(key)) return meshCache.get(key);
     if (typeof THREE === "undefined") return null;
-    const T = THREE, grp = three(name, sci, fam, 1.3, (col) => new T.MeshBasicMaterial({ color: col }));
+    const T = THREE, grp = three(name, sci, fam, 1.3, (col) => new T.MeshBasicMaterial({ color: col }), flying);
     grp.updateMatrixWorld(true);
+    /* where the flapping wings attach: the shoulder, in the mesh's own units (z up, feet at 0) */
+    const v = new T.Vector3(); grp.userData.wings[0].getWorldPosition(v);
+    const wingAt = [v.x, v.y + 0.15];
     const pos = [], nor = [], col = [];
     grp.traverse((o) => {
       if (!o.isMesh) return;
@@ -2310,10 +2318,11 @@ const BirdLook = (() => {
     });
     grp.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
     const mesh = { positions: { value: new Float32Array(pos), size: 3 }, normals: { value: new Float32Array(nor), size: 3 }, colors: { value: new Float32Array(col), size: 3 } };
-    meshCache.set(key, mesh); return mesh;
+    meshCache.set(key, mesh); meshCache.set(key + "|wing", wingAt); return mesh;
   }
   const wingColour = (name, sci, fam) => hexRGB(look(name, sci, fam).P.w);
-  return { look, three, deckMesh, wingColour, FORMS: F, PLUMAGE: P };
+  const wingAt = (name, sci, fam, flying) => { deckMesh(name, sci, fam, flying); return meshCache.get(name + "|" + sci + (flying ? "|fly" : "") + "|wing") || [0, 0.08]; };
+  return { look, three, deckMesh, wingColour, wingAt, habit, FORMS: F, PLUMAGE: P };
 })();
 
 const MESH = {
@@ -2333,12 +2342,12 @@ const VIZ_MAT = { ambient: 0.55, diffuse: 0.6, shininess: 20, specularColor: [40
 /* street-level birds: one layer per species, each with its own shape and plumage (falls back to the simple bird) */
 function speciesBirdLayers(idBase, pose, t, onClick) {
   const groups = new Map();
-  for (const d of pose) { const k = d.b.name; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(d); }
-  return [...groups].map(([nm, arr]) => {
-    const b0 = arr[0].b; let mesh = null;
-    try { mesh = BirdLook.deckMesh(nm, b0.sci, b0.fam); } catch (e) { mesh = null; }
+  for (const d of pose) { const fl = !!d.flying, k = d.b.name + (fl ? "|fly" : ""); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(d); }
+  return [...groups].map(([k, arr]) => {
+    const b0 = arr[0].b, fl = !!arr[0].flying; let mesh = null;
+    try { mesh = BirdLook.deckMesh(b0.name, b0.sci, b0.fam, fl); } catch (e) { mesh = null; }
     return new deck.SimpleMeshLayer({
-      id: idBase + "-" + nm, data: arr, mesh: mesh || MESH.bird, pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 120],
+      id: idBase + "-" + k, data: arr, mesh: mesh || MESH.bird, pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 120],
       getPosition: (d) => d.pos, getScale: (d) => [d.b.s, d.b.s, d.b.s], getOrientation: (d) => [0, d.yaw, 0],
       getColor: mesh ? [255, 255, 255] : (d) => d.b.colour, material: VIZ_MAT, onClick,
       updateTriggers: { getPosition: t, getOrientation: t },
@@ -2346,6 +2355,12 @@ function speciesBirdLayers(idBase, pose, t, onClick) {
   });
 }
 const wingCol = (b) => { try { return BirdLook.wingColour(b.name, b.sci, b.fam); } catch (e) { return b.colour; } };
+/* flapping wings sit at the bird's own shoulder height, moved forward or back with its heading */
+const wingPos = (d) => {
+  let at = [0, 0.08]; try { at = BirdLook.wingAt(d.b.name, d.b.sci, d.b.fam, true); } catch (e) {}
+  const s = d.b.s, yaw = (d.yaw * Math.PI) / 180, [lng, lat] = offsetLL(d.pos[0], d.pos[1], Math.cos(yaw) * at[0] * s, Math.sin(yaw) * at[0] * s);
+  return [lng, lat, d.pos[2] + at[1] * s];
+};
 let vizMode = "totem";
 try { const v = localStorage.getItem("birdmap-viz"); if (["totem", "flock", "habitat"].includes(v)) vizMode = v; else if (v === "tree") vizMode = "habitat"; } catch (e) {}
 let viz = { clusters: [], mpp: 1, totem: [], hab: { flats: [], pads: [], top: [], cyl: [], ball: [], sway: [], crowns: [], birds: [], labels: [] }, flock: [] };
@@ -2519,15 +2534,25 @@ function buildViz(groups, zoom) {
   });
   // Flock: one bird per species circling above the spot, higher for birds heard on more days
   const flock = [];
-  clusters.forEach((c) => c.birds.forEach((b, k) => {
-    flock.push({ kind: "bird", c, R: mpp * (40 + (k % 5) * 17 + (k % 3) * 5), H: mpp * (45 + b.days * 24 + (k % 4) * 6), a0: k * 2.399, sp: 0.3 + ((k * 37) % 10) / 34, ph: k * 1.7, s: mpp * 34, colour: hexRGB(famColour(b.fam)), ...b, places: c.placeNames });
-  }));
+  clusters.forEach((c) => {
+    let sw = 0, st = 0;
+    const nSwim = c.birds.filter((b) => { try { return BirdLook.habit(b.name, b.sci, b.fam) === "swim"; } catch (e) { return false; } }).length;
+    c.pondR = mpp * (22 + Math.max(0, nSwim - 3) * 3);
+    const grow = c.pondR / (mpp * 22);
+    c.birds.forEach((b, k) => {
+    let habit = "fly"; try { habit = BirdLook.habit(b.name, b.sci, b.fam); } catch (e) {}
+    /* ducks and other waterbirds swim inside the circle; herons and waders stand around its edge; the rest fly */
+    const placed = habit === "swim" ? { R: mpp * (6 + (sw % 3) * 5) * grow, H: mpp * 0.5, sp: (sw % 2 ? 1 : -1) * (0.08 + (sw % 3) * 0.03), a0: (sw++) * 2.399 }
+      : habit === "stand" ? { R: c.pondR + mpp * (5 + (st % 2) * 4), H: 0, sp: 0, a0: 0.6 + (st++) * 1.9 } : null;
+    flock.push({ kind: "bird", c, habit, R: mpp * (40 + (k % 5) * 17 + (k % 3) * 5), H: mpp * (45 + b.days * 24 + (k % 4) * 6), a0: k * 2.399, sp: 0.3 + ((k * 37) % 10) / 34, ph: k * 1.7, s: mpp * 34, ...(placed || {}), colour: hexRGB(famColour(b.fam)), ...b, places: c.placeNames });
+    });
+  });
   viz = { clusters, mpp, totem, hab, flock };
 }
 function vizLayers(t) {
   if (!(viewState.zoom >= MODEL_ZOOM) || !viz.clusters.length) return [];
   const mpp = viz.mpp, L = [];
-  const ground = viz.clusters.map((c) => ({ pos: [c.lng, c.lat] }));
+  const ground = viz.clusters.map((c) => ({ pos: [c.lng, c.lat], r: c.pondR || mpp * 22, pond: viz.flock.some((b) => b.c === c && b.habit === "swim") }));
   if (vizMode === "totem") {
     L.push(new deck.ScatterplotLayer({
       id: "viz-ripples", data: viz.clusters.flatMap((c) => [0, 1, 2].map((k) => ({ c, k }))),
@@ -2576,18 +2601,21 @@ function vizLayers(t) {
   }
   if (vizMode === "flock") {
     L.push(new deck.ScatterplotLayer({
-      id: "viz-nest", data: ground, getPosition: (d) => d.pos, radiusUnits: "meters", getRadius: mpp * 22,
-      stroked: true, filled: true, getFillColor: [29, 107, 134, 40], getLineColor: [29, 107, 134, 160], lineWidthUnits: "pixels", getLineWidth: 1.5,
+      id: "viz-nest", data: ground, getPosition: (d) => d.pos, radiusUnits: "meters", getRadius: (d) => d.r,
+      stroked: true, filled: true, getFillColor: (d) => (d.pond ? [96, 168, 205, 120] : [29, 107, 134, 40]), getLineColor: (d) => (d.pond ? [70, 140, 180, 200] : [29, 107, 134, 160]), lineWidthUnits: "pixels", getLineWidth: 1.5,
     }));
     const pose = viz.flock.map((b) => {
       const a = b.a0 + t * b.sp;
       const p = offsetLL(b.c.lng, b.c.lat, Math.cos(a) * b.R, Math.sin(a) * b.R);
-      return { b, pos: [...p, b.H + Math.sin(t * 1.3 + b.ph) * mpp * 4], yaw: (a * 180) / Math.PI + 90, flap: Math.sin(t * 11 + b.ph) * 38 };
+      if (b.habit === "swim") return { b, pos: [...p, b.H + Math.sin(t * 2 + b.ph) * mpp * 0.4], yaw: (a * 180) / Math.PI + (b.sp >= 0 ? 90 : -90), flap: 0 };
+      if (b.habit === "stand") return { b, pos: [...p, 0], yaw: (a * 180) / Math.PI + 200 + Math.sin(t * 0.4 + b.ph) * 12, flap: 0 };
+      return { b, flying: true, pos: [...p, b.H + Math.sin(t * 1.3 + b.ph) * mpp * 4], yaw: (a * 180) / Math.PI + 90, flap: Math.sin(t * 11 + b.ph) * 38 };
     });
+    const flyingF = pose.filter((d) => d.flying);
     L.push(...speciesBirdLayers("viz-flock", pose, t, ({ object }) => object && openDetail({ fam: object.b.fam, cluster: object.b.c, focus: object.b.name })));
     ["L", "R"].forEach((side) => L.push(new deck.SimpleMeshLayer({
-      id: "viz-flock-wing" + side, data: pose, mesh: MESH["wing" + side],
-      getPosition: (d) => [d.pos[0], d.pos[1], d.pos[2] + d.b.s * 0.22], getScale: (d) => [d.b.s, d.b.s, d.b.s],
+      id: "viz-flock-wing" + side, data: flyingF, mesh: MESH["wing" + side],
+      getPosition: wingPos, getScale: (d) => [d.b.s, d.b.s, d.b.s],
       getOrientation: (d) => [0, d.yaw, side === "L" ? d.flap : -d.flap], getColor: (d) => wingCol(d.b), material: VIZ_MAT,
       updateTriggers: { getPosition: t, getOrientation: t },
     })));
@@ -2619,7 +2647,7 @@ function vizLayers(t) {
       }
       if (b.mode === "fly") {
         const a = b.a0 + t * b.sp;
-        return { b, pos: [...offsetLL(b.cx[0], b.cx[1], Math.cos(a) * b.r * 1.2, Math.sin(a) * b.r * 0.9), b.z + Math.sin(t * 1.3 + b.ph) * b.s * 0.15], yaw: (a * 180) / Math.PI + 90, flap: Math.sin(t * 9 + b.ph) * 34 };
+        return { b, flying: true, pos: [...offsetLL(b.cx[0], b.cx[1], Math.cos(a) * b.r * 1.2, Math.sin(a) * b.r * 0.9), b.z + Math.sin(t * 1.3 + b.ph) * b.s * 0.15], yaw: (a * 180) / Math.PI + 90, flap: Math.sin(t * 9 + b.ph) * 34 };
       }
       return { b, pos: b.pos, yaw: b.yaw, flap: 0 };
     });
@@ -2627,7 +2655,7 @@ function vizLayers(t) {
     const flyers = pose.filter((d) => d.b.mode === "fly");
     ["L", "R"].forEach((side) => L.push(new deck.SimpleMeshLayer({
       id: "viz-hab-wing" + side, data: flyers, mesh: MESH["wing" + side],
-      getPosition: (d) => [d.pos[0], d.pos[1], d.pos[2] + d.b.s * 0.22], getScale: (d) => [d.b.s, d.b.s, d.b.s],
+      getPosition: wingPos, getScale: (d) => [d.b.s, d.b.s, d.b.s],
       getOrientation: (d) => [0, d.yaw, side === "L" ? d.flap : -d.flap], getColor: (d) => wingCol(d.b), material: VIZ_MAT,
       updateTriggers: { getPosition: t, getOrientation: t },
     })));
@@ -3156,7 +3184,7 @@ function updateLegend(pm, pb) {
   if (pm) {
     const titles = {
       totem: "Song totems: each layer is a bird family, thicker the more often you heard it, with your latest bird on top",
-      flock: "Flocks: one bird per species, flying higher the more days you heard it",
+      flock: "Flocks: one bird per species. Waterbirds swim in the pond, herons and waders stand at its edge, and the rest fly higher the more days you heard them",
       habitat: "Habitats: every bird in its pond, woodland or hedgerow scene, in a shade of its family colour",
     };
     $("legend-title").textContent = titles[vizMode];
