@@ -4,6 +4,7 @@ import { getStore } from "@netlify/blobs";
 import crypto from "node:crypto";
 import towns from "./towns.mjs";
 import RARE from "./rare.mjs";
+import WORDS from "./words.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -73,6 +74,15 @@ function verify(token) {
   if (want.length !== mac.length || !crypto.timingSafeEqual(Buffer.from(want), Buffer.from(mac))) return null;
   try { const p = JSON.parse(Buffer.from(body, "base64url").toString()); return p.exp > Date.now() ? p : null; } catch { return null; }
 }
+/* recovery phrases: six easy words, stored only as a salted hash like a passcode */
+const makePhrase = () => Array.from({ length: 6 }, () => WORDS[crypto.randomInt(WORDS.length)]).join(" ");
+const normPhrase = (p) => String(p || "").toLowerCase().replace(/[^a-z]+/g, " ").trim();
+function setPhrase(user) { const phrase = makePhrase(), salt = crypto.randomBytes(16).toString("base64"); user.rec = { salt, hash: hashPass(phrase, salt), made: new Date().toISOString() }; return phrase; }
+const phraseOk = (user, p) => !!user.rec && hashPass(normPhrase(p), user.rec.salt) === user.rec.hash;
+/* failed passcode and phrase tries share one lockout */
+async function failTry(user) { user.fails = (user.fails || 0) + 1; if (user.fails >= 5) { user.lockUntil = Date.now() + 15 * 60000; user.fails = 0; } await putUser(user); }
+const locked = (user) => (user.lockUntil > Date.now() ? `Too many wrong tries. Try again in ${Math.ceil((user.lockUntil - Date.now()) / 60000)} minutes.` : "");
+
 const SESSION_DAYS = 180;
 const tokenFor = (user) => sign({ u: user.u, v: user.v || 1, exp: Date.now() + SESSION_DAYS * 864e5 });
 
@@ -133,6 +143,7 @@ const publicMe = (user) => ({
   u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: visOf(user),
   admin: isAdmin(user.u), birds: user.birds || null, joined: user.joined, mustChange: !!user.mustChange, favourite: user.favourite || null,
   invite: user.invite || null, requests: (user.reqIn || []).length, friends: (user.friends || []).length,
+  hasRecovery: !!user.rec, hidden: user.hidden || [],
 });
 const canSee = (owner, viewer) => {
   const vis = visOf(owner);
@@ -168,6 +179,12 @@ async function notify(u, item, mergeBirds = false) {
   await store().setJSON(`inbox/${u}`, box);
 }
 const speciesIn = (csv) => { const m = new Map(); for (const r of toObjs(csv).objs) if (r["Common Name"]) m.set(r["Common Name"], r["Scientific Name"] || ""); return m; };
+const visibleRows = (user, objs) => { const h = new Set(user.hidden || []); return h.size ? objs.filter((r) => !h.has(r["Common Name"])) : objs; };
+function hideFromCsv(user, csv) {
+  if (!(user.hidden || []).length) return csv;
+  const { head, objs } = toObjs(csv);
+  return [head.join(","), ...visibleRows(user, objs).map((r) => head.map((h) => cell(r[h] || "")).join(","))].join("\n");
+}
 const isRare = (sci) => RARE.has(String(sci || "").split(" ").slice(0, 2).join(" "));
 
 /* ---------- CSV clean-up ---------- */
@@ -285,13 +302,14 @@ export default async (req) => {
       const user = { u, name: String(b.name || u).slice(0, 40), salt, hash: hashPass(String(b.passcode), salt), v: 1, joined: new Date().toISOString(), visibility: isAdmin(u) ? "public" : "friends", avatar: cleanAvatar(b.avatar), fails: 0, lockUntil: 0, friends: [], reqIn: [], reqOut: [], invitedBy: inv.by };
       await store().delete(`aliases/${u}`);
       /* the person who invited you, plus Lee, who starts as everyone's friend (you can remove him) */
+      const recovery = setPhrase(user);
       const firsts = [...new Set([inv.by, env("ADMIN_USER").toLowerCase()])].filter((x) => x && x !== u);
       const told = [];
       for (const f of firsts) { const other = await findUser(f); if (other) { befriend(user, other); await putUser(other); told.push(other.u); } }
       await putUser(user);
       for (const t of told) await notify(t, { kind: "joined", by: mini(user), viaYou: t === inv.by });
       await ensureInvite(user);
-      return json({ token: tokenFor(user), me: publicMe(user) }, 201);
+      return json({ token: tokenFor(user), me: publicMe(user), recovery }, 201);
     }
 
     /* who an invite link is from, so the welcome card can say so; shows only their name and bird */
@@ -317,10 +335,51 @@ export default async (req) => {
       return json({ token: tokenFor(user), me: publicMe(user) });
     }
 
+    /* forgotten passcode: username + recovery phrase + a new passcode. The phrase is replaced once used. */
+    if (path === "recover" && m === "POST") {
+      const b = await jsonBody(req);
+      const NO = "That username and recovery phrase don't match. If you never saved a phrase, ask Lee to reset your passcode.";
+      const user = await findUser(String(b.username || "").trim().toLowerCase());
+      if (!user || !user.rec) return fail(401, NO);
+      if (locked(user)) return fail(429, locked(user));
+      if (!phraseOk(user, b.phrase)) { await failTry(user); return fail(401, NO); }
+      if (String(b.passcode || "").length < 6) return fail(400, "Passcodes need at least 6 characters.");
+      user.salt = crypto.randomBytes(16).toString("base64"); user.hash = hashPass(String(b.passcode), user.salt);
+      user.v = (user.v || 1) + 1; user.fails = 0; user.lockUntil = 0; user.mustChange = false;
+      const recovery = setPhrase(user);
+      await putUser(user);
+      return json({ token: tokenFor(user), me: publicMe(user), recovery });
+    }
+
+    /* anonymous problem reports from the app, so Lee can see what breaks on which phones */
+    if (path === "report" && m === "POST") {
+      const raw = await req.text();
+      if (raw.length > 6000) return json({ ok: true });
+      let b = {}; try { b = JSON.parse(raw); } catch { return json({ ok: true }); }
+      const cut = (v, n) => String(v ?? "").slice(0, n);
+      const item = { t: new Date().toISOString(), kind: cut(b.kind, 30), msg: cut(b.msg, 300), where: cut(b.where, 300), ua: cut(b.ua, 220), gpu: cut(b.gpu, 140), mem: Number(b.mem) || 0, lite: !!b.lite, why: cut(b.why, 20), view: cut(b.view, 40), signedIn: !!b.signedIn };
+      const key = `reports/${item.t.slice(0, 10)}`;
+      const day = (await store().get(key, { type: "json" })) || [];
+      if (day.length < 400) { day.push(item); await store().setJSON(key, day); }
+      return json({ ok: true });
+    }
+
     const me = await sessionUser(req);
 
     if (path === "me") {
       if (!me) return fail(401, "Please sign in.");
+      if (m === "DELETE") {
+        const b = await jsonBody(req);
+        if (locked(me)) return fail(429, locked(me));
+        if (hashPass(String(b.passcode || ""), me.salt) !== me.hash) { await failTry(me); return fail(401, "That passcode isn't right."); }
+        if (isAdmin(me.u)) return fail(400, "You're the admin, so your account can't be deleted from here.");
+        await store().delete(`csv/${me.u}`); await store().delete(`users/${me.u}`); await store().delete(`inbox/${me.u}`);
+        if (me.invite) await store().delete(`invites/${me.invite}`);
+        const { blobs } = await store().list({ prefix: "aliases/" });
+        await Promise.all(blobs.map(async (a) => { if ((await store().get(a.key, { type: "text" })) === me.u) await store().delete(a.key); }));
+        await Promise.all((await allUsers()).map((x) => { if ([x.friends, x.reqIn, x.reqOut].some((a) => (a || []).includes(me.u))) { x.friends = without(x.friends, me.u); x.reqIn = without(x.reqIn, me.u); x.reqOut = without(x.reqOut, me.u); return putUser(x); } }));
+        return json({ deleted: true });
+      }
       if (m === "GET") { await ensureInvite(me); return json({ me: publicMe(me) }); }
       if (m === "PUT") {
         const b = await jsonBody(req);
@@ -331,6 +390,35 @@ export default async (req) => {
         await putUser(me);
         return json({ me: publicMe(me) });
       }
+    }
+
+    if (path === "recovery" && m === "POST") {
+      if (!me) return fail(401, "Please sign in.");
+      const b = await jsonBody(req);
+      if (locked(me)) return fail(429, locked(me));
+      if (hashPass(String(b.passcode || ""), me.salt) !== me.hash) { await failTry(me); return fail(401, "That passcode isn't right."); }
+      const recovery = setPhrase(me); me.fails = 0; await putUser(me);
+      return json({ me: publicMe(me), recovery });
+    }
+
+    if (path === "export" && m === "GET") {
+      if (!me) return fail(401, "Please sign in.");
+      const csv = (await store().get(`csv/${me.u}`, { type: "text" })) || "";
+      const { salt, hash, rec, fails, lockUntil, v, ...profile } = me;
+      return json({ exported: new Date().toISOString(), profile, birdsCsv: csv });
+    }
+
+    /* hide a bird Merlin got wrong: it disappears from your map and your friends', and your counts update */
+    if (path === "hide" && m === "POST") {
+      if (!me) return fail(401, "Please sign in.");
+      const b = await jsonBody(req);
+      const name = String(b.name || "").slice(0, 80);
+      if (!name) return fail(400, "Which bird?");
+      me.hidden = b.hide === false ? without(me.hidden, name) : withOne(me.hidden || [], name);
+      const csv = await store().get(`csv/${me.u}`, { type: "text" });
+      if (csv && me.birds) me.birds = { ...me.birds, ...statsOf(visibleRows(me, toObjs(csv).objs), me.birds.privatePlaces || 0) };
+      await putUser(me);
+      return json({ me: publicMe(me) });
     }
 
     if (path === "username" && m === "POST") {
@@ -380,8 +468,9 @@ export default async (req) => {
         const owner = await findUser(String(url.searchParams.get("u") || "").toLowerCase());
         if (!owner || !owner.birds) return fail(404, "No birds uploaded yet.");
         if (!canSee(owner, me)) return fail(403, owner.visibility === "private" ? "These birds are private." : "Sign in to see these birds.");
-        const csv = await store().get(`csv/${owner.u}`, { type: "text" });
-        if (!csv) return fail(404, "No birds uploaded yet.");
+        const csv0 = await store().get(`csv/${owner.u}`, { type: "text" });
+        if (!csv0) return fail(404, "No birds uploaded yet.");
+        const csv = hideFromCsv(owner, csv0);
         return new Response(csv, { headers: { "content-type": "text/csv; charset=utf-8", "cache-control": "no-store" } });
       }
       if (!me) return fail(401, "Please sign in.");
@@ -396,8 +485,9 @@ export default async (req) => {
         if (prev && !replace) res = mergeCSV(prev, res.csv, res.stats.privatePlaces);
         else res.stats = { ...res.stats, added: res.stats.rows, newSpecies: [], replaced: true };
         await store().set(`csv/${me.u}`, res.csv);
-        const after = speciesIn(res.csv), first = !prev;
-        const fresh = [...after.keys()].filter((n) => !before.has(n));
+        const after = speciesIn(res.csv), first = !prev, hid = new Set(me.hidden || []);
+        const fresh = [...after.keys()].filter((n) => !before.has(n) && !hid.has(n));
+        if (hid.size) res.stats = { ...res.stats, ...statsOf(visibleRows(me, toObjs(res.csv).objs), res.stats.privatePlaces || 0) };
         const rare = fresh.filter((n) => isRare(after.get(n)));
         res.stats.rare = rare;
         me.birds = { ...res.stats, updated: new Date().toISOString() };
@@ -486,6 +576,11 @@ export default async (req) => {
       if (path === "admin/users" && m === "GET") {
         const users = await allUsers();
         return json({ users: users.map((x) => ({ ...card(x, me), birds: x.birds || null, joined: x.joined, locked: x.lockUntil > Date.now(), friend: isFriend(me, x), invitedBy: x.invitedBy || null })), invite: envRaw("INVITE_CODE") || cfg.INVITE_CODE || "" });
+      }
+      if (path === "admin/reports" && m === "GET") {
+        const out = [];
+        for (let i = 0; i < 14; i++) { const d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10); const day = await store().get(`reports/${d}`, { type: "json" }); if (day) out.push(...day); }
+        return json({ reports: out.sort((a, b) => (a.t < b.t ? 1 : -1)) });
       }
       if (path === "admin/invite" && m === "POST") {
         const b = await jsonBody(req);

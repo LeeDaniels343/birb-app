@@ -7,6 +7,19 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="BIRB app">
 <title>BIRB app</title>
+<meta name="description" content="A living map of the birds you hear with Merlin Sound ID. Turn your eBird list into a 3D map, a habitat world and a collection to fill, and join your friends' flock.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BIRB">
+<meta property="og:title" content="BIRB · a living map of the birds you hear">
+<meta property="og:description" content="Turn the birds you hear with Merlin Sound ID into a 3D map, a habitat world and a collection to fill. Join your friends' flock.">
+<meta property="og:url" content="https://birb-app.netlify.app/">
+<meta property="og:image" content="https://birb-app.netlify.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The BIRB map of the UK with a few birbs">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
@@ -448,6 +461,32 @@ body.night .fr-row .btns .primary { color: #0f191d; }
 .mem-pop[hidden] { display: none; }
 .mem-card { position: relative; width: min(420px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; background: var(--surface); color: var(--ink); border-radius: 22px; border: 2px solid var(--mrim, var(--line)); box-shadow: 0 30px 70px rgba(0,0,0,.35), 0 0 0 6px color-mix(in srgb, var(--mrim, transparent) 18%, transparent); animation: memPop .32s cubic-bezier(.2, 1.4, .4, 1); }
 @keyframes memPop { from { opacity: 0; transform: translateY(18px) scale(.86); } to { opacity: 1; transform: none; } }
+.phrase { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 6px; }
+.phrase span { display: flex; align-items: baseline; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font-family: var(--font-mono); font-size: 16px; font-weight: 500; color: var(--ink); }
+.phrase small { color: var(--muted); font-size: 11px; }
+@media (max-width: 420px) { .phrase { grid-template-columns: repeat(2, 1fr); } }
+.nudge { display: flex; gap: 12px; align-items: center; padding: 11px 12px; margin: 10px 0; border-radius: 12px; background: color-mix(in srgb, var(--accent) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); font-size: 13px; color: var(--muted); }
+.nudge b { display: block; color: var(--ink); font-size: 14px; }
+.nudge .primary { background: var(--accent); color: #fff; border-radius: 999px; padding: 7px 14px; flex: none; }
+.data-links { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; }
+.danger-link { color: #b4234f !important; }
+.pv-list { display: grid; gap: 12px; margin: 6px 0 14px; }
+.pv b { display: block; font-size: 14.5px; color: var(--ink); margin-bottom: 2px; }
+.pv p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--muted); }
+.share-prev { display: grid; place-items: center; margin: 10px 0; min-height: 200px; }
+.share-prev img { width: min(320px, 100%); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.acct textarea { font: inherit; font-size: 15px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); resize: vertical; }
+.rep { padding: 9px 0; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.rep-h { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 13px; }
+.rep-h b { font-weight: 600; flex: 1; min-width: 160px; }
+.rep-h small { color: var(--muted); font-size: 11.5px; }
+.rep-k { font-size: 10.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .05em; padding: 2px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.rep-k.k-error, .rep-k.k-graphics-crash, .rep-k.k-crash { background: rgba(180,35,79,.12); color: #b4234f; }
+.rep-d { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--muted); }
+.rep code { font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+.acct .danger { color: #fff; background: #b4234f; border-radius: 999px; padding: 8px 16px; }
+.hide-btn { display: block; margin-top: 8px; font-size: 12.5px; color: var(--muted); background: none; border: 0; text-decoration: underline; text-underline-offset: 2px; padding: 4px 0; cursor: pointer; }
+.hide-btn.sure { color: #b4234f; font-weight: 600; }
 .wel-pop { background: rgba(12, 22, 26, .22); backdrop-filter: none; }
 .wel-card { width: min(440px, 100%); }
 .wel-card .mem-hero { height: 132px; }
@@ -1380,6 +1419,30 @@ const PERF = (() => {
 })();
 const LITE = PERF.lite;
 document.documentElement.classList.toggle("lite", LITE);
+
+/* ---------- problem reports: an anonymous note to Lee when something breaks (no name, birds or places) ---------- */
+const Report = (() => {
+  const on = /^https?:$/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname);
+  let sent = 0; const seen = new Set();
+  const once = (k) => { try { if (localStorage.getItem("birb-rep-" + k)) return false; localStorage.setItem("birb-rep-" + k, "1"); } catch (e) {} return true; };
+  function send(kind, msg, where = "") {
+    if (!on || sent >= 6) return;
+    const key = kind + "|" + msg; if (seen.has(key)) return; seen.add(key); sent++;
+    let view = ""; try { view = viewMode + (typeof vizMode === "string" ? "/" + vizMode : ""); } catch (e) {}
+    let signedIn = false; try { signedIn = !!localStorage.getItem("birb-token"); } catch (e) {}
+    const body = JSON.stringify({ kind, msg: String(msg).slice(0, 300), where: String(where).slice(0, 300), ua: navigator.userAgent, gpu: PERF.gpu, mem: PERF.mem, lite: PERF.lite, why: PERF.why, view, signedIn });
+    try { if (navigator.sendBeacon && navigator.sendBeacon("/api/report", new Blob([body], { type: "application/json" }))) return; } catch (e) {}
+    try { fetch("/api/report", { method: "POST", body, keepalive: true, headers: { "content-type": "application/json" } }); } catch (e) {}
+  }
+  addEventListener("error", (e) => { if (e && e.message) send("error", e.message, `${String(e.filename || "").split("/").pop()}:${e.lineno || ""} ${e.error && e.error.stack ? e.error.stack.split("\n").slice(0, 3).join(" | ") : ""}`); });
+  addEventListener("unhandledrejection", (e) => { const r = e && e.reason; send("error", r && r.message ? r.message : String(r), r && r.stack ? r.stack.split("\n").slice(0, 3).join(" | ") : ""); });
+  setTimeout(() => {
+    if (PERF.why === "lost") send("graphics-crash", "The map's graphics gave out, so the app reloaded in lite mode");
+    else if (PERF.why === "crashed") send("crash", "The last visit didn't finish loading, so the app started in lite mode");
+    else if (PERF.why === "phone" && once("autolite")) send("auto-lite", "This phone started in lite mode");
+  }, 4000);
+  return { send, once };
+})();
 
 const state = { upTo: "", data: [], source: "built-in", fileName: "", selected: new Set(), q: "", from: "", to: "", sort: "tax", level: "county", area: null, areaLevel: "county", tilt: !LITE, barBy: "family" };
 try { if (localStorage.getItem("birdmap-barby") === "species") state.barBy = "species"; } catch (e) {}
@@ -2484,6 +2547,13 @@ function openDetail({ fam, hab, cluster, focus }) {
 function closeDetail() { $("detail").hidden = true; $("panel").classList.remove("detail-mode"); }
 document.addEventListener("click", (e) => {
   if (e.target.closest("#detail-back")) { closeDetail(); $("panel").scrollTop = 0; return; }
+  const hb = e.target.closest("[data-hide-bird]");
+  if (hb) {
+    if (!hb.classList.contains("sure")) { hb.classList.add("sure"); hb.textContent = `Tap again to hide ${hb.dataset.hideBird} from your map and your friends`; return; }
+    hb.disabled = true; hb.textContent = "Hiding…";
+    Acct.hideBird(hb.dataset.hideBird).then((ok) => { if (ok) { closeDetail(); $("panel").scrollTop = 0; setStatus(`${esc(hb.dataset.hideBird)} is hidden. Unhide it any time in Your profile.`); } });
+    return;
+  }
   const only = e.target.closest("[data-only]");
   if (only) { state.selected.clear(); state.selected.add(only.dataset.only); closeDetail(); render(); }
 });
@@ -3313,6 +3383,7 @@ function openSpecies(name) {
       <a href="${xcLink(s0.sci)}" target="_blank" rel="noopener" style="font-size:13px;color:var(--accent)" title="Hear recordings of this bird on xeno-canto">Listen</a>
       ${viewMode === "map" ? `<button type="button" data-see-world="${esc(name)}">See in habitat world</button>` : ""}
     </div>
+    ${Acct.me && state.source !== "file" && (Acct.scope === "me" || (flockOn() && pool.some((d) => d.by === Acct.me.u))) ? `<button type="button" class="hide-btn" data-hide-bird="${esc(name)}">Merlin got this one wrong? Hide it</button>` : ""}
     ${places.map((p) => `<article class="sp-card">
       <div class="top"><div><h3>${esc(p.loc)}</h3><div class="latin" style="font-style:normal">${esc(p.ward.replace(/^Outside ward data$/, p.county))}</div></div>
         <div class="days"><b>${p.dates.size}</b>${p.dates.size === 1 ? "day" : "days"}</div></div>
@@ -3941,6 +4012,7 @@ const Acct = (() => {
   try { if (API && (new URLSearchParams(location.search).get("invite") || (!token && !localStorage.getItem(WELCOMED)))) document.body.classList.add("welcoming"); } catch (e) {}
   let requests = { in: [], out: [] }, findRes = null;
   let inbox = { items: [], read: "", unread: 0 }, inboxShownRead = "", pollT = 0;
+  let phrase = "", phraseNext = "profile", shareUrl = "", shareBlob = null;
   let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "";
   let scope = "", backTo = "me", memberU = "";
   const cache = new Map();
@@ -4194,7 +4266,7 @@ const Acct = (() => {
       ${o && state.source === "account" ? `<p class="wel-note">The birds behind this card are ${esc(nameOf(o))}'s, who made BIRB.</p>` : ""}
       <div class="wel-acts"><button type="button" class="primary" data-wel="look">Have a look around</button>
         <div class="row"><button type="button" class="ghost" data-wel="join">I have an invite code</button><button type="button" class="ghost" data-wel="signin">Sign in</button></div>
-        <button type="button" class="linkish" data-wel="guide">How do I get my birds into BIRB?</button></div>`);
+        <button type="button" class="linkish" data-wel="guide">How do I get my birds into BIRB?</button><button type="button" class="linkish" data-wel="privacy" style="font-size:12.5px">How BIRB looks after your data</button></div>`);
   }
   async function showInvite(code) {
     welInvite = { code };
@@ -4278,8 +4350,46 @@ const Acct = (() => {
           <div class="fld"><label for="s-pass">Passcode</label><input id="s-pass" type="password" autocomplete="current-password"></div>
           <div class="err" id="acct-err" role="alert"></div>
           <div class="acts"><span class="switch">New here? <button type="button" data-acct="join">Join with an invite code</button></span><button type="submit" class="primary">Sign in</button></div>
-          <p class="hint">Forgotten your passcode? Ask Lee to reset it.</p></form>
+          <p class="hint">Forgotten your passcode? <button type="button" class="linkish" data-acct="recover">Use your recovery phrase</button>, or ask Lee to reset it.</p></form>
         ${flockHTML(true)}`;
+    } else if (view === "phrase") {
+      h = `${X}<h2 id="acct-h">Save your recovery phrase</h2><p class="sub">If you ever forget your passcode, these six words let you set a new one yourself. Keep them somewhere safe, like your notes app or a photo. Nobody else, not even Lee, can see them again after this.</p>
+        <div class="phrase" aria-label="Your recovery phrase">${phrase.split(" ").map((w, i) => `<span><small>${i + 1}</small>${esc(w)}</span>`).join("")}</div>
+        <div class="acts" style="justify-content:center;margin:4px 0 2px"><button type="button" data-copy="${esc(phrase)}">Copy the words</button></div>
+        <label class="hint" style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:8px"><input type="checkbox" id="ph-saved"> I've saved my recovery phrase</label>
+        <div class="err" id="acct-err" role="alert"></div>
+        <div class="acts"><span></span><button type="button" class="primary" data-phrase-done>${phraseNext === "join" ? "Next: build your birb" : "Done"}</button></div>`;
+    } else if (view === "phrase-new" && me) {
+      h = `${X}${tabs()}<h2 id="acct-h">${me.hasRecovery ? "Make a new recovery phrase" : "Set up a recovery phrase"}</h2><p class="sub">Six words that let you reset your passcode yourself if you forget it.${me.hasRecovery ? " Your old phrase will stop working." : ""} Enter your passcode to carry on.</p>
+        <form id="f-phrase" class="stack" novalidate>
+          <div class="fld"><label for="pn-pass">Your passcode</label><input id="pn-pass" type="password" autocomplete="current-password"></div>
+          <div class="err" id="acct-err" role="alert"></div>
+          <div class="acts"><button type="button" class="ghost" data-acct="profile">Cancel</button><button type="submit" class="primary">Show my phrase</button></div></form>`;
+    } else if (view === "recover") {
+      h = `${X}<h2 id="acct-h">Forgotten your passcode?</h2><p class="sub">Enter your username and the six-word recovery phrase you saved when you joined, then choose a new passcode.</p>
+        <form id="f-recover" class="stack" novalidate>
+          <div class="fld"><label for="r-user">Username</label><input id="r-user" autocomplete="username" autocapitalize="none"></div>
+          <div class="fld"><label for="r-phrase">Recovery phrase</label><textarea id="r-phrase" rows="2" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="six words, any order of spacing"></textarea></div>
+          <div class="fld"><label for="r-pass">New passcode</label><input id="r-pass" type="password" autocomplete="new-password" placeholder="At least 6 characters"></div>
+          <div class="err" id="acct-err" role="alert"></div>
+          <div class="acts"><button type="button" class="ghost" data-acct="signin">Back</button><button type="submit" class="primary">Set new passcode</button></div>
+          <p class="hint">No phrase? Ask Lee to reset your passcode.</p></form>`;
+    } else if (view === "privacy") {
+      h = `${X}${tabs()}<h2 id="acct-h">Your data and privacy</h2><p class="sub">BIRB is a small app Lee runs for friends. Here's what it keeps and who can see it, in plain English.</p>${privacyHTML()}
+        <div class="acts"><span></span><button type="button" class="primary" data-acct="${me ? "profile" : "signin"}">${me ? "Back to your profile" : "OK"}</button></div>`;
+    } else if (view === "delete" && me) {
+      h = `${X}${tabs()}<h2 id="acct-h">Delete your account</h2><p class="sub">This removes your birds, your profile, your birb, your notifications and your friendships straight away. It can't be undone. You can download a copy of your data first.</p>
+        <form id="f-delete" class="stack" novalidate>
+          <div class="acts" style="justify-content:flex-start"><button type="button" data-export>Download my data</button></div>
+          <div class="fld"><label for="d-pass">Your passcode</label><input id="d-pass" type="password" autocomplete="current-password"></div>
+          <label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="d-sure"> Yes, delete everything for @${esc(me.u)}</label>
+          <div class="err" id="acct-err" role="alert"></div>
+          <div class="acts"><button type="button" class="ghost" data-acct="profile">Cancel</button><button type="submit" class="danger">Delete my account</button></div></form>`;
+    } else if (view === "share" && me) {
+      h = `${X}${tabs()}<h2 id="acct-h">Share your birds</h2><p class="sub">A picture of your birds to send in a chat or post anywhere. It shows your birb, your counts and a few birds, but not where you heard them.</p>
+        <div class="share-prev" id="share-prev">${shareUrl ? `<img src="${shareUrl}" alt="Your BIRB share card">` : `<p class="hint">Drawing your card…</p>`}</div>
+        <div class="err" id="acct-err" role="alert"></div>
+        <div class="acts"><button type="button" class="ghost" data-acct="profile">Back</button><span style="display:flex;gap:6px"><button type="button" data-share-save ${shareBlob ? "" : "disabled"}>Save image</button><button type="button" class="primary" data-share-send ${shareBlob ? "" : "disabled"}>Share</button></span></div>`;
     } else if (view === "passcode") {
       h = `${X}${tabs()}<h2 id="acct-h">${me && me.mustChange ? "Choose a new passcode" : "Change your passcode"}</h2><p class="sub">${me && me.mustChange ? "Your passcode was reset. Pick a new one to keep using BIRB." : "You'll stay signed in on this device."}</p>
         <form id="f-pass" class="stack" novalidate>
@@ -4293,8 +4403,9 @@ const Acct = (() => {
     } else if (view === "profile" && me) {
       const b = me.birds;
       h = `${X}${tabs()}<div class="prof">${Avatar.html(me.avatar)}<div><h2 id="acct-h">${esc(nameOf(me))}</h2><p class="sub" style="margin:0">@${esc(me.u)}${me.admin ? '<span class="tag-owner">admin</span>' : ""}</p>
-          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" data-acct="avatar">Edit my birb</button><button type="button" data-show-me ${b ? "" : "hidden"}>Show my birds</button></div></div></div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" data-acct="avatar">Edit my birb</button><button type="button" data-show-me ${b ? "" : "hidden"}>Show my birds</button>${b ? `<button type="button" data-acct="share">Share my birds</button>` : ""}</div></div></div>
         ${notice ? `<p class="ok" role="status">${notice}</p>` : ""}
+        ${!me.hasRecovery ? `<div class="nudge"><span><b>Set up a recovery phrase</b>Six words that let you reset your passcode yourself if you forget it.</span><button type="button" class="primary" data-acct="phrase-new">Set up</button></div>` : ""}
         ${b ? `<div class="stats"><span><b>${b.species}</b>species</span><span><b>${b.places}</b>places</span><span><b>${b.rows}</b>sightings</span><span><b>${esc(ago(b.updated))}</b>last upload</span></div>` : `<p class="sub">You haven't added any birds yet.</p>`}
         <div style="margin:14px 0">${uploadHTML()}</div>
         <form id="f-prof" class="stack" novalidate>
@@ -4305,18 +4416,123 @@ const Acct = (() => {
           ${inviteHTML()}
           <div class="fld"><label>Your link</label><div class="copybox"><code>${esc(location.origin)}/?who=${esc(me.u)}</code><button type="button" data-copy="${esc(location.origin)}/?who=${esc(me.u)}">Copy</button></div><span class="hint">Shows your birds to friends, or to anyone if you pick "Anyone with your link" above.</span></div>
           <div class="err" id="acct-err" role="alert"></div>
-          <div class="acts"><span style="display:flex;gap:4px"><button type="button" class="ghost" data-acct="passcode">Change passcode</button><button type="button" class="ghost" data-signout>Sign out</button></span><button type="submit" class="primary">Save</button></div></form>`;
+          <div class="acts"><span style="display:flex;gap:4px"><button type="button" class="ghost" data-acct="passcode">Change passcode</button><button type="button" class="ghost" data-signout>Sign out</button></span><button type="submit" class="primary">Save</button></div></form>
+        ${(me.hidden || []).length ? `<div class="fr-sec">Hidden birds</div><p class="hint" style="margin:0 0 6px">Birds you've hidden don't show on your map or to your friends.</p>${me.hidden.map((n) => `<div class="fr-row"><span class="t"><b>${esc(n)}</b></span><span class="btns"><button type="button" class="ghost" data-unhide="${esc(n)}">Unhide</button></span></div>`).join("")}` : ""}
+        <div class="fr-sec">Your data</div>
+        <div class="data-links"><button type="button" class="linkish" data-acct="privacy">Your data and privacy</button><button type="button" class="linkish" data-export>Download my data</button><button type="button" class="linkish" data-acct="phrase-new">${me.hasRecovery ? "New recovery phrase" : "Set up recovery phrase"}</button>${me.admin ? "" : `<button type="button" class="linkish danger-link" data-acct="delete">Delete my account</button>`}</div>`;
     } else if (view === "flock") {
       h = `${X}${tabs()}<h2 id="acct-h">${me ? "Your flock" : "The flock"}</h2><p class="sub">${me ? "Your friends on BIRB. Tap someone to see their profile and birds." : "Tap someone to see their birds on the map, in Habitat world and in their Collection."}</p>
         ${me ? friendsHTML() : ""}${me ? `<div class="fr-sec">Friends</div>` : ""}${flockHTML(false)}
         ${me ? "" : `<div class="acts"><span></span><span style="display:flex;gap:6px"><button type="button" data-acct="signin">Sign in</button><button type="button" class="primary" data-acct="join">Join</button></span></div>`}`;
     } else if (view === "admin" && me && me.admin) {
-      h = `${X}${tabs()}<h2 id="acct-h">Admin</h2><p class="sub">Only you can see this.</p><div id="adm" class="stack"><p class="hint">Loading members…</p></div>`;
+      h = `${X}${tabs()}<h2 id="acct-h">Admin</h2><p class="sub">Only you can see this.</p><div id="adm" class="stack"><p class="hint">Loading members…</p></div>
+        <div class="fr-sec">Problem reports, last 14 days</div><p class="hint" style="margin:0 0 6px">Anonymous notes the app sends when something goes wrong, with the phone type.</p><div id="adm-rep"><p class="hint">Loading…</p></div>`;
     } else { view = me ? "profile" : "signin"; return render(); }
     el.innerHTML = h;
     if ($("abld-stage")) mountBuilder();
-    if (view === "admin") loadAdmin();
+    if (view === "admin") { loadAdmin(); loadReports(); }
     const first = el.querySelector("input:not([type=file]), select"); if (first && !("ontouchstart" in window)) first.focus();
+  }
+  function privacyHTML() {
+    const sec = (t, b) => `<div class="pv"><b>${t}</b><p>${b}</p></div>`;
+    return `<div class="pv-list">
+      ${sec("What's kept", "Your username, display name and birb, your friends list and notifications, and your eBird sightings. From your eBird file only the columns the map needs are kept: the bird, the place, the date and time, and the count. Your passcode and recovery phrase are scrambled before they're saved, so nobody can read them, Lee included.")}
+      ${sec("Home addresses", "Any place in your file that looks like a home address is renamed to the nearest town (like \"Near Hindley\"), moved to about a kilometre away, and has its eBird checklist link removed, before anything is saved.")}
+      ${sec("Who sees your birds", "You choose in Your profile: only your friends (the default), anyone with your link, or only you. Friends of your friends can't see them. Birds you hide don't show to anyone.")}
+      ${sec("What BIRB doesn't do", "No adverts, no selling data, no tracking cookies. Your phone remembers a few settings for BIRB, like staying signed in, night mode and lite mode, in its own storage.")}
+      ${sec("Other services", "The app is hosted on Netlify, which stores the data. Map tiles come from OpenFreeMap, bird photos from iNaturalist and fonts from Google Fonts. Like any website, they see your device's internet address when they send these.")}
+      ${sec("Problem reports", "If something goes wrong in the app, it sends Lee an anonymous note: the error, the type of phone and browser, and its graphics chip. No name, birds or places.")}
+      ${sec("Your controls", "Download your data or delete your account at any time from Your profile. Deleting removes your birds, profile, notifications and friendships straight away. Questions? Ask Lee, who runs BIRB.")}
+    </div>`;
+  }
+  async function exportData() {
+    const r = await call("export"); if (!r.ok) { toast(`<span>${esc(r.error)}</span>`, $("me-btn")); return; }
+    const save = (data, name, type) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data], { type })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); };
+    save(JSON.stringify(r.data.profile, null, 2), `birb-${me.u}-profile.json`, "application/json");
+    if (r.data.birdsCsv) setTimeout(() => save(r.data.birdsCsv, `birb-${me.u}-birds.csv`, "text/csv"), 400);
+  }
+  /* ---------- the share card: a portrait picture of your birds, drawn on a canvas ---------- */
+  async function photoImg(sci) {
+    try {
+      const v = await Photos.get(sci); if (!v) return null;
+      let url = v.md || v.sq;
+      if (location.protocol.startsWith("http")) url = url.replace(/^https:\/\/inaturalist-open-data\.s3\.amazonaws\.com\//, "/inat-open/").replace(/^https:\/\/static\.inaturalist\.org\//, "/inat-static/");
+      return await new Promise((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.onerror = () => res(null); im.src = url; setTimeout(() => res(null), 6000); });
+    } catch (e) { return null; }
+  }
+  const loadImg = (src) => new Promise((res) => { if (!src) return res(null); const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  async function makeShareCard() {
+    const recs = await getRecs(me.u);
+    const by = new Map();
+    for (const d of recs) { const x = by.get(d.name) || { name: d.name, sci: d.sci, fam: d.family, days: new Set(), last: "" }; x.days.add(d.date); const w = d.date + (d.time || ""); if (w > x.last) x.last = w; by.set(d.name, x); }
+    const all = [...by.values()], days = new Set(recs.map((d) => d.date)).size, places = new Set(recs.map((d) => d.locId || d.loc)).size;
+    const latest = all.slice().sort((a, b) => b.last.localeCompare(a.last))[0];
+    const top = all.slice().sort((a, b) => b.days.size - a.days.size || a.name.localeCompare(b.name)).filter((x) => x !== latest).slice(0, 3);
+    const wallSci = new Map(WALL.map((w) => [sci2(w[1]), w[3]]));
+    const inWall = all.filter((x) => wallSci.has(sci2(x.sci))), rare = inWall.filter((x) => wallSci.get(sci2(x.sci)) === 2);
+    const W = 1080, H = 1350, c = document.createElement("canvas"); c.width = W; c.height = H;
+    const g = c.getContext("2d");
+    await (document.fonts ? document.fonts.ready : Promise.resolve());
+    const DISP = "'Bricolage Grotesque', 'IBM Plex Sans', sans-serif", BODY = "'IBM Plex Sans', Helvetica, Arial, sans-serif", MONO = "'IBM Plex Mono', Menlo, monospace";
+    const A = Avatar.norm(me.avatar);
+    const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#14343f"); bg.addColorStop(1, "#0b1d24"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.globalAlpha = 0.07; g.strokeStyle = "#ffffff"; g.lineWidth = 2;
+    for (let i = 0; i < 9; i++) { g.beginPath(); for (let x = -20; x <= W + 20; x += 20) { const y = 140 + i * 140 + Math.sin(x / 90 + i) * 18; x === -20 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); }
+    g.globalAlpha = 1;
+    const circleImg = (im, x, y, r, ring, fill) => { g.save(); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.closePath(); g.fillStyle = fill || "#24424d"; g.fill(); g.clip(); if (im) { const s = Math.max((2 * r) / im.width, (2 * r) / im.height); g.drawImage(im, x - (im.width * s) / 2, y - (im.height * s) / 2, im.width * s, im.height * s); } g.restore(); if (ring) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.lineWidth = 8; g.strokeStyle = ring; g.stroke(); } };
+    const text = (t, x, y, font, col, align = "left") => { g.font = font; g.fillStyle = col; g.textAlign = align; g.fillText(t, x, y); };
+    const fit = (t, max, font) => { g.font = font; if (g.measureText(t).width <= max) return t; while (t.length > 3 && g.measureText(t + "…").width > max) t = t.slice(0, -1); return t + "…"; };
+    text("BIRB", 72, 108, `700 52px ${DISP}`, "#ffffff");
+    text("birb-app.netlify.app", W - 72, 104, `500 26px ${MONO}`, "#8fc3d3", "right");
+    const av = await loadImg(Avatar.snapshot(A));
+    circleImg(av, W / 2, 330, 150, A.cBody, A.bg);
+    text(`${nameOf(me)}'s birds`, W / 2, 545, `700 56px ${DISP}`, "#ffffff", "center");
+    text(String(all.length), W / 2, 700, `700 150px ${DISP}`, "#ffffff", "center");
+    text(all.length === 1 ? "species heard" : "species heard", W / 2, 750, `500 34px ${BODY}`, "#a9c9d3", "center");
+    text(`${places} ${places === 1 ? "place" : "places"} · ${days} ${days === 1 ? "day" : "days"} out listening`, W / 2, 800, `400 28px ${BODY}`, "#7fa6b2", "center");
+    const [li, ...ti] = await Promise.all([latest && photoImg(latest.sci), ...top.map((x) => photoImg(x.sci))]);
+    const col = (x) => PLUMAGE[sci2(x.sci)] || famColour(x.fam);
+    if (latest) {
+      g.fillStyle = "rgba(255,255,255,.07)"; g.beginPath(); g.roundRect(72, 850, W - 144, 170, 28); g.fill();
+      circleImg(li, 72 + 95, 935, 62, col(latest), col(latest));
+      text("LATEST BIRD", 72 + 185, 905, `500 22px ${MONO}`, "#8fc3d3");
+      text(fit(latest.name, W - 144 - 220, `700 44px ${DISP}`), 72 + 185, 955, `700 44px ${DISP}`, "#ffffff");
+      text(fmtDate(latest.last.slice(0, 10)), 72 + 185, 995, `400 26px ${BODY}`, "#a9c9d3");
+    }
+    top.forEach((x, i) => {
+      const cx = 72 + ((W - 144) / 6) * (i * 2 + 1);
+      circleImg(ti[i], cx, 1110, 52, col(x), col(x));
+      text(fit(x.name, 300, `500 25px ${BODY}`), cx, 1195, `500 25px ${BODY}`, "#e7eef3", "center");
+      text(`${x.days.size} ${x.days.size === 1 ? "day" : "days"}`, cx, 1228, `400 22px ${BODY}`, "#7fa6b2", "center");
+    });
+    const by0 = 1270, bw = W - 144, frac = Math.min(1, inWall.length / WALL.length);
+    g.fillStyle = "rgba(255,255,255,.12)"; g.beginPath(); g.roundRect(72, by0, bw, 14, 7); g.fill();
+    g.fillStyle = "#5ab8d8"; g.beginPath(); g.roundRect(72, by0, Math.max(14, bw * frac), 14, 7); g.fill();
+    text(`Collection ${inWall.length} of ${WALL.length} UK birds`, 72, by0 + 52, `500 24px ${BODY}`, "#a9c9d3");
+    if (rare.length) text(`${rare.length} rare ${rare.length === 1 ? "find" : "finds"}`, W - 72, by0 + 52, `700 24px ${BODY}`, "#c4a6f2", "right");
+    return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
+  }
+  async function openShare() {
+    shareBlob = null; if (shareUrl) { URL.revokeObjectURL(shareUrl); shareUrl = ""; }
+    view = "share"; render();
+    try { shareBlob = await makeShareCard(); shareUrl = URL.createObjectURL(shareBlob); } catch (e) { console.warn(e); }
+    if (view === "share") { render(); if (!shareBlob) err("Couldn't draw your card. Try again in a moment."); }
+  }
+  async function sendShare(saveOnly) {
+    if (!shareBlob) return;
+    const file = new File([shareBlob], `birb-${me.u}.png`, { type: "image/png" });
+    if (!saveOnly && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: "My BIRB birds", text: `I've heard ${me.birds ? me.birds.species : ""} species on BIRB` }); return; } catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    const a = document.createElement("a"); a.href = shareUrl; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+  }
+  async function hideBird(name, hide = true) {
+    const r = await call("hide", { method: "POST", body: { name, hide } });
+    if (!r.ok) { toast(`<span>${esc(r.error)}</span>`, $("who")); return false; }
+    me = r.data.me; cache.delete(me.u); await refresh();
+    if (scope === "flock") await showFlock({ quiet: true }); else await show(me.u, { quiet: true });
+    paintChrome();
+    return true;
   }
   function uploadHTML() {
     return `<label class="drop" id="acct-drop"><input type="file" id="acct-file" accept=".csv,.zip,text/csv,application/zip" hidden>
@@ -4420,6 +4636,22 @@ const Acct = (() => {
         <p class="hint" style="margin:4px 0 0">You've both heard ${shared} ${shared === 1 ? "species" : "species"}.</p></div>` : ""}`;
     Photos.fill(box);
   }
+  const shortUA = (ua) => {
+    const os = /iPhone|iPad/.test(ua) ? "iPhone" : /Android/.test(ua) ? "Android" : /Mac OS/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : "Other";
+    const br = /SamsungBrowser/.test(ua) ? "Samsung Internet" : /EdgA?\//.test(ua) ? "Edge" : /CriOS|Chrome\//.test(ua) ? "Chrome" : /Firefox|FxiOS/.test(ua) ? "Firefox" : /Safari/.test(ua) ? "Safari" : "browser";
+    return `${os} · ${br}`;
+  };
+  async function loadReports() {
+    const box = $("adm-rep"); if (!box) return;
+    const r = await call("admin/reports"); if (!r.ok) { box.innerHTML = `<p class="err">${esc(r.error)}</p>`; return; }
+    const groups = new Map();
+    for (const x of r.data.reports) { const k = x.kind + "|" + x.msg; const g = groups.get(k) || { ...x, n: 0, devices: new Map() }; g.n++; const dv = `${shortUA(x.ua)}${x.gpu ? " · " + x.gpu.replace(/^ANGLE \(|\)$/g, "").slice(0, 40) : ""}${x.mem ? ` · ${x.mem} GB` : ""}`; g.devices.set(dv, (g.devices.get(dv) || 0) + 1); groups.set(k, g); }
+    const list = [...groups.values()].sort((a, b) => (a.t < b.t ? 1 : -1)).slice(0, 25);
+    const label = { error: "Error", "graphics-crash": "Graphics crash", crash: "Didn't finish loading", "auto-lite": "Started in lite", choppy: "Map was choppy" };
+    box.innerHTML = list.length ? list.map((g) => `<div class="rep"><div class="rep-h"><span class="rep-k k-${esc(g.kind)}">${esc(label[g.kind] || g.kind)}</span><b>${esc(g.msg)}</b><small>${g.n}× · last ${esc(ago(g.t))}</small></div>
+      <div class="rep-d">${[...g.devices].slice(0, 4).map(([d, n]) => `<span>${esc(d)}${n > 1 ? ` (${n})` : ""}</span>`).join("")}</div>${g.where && g.kind === "error" ? `<code>${esc(g.where.slice(0, 160))}</code>` : ""}</div>`).join("")
+      : `<p class="hint">Nothing in the last two weeks. That's a good sign.</p>`;
+  }
   async function loadAdmin() {
     const r = await call("admin/users"), box = $("adm"); if (!box) return;
     if (!r.ok) { box.innerHTML = `<p class="err">${esc(r.error)}</p>`; return; }
@@ -4498,6 +4730,7 @@ const Acct = (() => {
       else if (a === "join") { const inv = welInvite && welInvite.code; closeWel({ tour: false }); joinStep = 1; open("join", inv ? { invite: inv } : {}); }
       else if (a === "signin") { closeWel({ tour: false }); open("signin"); }
       else if (a === "guide") { closeWel({ tour: false }); Guide.open(); }
+      else if (a === "privacy") { closeWel({ tour: false }); open("privacy"); }
       else if (a === "befriend") {
         w.disabled = true;
         const r = await call("friends/request", { method: "POST", body: { u: welInvite.by.u } });
@@ -4525,6 +4758,16 @@ const Acct = (() => {
     if ($("acct").hidden) return;
     if (t === $("acct") || t.closest("[data-acct-close]")) { close(); return; }
     if (!$("mem-pop").hidden && !t.closest("#mem-pop")) return;
+    if (t.closest("[data-phrase-done]")) {
+      if (!$("ph-saved").checked) { err("Tick the box once you've saved your phrase. You won't see it again."); return; }
+      phrase = ""; if (phraseNext === "join") { view = "join"; joinStep = 2; } else { view = "profile"; notice = "Recovery phrase saved."; }
+      render(); return;
+    }
+    if (t.closest("[data-export]")) { await exportData(); return; }
+    const uh = t.closest("[data-unhide]"); if (uh) { uh.disabled = true; if (await hideBird(uh.dataset.unhide, false)) { notice = `${esc(uh.dataset.unhide)} is back on your map.`; render(); } return; }
+    if (t.closest("[data-share-send]")) { await sendShare(false); return; }
+    if (t.closest("[data-share-save]")) { await sendShare(true); return; }
+    const sh = t.closest('[data-acct="share"]'); if (sh) { await openShare(); return; }
     const go = t.closest("[data-acct]"); if (go) { if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }
     const vu = t.closest("[data-view-u]"); if (vu) { openMember(vu.dataset.viewU); return; }
     const fr = t.closest("[data-fr]"); if (fr) { fr.disabled = true; await friendAct(fr.dataset.fr, fr.dataset.u); return; }
@@ -4591,7 +4834,8 @@ const Acct = (() => {
       if (passcode.length < 6) return err("Passcodes need at least 6 characters.");
       btn.disabled = true; const r = await call("join", { method: "POST", body: { invite, name, username, passcode, avatar: draft.avatar } }); btn.disabled = false;
       if (!r.ok) return err(r.error);
-      await afterAuth(r); joinStep = 2; render();
+      await afterAuth(r); joinStep = 2; phrase = r.data.recovery || ""; phraseNext = "join";
+      if (phrase) { view = "phrase"; render(); } else render();
     } else if (f.id === "f-signin") {
       const username = $("s-user").value.trim().toLowerCase(), passcode = $("s-pass").value;
       if (!username || !passcode) return err("Enter your username and passcode.");
@@ -4609,6 +4853,26 @@ const Acct = (() => {
       btn.disabled = true; const r = await call("passcode", { method: "POST", body: { old, passcode } }); btn.disabled = false;
       if (!r.ok) return err(r.error);
       await afterAuth(r); notice = "Passcode changed."; view = "profile"; render();
+    } else if (f.id === "f-recover") {
+      const username = $("r-user").value.trim().toLowerCase(), ph = $("r-phrase").value, passcode = $("r-pass").value;
+      if (!username || !ph.trim()) return err("Enter your username and recovery phrase.");
+      if (passcode.length < 6) return err("Passcodes need at least 6 characters.");
+      btn.disabled = true; const r = await call("recover", { method: "POST", body: { username, phrase: ph, passcode } }); btn.disabled = false;
+      if (!r.ok) return err(r.error);
+      await afterAuth(r);
+      if (me.birds) await show(me.u, { quiet: true }); else await showFlock({ quiet: true });
+      phrase = r.data.recovery; phraseNext = "profile"; notice = ""; view = "phrase"; render();
+    } else if (f.id === "f-phrase") {
+      btn.disabled = true; const r = await call("recovery", { method: "POST", body: { passcode: $("pn-pass").value } }); btn.disabled = false;
+      if (!r.ok) return err(r.error);
+      me = r.data.me; phrase = r.data.recovery; phraseNext = "profile"; view = "phrase"; render();
+    } else if (f.id === "f-delete") {
+      if (!$("d-sure").checked) return err("Tick the box to confirm.");
+      btn.disabled = true; const r = await call("me", { method: "DELETE", body: { passcode: $("d-pass").value } }); btn.disabled = false;
+      if (!r.ok) return err(r.error);
+      setToken(""); me = null; scope = ""; cache.clear(); inbox = { items: [], read: "", unread: 0 }; clearInterval(pollT);
+      await refresh(); if (owner && members.some((m) => m.u === owner && m.birds)) await show(owner, { quiet: true }); paintChrome();
+      close(); toast(`<span>Your account and everything in it has been deleted.</span>`, $("me-btn"));
     } else if (f.id === "f-find") {
       const q = $("fr-u").value.trim().toLowerCase().replace(/^@/, "");
       if (!q) return;
@@ -4642,7 +4906,7 @@ const Acct = (() => {
     me = r.data.me; const m = members.find((x) => x.u === me.u); if (m) m.favourite = me.favourite;
     return true;
   }
-  return { boot, open, member, saveFavourite, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
+  return { boot, open, member, saveFavourite, hideBird, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
 })();
 
 /* ---------- reading an eBird export: the .csv, or the .zip eBird emails (opened right here in the browser) ---------- */
@@ -4777,6 +5041,7 @@ const Guide = (() => {
       if (gaps.length < 40) return;
       gaps.sort((a, b) => a - b);
       const med = gaps[Math.floor(gaps.length / 2)];
+      if (med > 48 && Report.once("choppy")) Report.send("choppy", `The 3D map drew at about ${Math.round(1000 / med)} frames a second`);
       if (med > 48) liteBar(`<span class="tx"><b>Is the map a bit slow?</b>This phone seems to be finding the 3D map hard going. Lite mode is flatter and much lighter.</span><span class="bt"><button type="button" class="primary" data-lite="lite">Switch to lite</button><button type="button" class="ghost" data-lite="keep">Keep 3D</button></span>`);
     }, 30000);
   }
