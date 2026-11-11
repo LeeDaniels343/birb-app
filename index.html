@@ -1978,9 +1978,9 @@ function tooltip({ object, layer }) {
     const shown = object.names.slice(0, 8).map(esc).join("<br>") + (object.names.length > 8 ? `<br>and ${object.names.length - 8} more` : "");
     return { html: `<div style="font-weight:600">${sw}${esc(habName(object.hab))}</div><div style="color:#5c6d72;margin:2px 0 6px">${object.names.length} species here</div><div style="font-size:12px">${shown}</div><div style="color:#1d6b86;margin-top:6px;font-size:12px">Click for details</div>`, style: TIP_STYLE };
   }
-  if (layer.id === "viz-flock" || layer.id === "viz-hab-birds") {
+  if (layer.id.startsWith("viz-flock-") && !layer.id.startsWith("viz-flock-wing") || layer.id.startsWith("viz-hab-birds")) {
     const b = object.b || object;
-    const sw = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${layer.id === "viz-hab-birds" ? `rgb(${b.colour.join(",")})` : famColour(b.fam)};margin-right:6px"></span>`;
+    const sw = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${layer.id.startsWith("viz-hab-birds") ? `rgb(${b.colour.join(",")})` : famColour(b.fam)};margin-right:6px"></span>`;
     const ph = Photos.peek(sciOf(b.name));
     return { html: `${ph ? `<img src="${ph.sq}" alt="" referrerpolicy="no-referrer" style="float:right;width:52px;height:52px;border-radius:50%;object-fit:cover;margin:0 0 4px 10px">` : ""}<div style="font-weight:600">${sw}${esc(b.name)}</div><div style="color:#5c6d72;margin:2px 0 4px">${esc(vizMode === "habitat" ? habName(b.hab) : famName(b.fam))} · heard on ${b.days} ${b.days === 1 ? "day" : "days"}</div><div style="font-size:12px">${b.places.map(esc).join("<br>")}</div><div style="color:#1d6b86;margin-top:6px;font-size:12px">Click for details</div>`, style: TIP_STYLE };
   }
@@ -2053,6 +2053,269 @@ function sphereTris(cx, cy, cz, rx, ry, rz, seg = 8, rings = 6) {
   }
   return T;
 }
+/* ---------- bird looks: a shape for each kind of bird and real plumage colours for common UK species ----------
+   Used by Habitat world (Three.js) and by the street-level flock and habitat views (as a coloured deck.gl mesh). */
+const BirdLook = (() => {
+  /* body forms: body [half-length, half-height, half-width], pitch (head-up tilt), head radius and [x, y] from the body,
+     neck, beak [type, length, thickness], tail [type, length], legs (length), size */
+  const F = {
+    duck:       { body: [0.28, 0.12, 0.15], pitch: 0,    head: 0.085, hp: [0.26, 0.15], neck: 1, beak: ["flat", 0.12, 0.035], tail: ["short", 0.12], legs: 0, size: 1.1, float: 1 },
+    goose:      { body: [0.31, 0.14, 0.16], pitch: 0.05, head: 0.075, hp: [0.34, 0.36], neck: 1, beak: ["flat", 0.11, 0.035], tail: ["short", 0.12], legs: 0, size: 1.35, float: 1 },
+    swan:       { body: [0.36, 0.15, 0.18], pitch: 0,    head: 0.07,  hp: [0.28, 0.48], neck: 1, beak: ["flat", 0.12, 0.035], tail: ["short", 0.1],  legs: 0, size: 1.6, float: 1 },
+    coot:       { body: [0.21, 0.14, 0.13], pitch: 0.05, head: 0.08,  hp: [0.2, 0.14],  neck: 0, beak: ["cone", 0.06, 0.03],  tail: ["short", 0.06], legs: 0, size: 0.95, float: 1, shield: 1 },
+    grebe:      { body: [0.24, 0.1, 0.13],  pitch: 0,    head: 0.07,  hp: [0.25, 0.2],  neck: 1, beak: ["dagger", 0.09, 0.02], tail: ["none", 0],   legs: 0, size: 0.9, float: 1 },
+    cormorant:  { body: [0.3, 0.13, 0.13],  pitch: 0.45, head: 0.07,  hp: [0.28, 0.3],  neck: 1, beak: ["hook", 0.13, 0.025], tail: ["short", 0.16], legs: 0.08, size: 1.35 },
+    heron:      { body: [0.26, 0.13, 0.12], pitch: 0.5,  head: 0.06,  hp: [0.22, 0.52], neck: 1, beak: ["dagger", 0.2, 0.025], tail: ["short", 0.1],  legs: 0.5, size: 1.55 },
+    gull:       { body: [0.29, 0.13, 0.14], pitch: 0.08, head: 0.085, hp: [0.27, 0.16], neck: 0, beak: ["cone", 0.1, 0.03],   tail: ["short", 0.14], legs: 0.12, size: 1.2, longWings: 1 },
+    tern:       { body: [0.24, 0.1, 0.11],  pitch: 0.08, head: 0.07,  hp: [0.23, 0.12], neck: 0, beak: ["dagger", 0.11, 0.022], tail: ["fork", 0.22], legs: 0.06, size: 1, longWings: 1 },
+    wader:      { body: [0.21, 0.12, 0.12], pitch: 0.12, head: 0.065, hp: [0.21, 0.14], neck: 0, beak: ["long", 0.2, 0.016],  tail: ["short", 0.1],  legs: 0.28, size: 1 },
+    curlew:     { body: [0.24, 0.13, 0.13], pitch: 0.12, head: 0.07,  hp: [0.24, 0.15], neck: 0, beak: ["curve", 0.26, 0.018], tail: ["short", 0.1],  legs: 0.3, size: 1.25 },
+    plover:     { body: [0.2, 0.12, 0.12],  pitch: 0.1,  head: 0.07,  hp: [0.2, 0.14],  neck: 0, beak: ["cone", 0.05, 0.02],  tail: ["short", 0.1],  legs: 0.16, size: 1 },
+    pigeon:     { body: [0.25, 0.16, 0.15], pitch: 0.15, head: 0.07,  hp: [0.25, 0.17], neck: 0, beak: ["cone", 0.045, 0.02], tail: ["short", 0.18], legs: 0.06, size: 1.05 },
+    pheasant:   { body: [0.3, 0.16, 0.15],  pitch: 0.1,  head: 0.07,  hp: [0.3, 0.25],  neck: 1, beak: ["cone", 0.045, 0.025], tail: ["long", 0.55], legs: 0.13, size: 1.4 },
+    raptor:     { body: [0.23, 0.15, 0.15], pitch: 0.75, head: 0.09,  hp: [0.12, 0.24], neck: 0, beak: ["hook", 0.07, 0.03],  tail: ["short", 0.22], legs: 0.08, size: 1.3 },
+    owl:        { body: [0.2, 0.19, 0.17],  pitch: 1.2,  head: 0.13,  hp: [0.04, 0.27], neck: 0, beak: ["hook", 0.035, 0.02], tail: ["short", 0.08], legs: 0.06, size: 1.25, disc: 1 },
+    woodpecker: { body: [0.22, 0.13, 0.13], pitch: 0.9,  head: 0.08,  hp: [0.16, 0.2],  neck: 0, beak: ["dagger", 0.1, 0.022], tail: ["stiff", 0.16], legs: 0.05, size: 0.95 },
+    parakeet:   { body: [0.2, 0.14, 0.13],  pitch: 0.7,  head: 0.085, hp: [0.15, 0.2],  neck: 0, beak: ["hook", 0.055, 0.035], tail: ["long", 0.45], legs: 0.05, size: 1 },
+    kingfisher: { body: [0.17, 0.12, 0.12], pitch: 0.4,  head: 0.09,  hp: [0.15, 0.16], neck: 0, beak: ["dagger", 0.15, 0.025], tail: ["short", 0.06], legs: 0.03, size: 0.75 },
+    crow:       { body: [0.27, 0.16, 0.15], pitch: 0.35, head: 0.1,   hp: [0.25, 0.17], neck: 0, beak: ["thick", 0.12, 0.04],  tail: ["short", 0.22], legs: 0.1, size: 1.2 },
+    magpie:     { body: [0.24, 0.15, 0.14], pitch: 0.35, head: 0.09,  hp: [0.23, 0.16], neck: 0, beak: ["thick", 0.1, 0.035],  tail: ["long", 0.48], legs: 0.1, size: 1.1 },
+    tit:        { body: [0.16, 0.14, 0.13], pitch: 0.4,  head: 0.095, hp: [0.14, 0.14], neck: 0, beak: ["cone", 0.035, 0.018], tail: ["short", 0.12], legs: 0.05, size: 0.75 },
+    longtail:   { body: [0.13, 0.12, 0.11], pitch: 0.2,  head: 0.08,  hp: [0.1, 0.1],   neck: 0, beak: ["cone", 0.025, 0.014], tail: ["long", 0.4], legs: 0.04, size: 0.7 },
+    warbler:    { body: [0.18, 0.11, 0.1],  pitch: 0.35, head: 0.075, hp: [0.17, 0.12], neck: 0, beak: ["thin", 0.06, 0.013],  tail: ["short", 0.14], legs: 0.06, size: 0.75 },
+    wren:       { body: [0.15, 0.13, 0.12], pitch: 0.2,  head: 0.075, hp: [0.13, 0.12], neck: 0, beak: ["thin", 0.06, 0.012],  tail: ["cocked", 0.12], legs: 0.05, size: 0.6 },
+    nuthatch:   { body: [0.18, 0.12, 0.12], pitch: 0.05, head: 0.08,  hp: [0.18, 0.1],  neck: 0, beak: ["dagger", 0.08, 0.02], tail: ["short", 0.08], legs: 0.05, size: 0.8 },
+    creeper:    { body: [0.17, 0.1, 0.1],   pitch: 1,    head: 0.065, hp: [0.15, 0.13], neck: 0, beak: ["curve", 0.09, 0.012], tail: ["stiff", 0.16], legs: 0.04, size: 0.7 },
+    thrush:     { body: [0.22, 0.15, 0.14], pitch: 0.55, head: 0.085, hp: [0.19, 0.17], neck: 0, beak: ["cone", 0.07, 0.02],  tail: ["short", 0.2],  legs: 0.12, size: 1 },
+    robin:      { body: [0.17, 0.15, 0.14], pitch: 0.5,  head: 0.085, hp: [0.14, 0.16], neck: 0, beak: ["thin", 0.05, 0.015],  tail: ["short", 0.14], legs: 0.1, size: 0.8 },
+    starling:   { body: [0.21, 0.13, 0.13], pitch: 0.35, head: 0.08,  hp: [0.21, 0.15], neck: 0, beak: ["dagger", 0.1, 0.02], tail: ["short", 0.11], legs: 0.1, size: 0.95 },
+    wagtail:    { body: [0.17, 0.11, 0.1],  pitch: 0.1,  head: 0.07,  hp: [0.17, 0.12], neck: 0, beak: ["thin", 0.05, 0.013],  tail: ["long", 0.35], legs: 0.1, size: 0.85 },
+    pipit:      { body: [0.18, 0.11, 0.11], pitch: 0.2,  head: 0.07,  hp: [0.18, 0.12], neck: 0, beak: ["thin", 0.055, 0.014], tail: ["short", 0.18], legs: 0.08, size: 0.8 },
+    finch:      { body: [0.17, 0.13, 0.13], pitch: 0.4,  head: 0.085, hp: [0.16, 0.14], neck: 0, beak: ["thick", 0.05, 0.03],  tail: ["fork", 0.15],  legs: 0.06, size: 0.8 },
+    sparrow:    { body: [0.17, 0.13, 0.13], pitch: 0.35, head: 0.085, hp: [0.16, 0.14], neck: 0, beak: ["thick", 0.045, 0.028], tail: ["short", 0.15], legs: 0.06, size: 0.8 },
+    swallow:    { body: [0.17, 0.1, 0.1],   pitch: 0.2,  head: 0.075, hp: [0.16, 0.1],  neck: 0, beak: ["cone", 0.025, 0.018], tail: ["fork", 0.3],  legs: 0.03, size: 0.85, longWings: 1 },
+    swift:      { body: [0.18, 0.1, 0.1],   pitch: 0.1,  head: 0.075, hp: [0.17, 0.09], neck: 0, beak: ["cone", 0.02, 0.016], tail: ["fork", 0.14],  legs: 0.02, size: 0.85, longWings: 1 },
+    cuckoo:     { body: [0.23, 0.13, 0.13], pitch: 0.3,  head: 0.08,  hp: [0.22, 0.14], neck: 0, beak: ["cone", 0.06, 0.02],  tail: ["long", 0.34], legs: 0.06, size: 1.1 },
+  };
+  const GENUS = {
+    Anas: "duck", Mareca: "duck", Spatula: "duck", Aythya: "duck", Aix: "duck", Tadorna: "duck", Mergus: "duck", Mergellus: "duck", Bucephala: "duck", Somateria: "duck", Melanitta: "duck", Netta: "duck", Clangula: "duck",
+    Branta: "goose", Anser: "goose", Cygnus: "swan", Fulica: "coot", Gallinula: "coot", Rallus: "coot", Tachybaptus: "grebe", Podiceps: "grebe", Gavia: "grebe",
+    Phalacrocorax: "cormorant", Gulosus: "cormorant", Ardea: "heron", Egretta: "heron", Bubulcus: "heron", Botaurus: "heron",
+    Larus: "gull", Chroicocephalus: "gull", Ichthyaetus: "gull", Rissa: "gull", Fulmarus: "gull", Sterna: "tern", Sternula: "tern", Thalasseus: "tern",
+    Numenius: "curlew", Tringa: "wader", Calidris: "wader", Limosa: "wader", Haematopus: "wader", Gallinago: "wader", Scolopax: "wader", Arenaria: "plover", Vanellus: "plover", Charadrius: "plover", Pluvialis: "plover", Actitis: "wader",
+    Columba: "pigeon", Streptopelia: "pigeon", Phasianus: "pheasant", Perdix: "pheasant", Alectoris: "pheasant", Lagopus: "pheasant",
+    Buteo: "raptor", Accipiter: "raptor", Falco: "raptor", Milvus: "raptor", Circus: "raptor", Pandion: "raptor", Haliaeetus: "raptor", Aquila: "raptor",
+    Strix: "owl", Tyto: "owl", Athene: "owl", Asio: "owl", Picus: "woodpecker", Dendrocopos: "woodpecker", Dryobates: "woodpecker", Dryocopus: "woodpecker", Jynx: "woodpecker",
+    Psittacula: "parakeet", Alcedo: "kingfisher", Corvus: "crow", Coloeus: "crow", Garrulus: "crow", Pyrrhocorax: "crow", Pica: "magpie",
+    Parus: "tit", Cyanistes: "tit", Periparus: "tit", Poecile: "tit", Lophophanes: "tit", Panurus: "longtail", Aegithalos: "longtail",
+    Phylloscopus: "warbler", Sylvia: "warbler", Curruca: "warbler", Acrocephalus: "warbler", Cettia: "warbler", Regulus: "warbler", Locustella: "warbler", Hippolais: "warbler", Muscicapa: "warbler", Ficedula: "warbler",
+    Troglodytes: "wren", Nannus: "wren", Sitta: "nuthatch", Certhia: "creeper",
+    Turdus: "thrush", Erithacus: "robin", Phoenicurus: "robin", Saxicola: "robin", Oenanthe: "robin", Luscinia: "robin", Sturnus: "starling", Bombycilla: "starling",
+    Motacilla: "wagtail", Anthus: "pipit", Alauda: "pipit", Lullula: "pipit",
+    Fringilla: "finch", Carduelis: "finch", Chloris: "finch", Spinus: "finch", Linaria: "finch", Acanthis: "finch", Pyrrhula: "finch", Coccothraustes: "finch", Loxia: "finch", Serinus: "finch", Emberiza: "finch",
+    Passer: "sparrow", Prunella: "sparrow", Hirundo: "swallow", Delichon: "swallow", Riparia: "swallow", Apus: "swift", Cuculus: "cuckoo",
+  };
+  const FAMF = { water: "duck", game: "pheasant", pigeons: "pigeon", aerial: "swallow", coastal: "gull", raptors: "raptor", woodpeckers: "woodpecker", corvids: "crow", tits: "tit", warblers: "warbler", creepers: "wren", thrushes: "thrush", pipits: "pipit", finches: "finch", other: "thrush" };
+  /* plumage: h head, b back, w wings, u underparts, k beak, l legs, t tail, plus patches: cap, cheek, mask (eye stripe or face),
+     breast, bib, collar, bar (wing bar), crest, vent */
+  const W = "#f4f3ee", K = "#1d1f22";
+  const P = {
+    "Mallard": { h: "#1f6b3a", b: "#8f8b85", w: "#6f6a62", u: "#b9b2a8", breast: "#6b4532", collar: W, k: "#e3c23a", t: "#2b2b2b", l: "#e8873a" },
+    "Mute Swan": { h: W, b: W, w: "#ecebe6", u: W, k: "#e07a2e", l: K },
+    "Canada Goose": { h: K, cheek: W, b: "#8a6e55", w: "#6f5a46", u: "#d8cdbb", k: K, t: K, l: K },
+    "Graylag Goose": { h: "#9a8b78", b: "#8f8170", w: "#7c6e5e", u: "#c9bfb2", k: "#f08a3c", l: "#e7a0a0" },
+    "Tufted Duck": { h: K, crest: K, b: K, w: K, u: W, k: "#8aa0b8" },
+    "Eurasian Wigeon": { h: "#b0603e", cap: "#e8cf7a", b: "#a0a3a6", w: "#8f9296", u: W, breast: "#c4a29a", k: "#8aa0b8" },
+    "Gadwall": { h: "#8e8378", b: "#8e8378", w: "#6f655c", u: "#b0a89e", k: K },
+    "Common Shelduck": { h: "#1f5a3a", b: W, w: K, u: W, breast: "#b0603a", k: "#c43a3a" },
+    "Mandarin Duck": { h: "#d08a3c", crest: "#5a3a8a", cheek: W, b: "#7a5a3a", w: "#d08a3c", breast: "#5a3a6a", u: "#e8d8b0", k: "#d23a2a" },
+    "Eurasian Coot": { h: K, b: "#26282b", w: "#2a2c30", u: "#2e3034", k: W, shieldC: W, l: "#a8b83a" },
+    "Eurasian Moorhen": { h: "#2d2f3a", b: "#4a3f33", w: "#4a3f33", u: "#2d2f3a", k: "#d23a2a", shieldC: "#d23a2a", vent: W, l: "#b6c23a" },
+    "Little Grebe": { h: "#3a2e25", cheek: "#8a3a22", b: "#4a3a2e", w: "#4a3a2e", u: "#8c6a4c", k: K },
+    "Great Crested Grebe": { h: "#3a2e25", crest: "#3a2e25", cheek: W, b: "#6b5a4a", w: "#6b5a4a", u: "#f2ece2", k: "#c98a8a" },
+    "Great Cormorant": { h: "#1e2326", cheek: W, b: "#2a2f2e", w: "#2a2f2e", u: "#1e2326", k: "#6a6a62", l: K },
+    "Gray Heron": { h: W, mask: K, b: "#9aa3aa", w: "#6f7a82", u: "#e8e8e4", k: "#e3c23a", l: "#b3a37a" },
+    "Little Egret": { h: W, b: W, w: W, u: W, k: K, l: K },
+    "Black-headed Gull": { h: W, cheek: "#3b3b3b", b: W, w: "#c4ccd2", u: W, t: W, k: "#c43a3a", l: "#c43a3a" },
+    "Herring Gull": { h: W, b: W, w: "#b8c2ca", u: W, t: W, k: "#e8c23a", l: "#e6b3b3" },
+    "Lesser Black-backed Gull": { h: W, b: W, w: "#4a5057", u: W, t: W, k: "#e8c23a", l: "#e8c23a" },
+    "Great Black-backed Gull": { h: W, b: W, w: "#2a2e33", u: W, t: W, k: "#e8c23a", l: "#e6b3b3" },
+    "Common Gull": { h: W, b: W, w: "#a9b4bc", u: W, t: W, k: "#d8d26a", l: "#d8d26a" },
+    "Mew Gull": { h: W, b: W, w: "#a9b4bc", u: W, t: W, k: "#d8d26a", l: "#d8d26a" },
+    "Eurasian Curlew": { h: "#9a8466", b: "#9a8466", w: "#7f6c52", u: "#e3d4bc", k: "#3a2e25", l: "#7a8a96" },
+    "Northern Lapwing": { h: K, crest: K, cheek: W, b: "#2f5a4a", w: "#2f5a4a", breast: K, u: W, k: K, l: "#c98a7a" },
+    "Common Redshank": { h: "#8a7a6a", b: "#8a7a6a", w: "#7a6a5a", u: "#e3dacd", k: "#d23a2a", l: "#d23a2a" },
+    "Eurasian Oystercatcher": { h: K, b: K, w: K, u: W, k: "#e05a2a", l: "#e3a0a0" },
+    "Common Wood-Pigeon": { h: "#8a95a8", collar: W, b: "#8a95a8", w: "#7d879a", u: "#b9a3b3", breast: "#b9a3b3", k: "#e3a63a", l: "#d77a7a" },
+    "Rock Pigeon": { h: "#5d6878", collar: "#3f7a6a", b: "#8590a0", w: "#8590a0", bar: K, u: "#8590a0", k: K, l: "#d77a7a" },
+    "Stock Dove": { h: "#7d8aa0", collar: "#5f9a7a", b: "#7d8aa0", w: "#6f7c92", u: "#9a8aa0", k: "#e3a63a", l: "#d77a7a" },
+    "Eurasian Collared-Dove": { h: "#c9b9a6", collar: K, b: "#c9b9a6", w: "#b4a28c", u: "#d8cbbd", k: K, l: "#d77a7a" },
+    "Ring-necked Pheasant": { h: "#1f5a3a", cheek: "#c43a3a", collar: W, b: "#b0603a", w: "#8a5a36", u: "#9a4a2a", t: "#b07a4a", k: "#e3d2a8", l: "#8a8070" },
+    "Common Pheasant": { h: "#1f5a3a", cheek: "#c43a3a", collar: W, b: "#b0603a", w: "#8a5a36", u: "#9a4a2a", t: "#b07a4a", k: "#e3d2a8", l: "#8a8070" },
+    "Common Buzzard": { h: "#8a6a4e", b: "#7a5a40", w: "#6a4c34", u: "#d8c7ad", breast: "#8a6a4e", k: "#3a3a3a", l: "#e3c23a" },
+    "Eurasian Kestrel": { h: "#8a95a0", b: "#b0683e", w: "#a0603a", u: "#e3c9a4", t: "#8a95a0", k: "#3a3a3a", l: "#e3c23a" },
+    "Eurasian Sparrowhawk": { h: "#6f7a86", b: "#6f7a86", w: "#6f7a86", u: "#e8c4a4", k: "#3a3a3a", l: "#e3c23a" },
+    "Red Kite": { h: "#c9c4bb", b: "#b0603a", w: "#4a3a32", u: "#b0603a", t: "#c26a3a", k: "#e3c23a", l: "#e3c23a" },
+    "Peregrine Falcon": { h: K, cheek: W, b: "#4a5562", w: "#4a5562", u: "#ece6dc", k: "#e3c23a", l: "#e3c23a" },
+    "Tawny Owl": { h: "#9a6e4a", disc: "#c7a074", b: "#9a6e4a", w: "#8a5e3c", u: "#c9a37a", k: "#d8c9a6" },
+    "Barn Owl": { h: "#d4a96a", disc: W, b: "#d4a96a", w: "#c99a5a", u: W, k: "#e3d2a8" },
+    "Great Spotted Woodpecker": { h: K, cheek: W, cap: K, b: K, w: K, bar: W, u: "#ece6dc", vent: "#c43a3a", k: "#3a3a3a" },
+    "Eurasian Green Woodpecker": { h: "#6c9a3e", cap: "#d23a2a", mask: K, b: "#6c9a3e", w: "#5a8a34", u: "#c9d48a", k: "#3a3a3a" },
+    "Rose-ringed Parakeet": { h: "#58b04a", collar: K, b: "#58b04a", w: "#4a9a3c", u: "#8acc6a", t: "#4a9a6a", k: "#c43a3a" },
+    "Common Kingfisher": { h: "#2f9fc4", cheek: "#e07a2e", b: "#3ab0d8", w: "#2a7fa8", u: "#e07a2e", k: K, l: "#e05a3a" },
+    "Carrion Crow": { h: K, b: "#1f2226", w: "#1b1e22", u: "#1f2226", k: "#141414", l: K },
+    "Rook": { h: "#23202a", cheek: "#c9c4bb", b: "#23202a", w: "#1f1c26", u: "#23202a", k: "#c9c4bb", l: K },
+    "Eurasian Jackdaw": { h: "#2b2f33", collar: "#8d949a", b: "#2b2f33", w: "#24282c", u: "#34383d", k: K, l: K },
+    "Common Raven": { h: "#16181b", b: "#16181b", w: "#121417", u: "#16181b", k: "#111", l: K },
+    "Eurasian Magpie": { h: K, b: K, w: "#233a5a", bar: W, u: W, t: "#1b2a3f", k: K, l: K },
+    "Eurasian Jay": { h: "#c9b2a6", crest: "#d8d0c6", mask: K, b: "#c49a86", w: "#2a2a2a", bar: "#3d79c8", u: "#d8b4a2", t: K, k: K, l: "#c9a3a3" },
+    "Great Tit": { h: K, cheek: W, b: "#6f8a3a", w: "#6a7c86", u: "#e8d23a", bib: K, t: "#4a5a66", k: K, l: "#7a8a96" },
+    "Eurasian Blue Tit": { h: W, cap: "#3d8fd0", mask: "#1e3b6a", b: "#9aaa5a", w: "#3d7fc0", u: "#f0d63a", t: "#3d7fc0", k: K, l: "#7a8a96" },
+    "Coal Tit": { h: K, cheek: W, b: "#7b7f86", w: "#6b6f76", bar: W, u: "#d9cfbf", k: K, l: "#7a8a96" },
+    "Marsh Tit": { h: "#8d8577", cap: K, cheek: W, b: "#8d8577", w: "#7d7567", u: "#d9cfbf", k: K },
+    "Long-tailed Tit": { h: W, mask: K, b: "#c99aa4", w: "#2a2a2a", u: "#efe3e3", t: "#1e1e1e", k: K },
+    "Common Chiffchaff": { h: "#9aa060", b: "#9aa060", w: "#8a9050", u: "#d9d8a8", k: "#3a3a3a", l: "#3a3a3a" },
+    "Willow Warbler": { h: "#a9ab5c", b: "#a9ab5c", w: "#999b4c", u: "#e3df9a", k: "#c9a37a", l: "#c9a37a" },
+    "Eurasian Blackcap": { h: "#868a8e", cap: K, b: "#868a8e", w: "#767a7e", u: "#c9cbcc", k: K },
+    "Goldcrest": { h: "#a8b04a", cap: "#f2c83a", b: "#a8b04a", w: "#8a9040", bar: W, u: "#d8d8a8", k: K },
+    "Cetti's Warbler": { h: "#8a5e42", b: "#8a5e42", w: "#7a5238", u: "#c9b9a6", k: "#3a3a3a" },
+    "Eurasian Wren": { h: "#9a6c48", b: "#9a6c48", w: "#8a5c3a", u: "#c9a37a", t: "#8a5c3a", k: "#5a4a3a", l: "#c9a37a" },
+    "Eurasian Nuthatch": { h: "#7d93a8", mask: K, b: "#7d93a8", w: "#6d8398", u: "#e0a36a", k: "#3a3a3a" },
+    "Eurasian Treecreeper": { h: "#9a7c5e", b: "#9a7c5e", w: "#8a6c4e", u: "#f2ece2", k: "#5a4a3a" },
+    "Eurasian Blackbird": { h: K, b: "#1d1e20", w: "#191a1c", u: "#1d1e20", k: "#f2b31a", l: "#4a3a2e" },
+    "Song Thrush": { h: "#9a7a56", b: "#9a7a56", w: "#8a6a46", u: "#efe0c4", breast: "#e8d0a4", k: "#5a4a3a", l: "#d8b8a0" },
+    "Mistle Thrush": { h: "#9c8a6a", b: "#9c8a6a", w: "#8c7a5a", u: "#efe3cc", k: "#5a4a3a", l: "#d8b8a0" },
+    "Redwing": { h: "#7a6a56", mask: W, b: "#7a6a56", w: "#6a5a46", u: "#efe3cc", breast: "#c0583a", k: "#5a4a3a" },
+    "Fieldfare": { h: "#8a8f99", b: "#8a5e3c", w: "#7a4e2c", u: "#ece2cf", breast: "#e8b46a", t: K, k: "#e3c23a" },
+    "European Robin": { h: "#8a6e4a", mask: "#e0702e", b: "#8a6e4a", w: "#7a5e3a", breast: "#e0702e", u: "#f2ece2", k: K, l: "#8a6a4e" },
+    "Black Redstart": { h: "#3a3d42", b: "#3a3d42", w: "#2e3136", u: "#3a3d42", t: "#d0602a", k: K },
+    "European Stonechat": { h: K, cheek: W, b: "#4a3a2e", w: "#3a2e25", bar: W, breast: "#d0702e", u: "#e8d8c0", k: K },
+    "European Starling": { h: "#2a3a3a", b: "#2a3a3a", w: "#33393a", u: "#2f3a3c", k: "#e8d23a", l: "#c98a7a" },
+    "White Wagtail": { h: W, cap: K, bib: K, b: "#3a3d42", w: "#2a2a2a", bar: W, u: W, t: K, k: K, l: K },
+    "Gray Wagtail": { h: "#8d949a", mask: W, bib: K, b: "#8d949a", w: "#3a3d42", u: "#f2d23a", t: K, k: K, l: "#d8b8a0" },
+    "Meadow Pipit": { h: "#8f8a62", b: "#8f8a62", w: "#7f7a52", u: "#e8dcc0", k: "#5a4a3a", l: "#d8b8a0" },
+    "Eurasian Skylark": { h: "#9a8466", crest: "#9a8466", b: "#9a8466", w: "#8a7456", u: "#e8dcc0", k: "#5a4a3a" },
+    "Common Chaffinch": { h: "#6a7a96", b: "#8a6a4e", w: K, bar: W, u: "#d98a6a", breast: "#d98a6a", k: "#8a9aa8", l: "#8a6a5a" },
+    "European Goldfinch": { h: K, mask: "#d23a2e", cheek: W, b: "#c9a77a", w: K, bar: "#f2c83a", u: "#f2ece2", t: K, k: "#e3d2b8" },
+    "European Greenfinch": { h: "#8faa3c", b: "#8faa3c", w: "#7a9a2c", bar: "#f2d23a", u: "#b8cc5a", k: "#e3c9a4" },
+    "Eurasian Siskin": { h: "#b2c23c", cap: K, b: "#a2b23c", w: K, bar: "#f2d23a", u: "#d8e08a", k: "#b8a080" },
+    "Eurasian Bullfinch": { h: K, cap: K, b: "#8d949a", w: K, bar: W, u: "#e0606e", breast: "#e0606e", t: K, k: K },
+    "Common Linnet": { h: "#9a8f86", b: "#b3664f", w: "#7a5a4a", breast: "#c4504a", u: "#e8d8c8", k: "#8a8a8a" },
+    "Yellowhammer": { h: "#f2d23a", b: "#9a6a3a", w: "#8a5a2a", u: "#f2d23a", k: "#9aa0a8" },
+    "Reed Bunting": { h: K, collar: W, b: "#8a6a4a", w: "#7a5a3a", u: "#e8e0d4", k: K },
+    "House Sparrow": { h: "#8d8a86", cheek: "#d9d4cc", bib: K, b: "#9a7454", w: "#7a5a3e", bar: "#f2ece2", u: "#c9c4bb", k: K, l: "#c9a3a3" },
+    "Eurasian Tree Sparrow": { h: "#8a4a2a", cheek: W, bib: K, b: "#9a7454", w: "#7a5a3e", bar: W, u: "#d4cfc7", k: K },
+    "Dunnock": { h: "#6d7178", b: "#8a6a52", w: "#7a5a42", u: "#8d8a86", k: K, l: "#c9a3a3" },
+    "Barn Swallow": { h: "#1f3a6a", cheek: "#c4502a", b: "#1f3a6a", w: "#1a2e54", u: "#f2ece2", t: "#1a2e54", k: K },
+    "Common House-Martin": { h: "#20325a", b: "#20325a", w: "#1a2a4a", u: W, t: "#1a2a4a", k: K },
+    "Common Swift": { h: "#3a3836", b: "#3a3836", w: "#2e2c2a", u: "#3a3836", k: K },
+    "Common Cuckoo": { h: "#8a95a0", b: "#8a95a0", w: "#7a8590", u: "#ece6dc", t: "#5a6570", k: "#e3c23a", l: "#e3c23a" },
+  };
+  const cache = new Map(), meshCache = new Map();
+  const shadeHex = (hex, f) => { const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; const c = (v) => Math.max(0, Math.min(255, Math.round(f >= 0 ? v + (255 - v) * f : v * (1 + f)))); return "#" + [c(r), c(g), c(b)].map((v) => v.toString(16).padStart(2, "0")).join(""); };
+  function look(name, sci, fam) {
+    const key = name + "|" + sci;
+    if (cache.has(key)) return cache.get(key);
+    const genus = String(sci || "").split(" ")[0];
+    const form = (/Curlew|Whimbrel/.test(name) ? "curlew" : null) || GENUS[genus] || FAMF[fam] || "thrush";
+    const main = (typeof PLUMAGE !== "undefined" && PLUMAGE[sci2(sci)]) || famColour(fam);
+    const p = P[name] || { h: shadeHex(main, -0.12), b: main, w: shadeHex(main, -0.22), u: shadeHex(main, 0.45), k: "#4a4640", l: "#8a7a6a" };
+    const out = { form, F: F[form] || F.thrush, P: { k: "#4a4640", l: "#8a7a6a", t: p.w || p.b, ...p } };
+    cache.set(key, out); return out;
+  }
+  /* builds the bird as a Three.js group: x forward, y up, feet 0.15 below the origin (or sitting on the water) */
+  function three(name, sci, fam, big = 1, mat) {
+    const T = THREE, L = look(name, sci, fam), f = L.F, c = L.P;
+    const M = mat || ((col) => new T.MeshLambertMaterial({ color: col }));
+    const root = new T.Group(), g = new T.Group(); root.add(g);
+    const ell = (rx, ry, rz, col, x, y, z, parent = g, seg = 12) => { if (LITE) seg = Math.min(seg, 7); const m = new T.Mesh(new T.SphereGeometry(1, seg, Math.max(5, seg - 4)), M(col)); m.scale.set(rx, ry, rz); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
+    const stick = (r1, r2, col, a, b, parent = g, seg = 6) => { const v = new T.Vector3().subVectors(b, a), len = v.length(); const m = new T.Mesh(new T.CylinderGeometry(r2, r1, len, seg), M(col)); m.position.copy(a).addScaledVector(v, 0.5); m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), v.normalize()); m.castShadow = true; parent.add(m); return m; };
+    const [bx, by, bz] = f.body, pitch = f.pitch, legs = f.legs || 0;
+    const cy = f.float ? by * 0.45 : legs + by * 0.9;
+    const body = new T.Group(); body.position.set(0, cy, 0); body.rotation.z = pitch; g.add(body);
+    ell(bx, by, bz, c.b, 0, 0, 0, body, 14);
+    ell(bx * 0.82, by * 0.78, bz * 0.92, c.u, bx * 0.08, -by * 0.28, 0, body);
+    if (c.breast) ell(bx * 0.5, by * 0.62, bz * 0.88, c.breast, bx * 0.5, -by * 0.05, 0, body);
+    if (c.vent) ell(bx * 0.28, by * 0.35, bz * 0.6, c.vent, -bx * 0.62, -by * 0.45, 0, body);
+    /* folded wings, each on a hinge at the shoulder so flyers can flap them */
+    const wl = f.longWings ? 1.25 : 0.95;
+    const wings = [1, -1].map((sd) => {
+      const hinge = new T.Group(); hinge.position.set(bx * 0.25, by * 0.35, sd * bz * 0.78); body.add(hinge);
+      ell(bx * 0.72 * wl, by * 0.42, bz * 0.3, c.w, -bx * 0.45 * wl, -by * 0.05, sd * bz * 0.05, hinge);
+      if (c.bar) ell(bx * 0.42, by * 0.1, bz * 0.32, c.bar, -bx * 0.12, by * 0.04, sd * bz * 0.06, hinge, 8);
+      return hinge;
+    });
+    /* tail */
+    const tl = f.tail[1], tc = c.t || c.w, tx = -bx * 0.92;
+    if (f.tail[0] === "short" && tl) ell(tl * 0.6, by * 0.12, bz * 0.42, tc, tx - tl * 0.45, -by * 0.05, 0, body, 8);
+    else if (f.tail[0] === "long") ell(tl * 0.55, by * 0.08, bz * 0.3, tc, tx - tl * 0.5, -by * 0.05, 0, body, 8);
+    else if (f.tail[0] === "fork") [1, -1].forEach((sd) => { const m = ell(tl * 0.55, by * 0.06, bz * 0.16, tc, tx - tl * 0.5, -by * 0.05, sd * bz * 0.16, body, 8); m.rotation.y = sd * 0.25; });
+    else if (f.tail[0] === "cocked") { const m = ell(tl * 0.6, by * 0.1, bz * 0.38, tc, tx - tl * 0.1, by * 0.55, 0, body, 8); m.rotation.z = -1.1; }
+    else if (f.tail[0] === "stiff") { const m = ell(tl * 0.6, by * 0.1, bz * 0.35, tc, tx - tl * 0.4, -by * 0.25, 0, body, 8); m.rotation.z = 0.35; }
+    /* head and neck: the head stays level whatever the body does */
+    const hx = f.hp[0], hy = cy + f.hp[1], hr = f.head;
+    const head = new T.Group(); head.position.set(hx, hy, 0); g.add(head);
+    if (f.neck) stick(bz * 0.42, hr * 0.65, c.h === c.b ? c.b : c.h, new T.Vector3(bx * 0.55 * Math.cos(pitch), cy + bx * 0.55 * Math.sin(pitch) + by * 0.2, 0), new T.Vector3(hx - hr * 0.2, hy - hr * 0.3, 0), g, 8);
+    if (f.neck && c.collar) ell(hr * 0.75, hr * 0.28, hr * 0.75, c.collar, hx - hr * 0.5, hy - hr * 1.2, 0, g, 10);
+    else if (c.collar) ell(hr * 0.85, hr * 0.3, hr * 0.85, c.collar, hx - hr * 0.55, hy - hr * 0.75, 0, g, 10);
+    ell(hr, hr * 0.94, hr * 0.9, c.h, 0, 0, 0, head, 14);
+    if (c.cap) ell(hr * 0.9, hr * 0.5, hr * 0.84, c.cap, -hr * 0.05, hr * 0.5, 0, head, 12);
+    if (c.disc) ell(hr * 0.35, hr * 0.85, hr * 0.8, c.disc, hr * 0.72, -hr * 0.05, 0, head, 12);
+    if (c.cheek) [1, -1].forEach((sd) => ell(hr * 0.45, hr * 0.4, hr * 0.12, c.cheek, hr * 0.1, -hr * 0.2, sd * hr * 0.83, head, 8));
+    if (c.mask) [1, -1].forEach((sd) => ell(hr * 0.55, hr * 0.14, hr * 0.1, c.mask, hr * 0.3, hr * 0.12, sd * hr * 0.85, head, 8));
+    if (c.bib) ell(hr * 0.35, hr * 0.5, hr * 0.5, c.bib, hr * 0.55, -hr * 0.65, 0, head, 8);
+    if (c.crest) { const m = new T.Mesh(new T.ConeGeometry(hr * 0.35, hr * 0.9, 6), M(c.crest)); m.position.set(-hr * 0.35, hr * 0.95, 0); m.rotation.z = 0.7; head.add(m); }
+    [1, -1].forEach((sd) => ell(hr * 0.16, hr * 0.16, hr * 0.08, "#111111", hr * 0.5, hr * 0.22, sd * hr * 0.82, head, 6));
+    /* beak */
+    const [bt, bl, bw] = f.beak, kc = c.k, front = hr * 0.92;
+    const cone = (len, r, rotZ, y = 0) => { const m = new T.Mesh(new T.ConeGeometry(r, len, 7), M(kc)); m.rotation.z = -Math.PI / 2 + rotZ; m.position.set(front + (len / 2) * Math.cos(rotZ), y + (len / 2) * Math.sin(rotZ), 0); head.add(m); return m; };
+    if (bt === "flat") { ell(bl * 0.55, bw * 0.45, bw, kc, front + bl * 0.4, -hr * 0.15, 0, head, 10); if (f.float && c.shieldC) {} }
+    else if (bt === "hook") { cone(bl, bw, -0.35, -hr * 0.05); }
+    else if (bt === "curve") { const segs = 4; let x = front, y = -hr * 0.05, a = -0.15; for (let i = 0; i < segs; i++) { const l = bl / segs; const m = new T.Mesh(new T.CylinderGeometry(bw * (1 - i / segs) * 0.9 + 0.003, bw * (1 - (i - 1) / segs) * 0.9, l, 5), M(kc)); m.rotation.z = -Math.PI / 2 + a; m.position.set(x + (l / 2) * Math.cos(a), y + (l / 2) * Math.sin(a), 0); head.add(m); x += l * Math.cos(a); y += l * Math.sin(a); a -= 0.22; } }
+    else if (bt === "long" || bt === "dagger" || bt === "thin") cone(bl, bw, -0.05, -hr * 0.05);
+    else if (bt === "thick") cone(bl, bw, -0.08, -hr * 0.08);
+    else cone(bl, bw, -0.1, -hr * 0.08);
+    if (f.shield) ell(hr * 0.22, hr * 0.32, hr * 0.18, c.shieldC || kc, front * 0.95, hr * 0.25, 0, head, 8);
+    /* legs */
+    if (legs > 0) [1, -1].forEach((sd) => {
+      const top = new T.Vector3(0, cy - by * 0.6, sd * bz * 0.35), foot = new T.Vector3(0.02, 0.005, sd * bz * 0.4);
+      stick(0.012 + legs * 0.012, 0.012 + legs * 0.012, c.l, top, foot, g, 5);
+      const toe = new T.Mesh(new T.BoxGeometry(0.07, 0.01, 0.018), M(c.l)); toe.position.set(0.05, 0.005, sd * bz * 0.4); g.add(toe);
+    });
+    /* normalise: about 0.75 long for an average bird, scaled by its form and the caller's size; feet 0.15 below the origin */
+    const box = new T.Box3().setFromObject(g), sz = new T.Vector3(); box.getSize(sz);
+    const s = (0.72 * f.size * 0.85 * big) / Math.max(0.3, sz.x);
+    g.scale.setScalar(s); g.position.y = -0.15 - box.min.y * s;
+    if (f.float) g.position.y = -0.15 + 0.02;
+    root.userData.wings = wings; root.userData.form = L.form;
+    return root;
+  }
+  /* the same bird as a single coloured mesh for deck.gl (z up), cached per species */
+  function deckMesh(name, sci, fam) {
+    const key = name + "|" + sci;
+    if (meshCache.has(key)) return meshCache.get(key);
+    if (typeof THREE === "undefined") return null;
+    const T = THREE, grp = three(name, sci, fam, 1.3, (col) => new T.MeshBasicMaterial({ color: col }));
+    grp.updateMatrixWorld(true);
+    const pos = [], nor = [], col = [];
+    grp.traverse((o) => {
+      if (!o.isMesh) return;
+      let geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+      geo.applyMatrix4(o.matrixWorld); geo.computeVertexNormals();
+      const p = geo.attributes.position.array, n = geo.attributes.normal.array, cc = o.material.color;
+      for (let i = 0; i < p.length; i += 3) {
+        pos.push(p[i], -p[i + 2], p[i + 1] + 0.15); nor.push(n[i], -n[i + 2], n[i + 1]); col.push(cc.r, cc.g, cc.b);
+      }
+      geo.dispose();
+    });
+    grp.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+    const mesh = { positions: { value: new Float32Array(pos), size: 3 }, normals: { value: new Float32Array(nor), size: 3 }, colors: { value: new Float32Array(col), size: 3 } };
+    meshCache.set(key, mesh); return mesh;
+  }
+  const wingColour = (name, sci, fam) => hexRGB(look(name, sci, fam).P.w);
+  return { look, three, deckMesh, wingColour, FORMS: F, PLUMAGE: P };
+})();
+
 const MESH = {
   cyl: meshFromTris(cylTris()),
   ball: meshFromTris(sphereTris(0, 0, 0, 1, 1, 1, 7, 5)),
@@ -2067,6 +2330,22 @@ const MESH = {
   wingR: meshFromTris([[[0.1, 0, 0], [-0.02, -0.46, 0], [-0.12, 0, 0]], [[0.1, 0, 0], [-0.12, 0, 0], [-0.02, -0.46, 0]]]),
 };
 const VIZ_MAT = { ambient: 0.55, diffuse: 0.6, shininess: 20, specularColor: [40, 44, 48] };
+/* street-level birds: one layer per species, each with its own shape and plumage (falls back to the simple bird) */
+function speciesBirdLayers(idBase, pose, t, onClick) {
+  const groups = new Map();
+  for (const d of pose) { const k = d.b.name; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(d); }
+  return [...groups].map(([nm, arr]) => {
+    const b0 = arr[0].b; let mesh = null;
+    try { mesh = BirdLook.deckMesh(nm, b0.sci, b0.fam); } catch (e) { mesh = null; }
+    return new deck.SimpleMeshLayer({
+      id: idBase + "-" + nm, data: arr, mesh: mesh || MESH.bird, pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 120],
+      getPosition: (d) => d.pos, getScale: (d) => [d.b.s, d.b.s, d.b.s], getOrientation: (d) => [0, d.yaw, 0],
+      getColor: mesh ? [255, 255, 255] : (d) => d.b.colour, material: VIZ_MAT, onClick,
+      updateTriggers: { getPosition: t, getOrientation: t },
+    });
+  });
+}
+const wingCol = (b) => { try { return BirdLook.wingColour(b.name, b.sci, b.fam); } catch (e) { return b.colour; } };
 let vizMode = "totem";
 try { const v = localStorage.getItem("birdmap-viz"); if (["totem", "flock", "habitat"].includes(v)) vizMode = v; else if (v === "tree") vizMode = "habitat"; } catch (e) {}
 let viz = { clusters: [], mpp: 1, totem: [], hab: { flats: [], pads: [], top: [], cyl: [], ball: [], sway: [], crowns: [], birds: [], labels: [] }, flock: [] };
@@ -2305,16 +2584,11 @@ function vizLayers(t) {
       const p = offsetLL(b.c.lng, b.c.lat, Math.cos(a) * b.R, Math.sin(a) * b.R);
       return { b, pos: [...p, b.H + Math.sin(t * 1.3 + b.ph) * mpp * 4], yaw: (a * 180) / Math.PI + 90, flap: Math.sin(t * 11 + b.ph) * 38 };
     });
-    L.push(new deck.SimpleMeshLayer({
-      id: "viz-flock", data: pose, mesh: MESH.bird, pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 120],
-      getPosition: (d) => d.pos, getScale: (d) => [d.b.s, d.b.s, d.b.s], getOrientation: (d) => [0, d.yaw, 0], getColor: (d) => d.b.colour, material: VIZ_MAT,
-      onClick: ({ object }) => object && openDetail({ fam: object.b.fam, cluster: object.b.c, focus: object.b.name }),
-      updateTriggers: { getPosition: t, getOrientation: t },
-    }));
+    L.push(...speciesBirdLayers("viz-flock", pose, t, ({ object }) => object && openDetail({ fam: object.b.fam, cluster: object.b.c, focus: object.b.name })));
     ["L", "R"].forEach((side) => L.push(new deck.SimpleMeshLayer({
       id: "viz-flock-wing" + side, data: pose, mesh: MESH["wing" + side],
-      getPosition: (d) => [d.pos[0], d.pos[1], d.pos[2] + d.b.s * 0.08], getScale: (d) => [d.b.s, d.b.s, d.b.s],
-      getOrientation: (d) => [0, d.yaw, side === "L" ? d.flap : -d.flap], getColor: (d) => d.b.colour, material: VIZ_MAT,
+      getPosition: (d) => [d.pos[0], d.pos[1], d.pos[2] + d.b.s * 0.22], getScale: (d) => [d.b.s, d.b.s, d.b.s],
+      getOrientation: (d) => [0, d.yaw, side === "L" ? d.flap : -d.flap], getColor: (d) => wingCol(d.b), material: VIZ_MAT,
       updateTriggers: { getPosition: t, getOrientation: t },
     })));
   }
@@ -2349,17 +2623,12 @@ function vizLayers(t) {
       }
       return { b, pos: b.pos, yaw: b.yaw, flap: 0 };
     });
-    L.push(new deck.SimpleMeshLayer({
-      id: "viz-hab-birds", data: pose, mesh: MESH.bird, pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 120],
-      getPosition: (d) => d.pos, getScale: (d) => [d.b.s, d.b.s, d.b.s], getOrientation: (d) => [0, d.yaw, 0], getColor: (d) => d.b.colour, material: VIZ_MAT,
-      onClick: ({ object }) => object && openDetail({ hab: object.b.hab, cluster: object.b.c, focus: object.b.name }),
-      updateTriggers: { getPosition: t, getOrientation: t },
-    }));
+    L.push(...speciesBirdLayers("viz-hab-birds", pose, t, ({ object }) => object && openDetail({ hab: object.b.hab, cluster: object.b.c, focus: object.b.name })));
     const flyers = pose.filter((d) => d.b.mode === "fly");
     ["L", "R"].forEach((side) => L.push(new deck.SimpleMeshLayer({
       id: "viz-hab-wing" + side, data: flyers, mesh: MESH["wing" + side],
-      getPosition: (d) => [d.pos[0], d.pos[1], d.pos[2] + d.b.s * 0.08], getScale: (d) => [d.b.s, d.b.s, d.b.s],
-      getOrientation: (d) => [0, d.yaw, side === "L" ? d.flap : -d.flap], getColor: (d) => d.b.colour, material: VIZ_MAT,
+      getPosition: (d) => [d.pos[0], d.pos[1], d.pos[2] + d.b.s * 0.22], getScale: (d) => [d.b.s, d.b.s, d.b.s],
+      getOrientation: (d) => [0, d.yaw, side === "L" ? d.flap : -d.flap], getColor: (d) => wingCol(d.b), material: VIZ_MAT,
       updateTriggers: { getPosition: t, getOrientation: t },
     })));
     L.push(mesh("viz-hab-crowns", H.crowns, MESH.ball, { parameters: { depthWriteEnabled: false } }));
@@ -3631,7 +3900,10 @@ const World = (() => {
       g.scale.setScalar(big || 1); return g;
     };
     const addBird = (sp, big, par) => {
-      const g = birdMesh(sp.col, big); g.userData.sp = sp; g.userData.s = big || 1;
+      let g = null;
+      try { g = BirdLook.three(sp.n, sp.s, sp.fam, big || 1, (c) => M(c)); } catch (e) { g = null; }
+      if (!g) g = birdMesh(sp.col, big);
+      g.userData.sp = sp; g.userData.s = big || 1;
       g.traverse((o) => { if (o !== g) o.userData.root = g; }); g.userData.root = g;
       birds.push(g); (par || S).add(g); song.push({ g, next: 2 + (rnd() * 12) / sp.d, rate: sp.d }); return g;
     };
