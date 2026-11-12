@@ -982,6 +982,69 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
   .coll, .world { bottom: var(--tabh); }
   .world-tools { right: 10px; }
 }
+
+/* ---------- a calmer screen: fewer, smaller pieces around the map ---------- */
+.view-top { display: none; }
+.replay-key { flex: none; width: 84px; display: grid; gap: 3px; padding-left: 12px; border-left: 1px solid var(--line); font-size: 10px; color: var(--muted); }
+.replay-key[hidden] { display: none; }
+@media (min-width: 761px) {
+  /* the settings box opens from one Options button */
+  .layers-btn { display: flex; position: absolute; z-index: 8; top: 19px; right: var(--opt-right, 14px); align-items: center; gap: 7px; height: 44px; padding: 0 16px 0 13px; border-radius: 999px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line); box-shadow: 0 2px 10px rgba(0,0,0,.1); color: var(--ink); font-size: 13px; font-weight: 600; }
+  .layers-btn svg { width: 19px; height: 19px; color: var(--accent); }
+  .layers-btn:hover, .layers-btn[aria-expanded="true"] { border-color: var(--accent); }
+  body.coll-on .layers-btn, body.world-on .layers-btn { display: none; }
+  #map-tools { display: none; top: 76px; }
+  #map-tools.open { display: grid; z-index: 9; box-shadow: 0 14px 40px rgba(0,0,0,.2); }
+  #map-tools.open ~ .replay { display: flex; }
+  #map-tools .seg[data-k="View"], .world-tools .seg[data-k="View"], .coll-views { display: none !important; }
+  /* Map, World and Birds: one switch at the top */
+  .view-top { display: flex; position: absolute; z-index: 7; top: 19px; left: 50%; transform: translateX(-50%); padding: 4px; gap: 2px; border-radius: 999px; background: var(--surface); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  .view-top button { padding: 7px 16px; font-size: 13px; font-weight: 500; border-radius: 999px; }
+  .view-top button[aria-pressed="true"] { background: var(--accent); color: #fff; box-shadow: none; }
+  body.night .view-top button[aria-pressed="true"] { color: #0f191d; }
+  body.panel-open .view-top { left: calc(380px + (100vw - 380px) / 2); }
+  .crumbs { top: 72px; }
+  body.panel-open .coll-in { padding-top: 80px; }
+  /* one card on the left: the title, whose birds, and the latest and favourite birds as two small photos */
+  .map-card { grid-template-columns: 1fr auto; gap: 0; align-items: center; min-width: 232px; border-radius: 14px; background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.14); }
+  .map-card .open-panel { grid-column: 1 / -1; border: 0; box-shadow: none; background: transparent; border-radius: 14px; }
+  .map-card .who { grid-column: 1; grid-row: 2; padding: 0 6px 9px 10px; }
+  .map-card .who .scope { background: var(--bg); box-shadow: none; backdrop-filter: none; }
+  .map-card .latest { grid-column: 2; grid-row: 2; display: flex; gap: 6px; justify-self: end; padding: 0 10px 9px 6px; }
+  .map-card .chips { grid-column: 1 / -1; grid-row: 3; padding: 0 10px 9px; }
+  /* nobody signed in: the two photos sit beside the title instead of on a row of their own */
+  .map-card:not(:has(> .who:not([hidden]))) .open-panel { grid-column: 1; }
+  .map-card:not(:has(> .who:not([hidden]))) .latest { grid-row: 1; padding: 0 12px 0 0; }
+  .map-card .latest-pill { padding: 3px; border-radius: 50%; box-shadow: none; }
+  .map-card .latest-txt, .map-card .latest-chev { display: none; }
+  .map-card .latest-thumb .ph-thumb, .map-card .fav-empty { width: 30px; height: 30px; }
+  .map-card .fav-heart { width: 14px; height: 14px; right: -4px; bottom: -4px; }
+  .map-card .fav-heart svg { width: 8px; height: 8px; }
+  .map-card .latest-card { position: absolute; top: calc(100% + 8px); left: 0; z-index: 2; }
+  /* the colour key rides in the timeline until you reach street level, where the family key takes over */
+  .legend[data-mode="area"] { display: none; }
+  .replay { width: min(600px, calc(100vw - 560px)); }
+  /* the bell is a small badge on your picture */
+  .me-btn.in { padding: 4px; }
+  .me-btn.in .me-txt { display: none; }
+  .bell-btn { top: 7px; right: 7px; z-index: 9; width: 26px; height: 26px; background: var(--surface); box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+  .bell-btn svg { width: 14px; height: 14px; }
+  .bell-n { top: -6px; right: -6px; min-width: 16px; height: 16px; padding: 0 3px; font-size: 10px; border-width: 1.5px; }
+}
+@media (max-width: 760px) {
+  .replay-key { display: none; }
+  /* the latest and favourite birds share one tile, which turns over every few seconds */
+  .latest:not(.show-fav) #fav-pill, .latest.show-fav #latest-pill { display: none; }
+  .latest-pill { animation: tileTurn .45s ease; }
+}
+@keyframes tileTurn { from { opacity: 0; transform: rotateY(80deg); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .latest-pill { animation: none !important; } }
+/* pinch does the zooming on touch screens, so the plus and minus buttons go */
+@media (pointer: coarse) { .maplibregl-ctrl-zoom-in, .maplibregl-ctrl-zoom-out { display: none !important; } }
+/* quiet mode: the pieces around the map fade after a few seconds without a touch */
+.map-card, #crumbs, .layers-btn, .me-btn, .bell-btn, .legend, .replay, .view-top, .world-tools, .world-focus, .maplibregl-ctrl-bottom-right { transition: opacity .25s ease; }
+body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me-btn, body.quiet .bell-btn, body.quiet .legend, body.quiet .replay:not(.playing), body.quiet .view-top, body.quiet .world-tools, body.quiet .world-focus, body.quiet .maplibregl-ctrl-bottom-right { opacity: .3; transition: opacity 1.6s ease; }
 </style>
 </head>
 <body>
@@ -1083,6 +1146,11 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
     </div>
   </div>
   <nav class="crumbs" id="crumbs" aria-label="Where you are on the map"></nav>
+  <div class="seg view-top" id="view-top" role="group" aria-label="Choose a view">
+    <button type="button" data-view="map" aria-pressed="true">Map</button>
+    <button type="button" data-view="world" aria-pressed="false" title="Every bird you've heard, together in their habitats (W)">World</button>
+    <button type="button" data-view="collection" aria-pressed="false" title="Your collection of UK birds (C)">Birds</button>
+  </div>
   <div id="map" aria-label="3D map of sightings by county"><div class="loading">Drawing the map…</div></div>
   <div class="basemap-note" id="basemap-note" hidden>
     <span>The detailed map couldn't load, so this is the simple map.</span>
@@ -1118,6 +1186,10 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
     <div class="seg" data-k="Detail" role="group" aria-label="Map detail" title="Lite is flatter and lighter, for phones that find the full map hard going">
       <button type="button" data-detail="full" aria-pressed="true">Full 3D</button>
       <button type="button" data-detail="lite" aria-pressed="false">Lite</button>
+    </div>
+    <div class="seg" data-k="Quiet" role="group" aria-label="Quiet mode" title="Fades the buttons after a few seconds without a touch, so the map stands out. They come back the moment you move.">
+      <button type="button" data-quiet="on" aria-pressed="true">On</button>
+      <button type="button" data-quiet="off" aria-pressed="false">Off</button>
     </div>
     </div>
     <button type="button" id="fit">Fit to sightings</button>
@@ -1233,6 +1305,7 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
       <input type="range" id="replay-range" min="0" max="1" step="1" value="1" aria-label="Show birds heard up to this date">
       <div class="replay-labels"><span id="replay-start"></span><span id="replay-now"></span><span id="replay-end"></span></div>
     </div>
+    <div class="replay-key" id="replay-key" hidden><div class="legend-bar"></div><div class="legend-scale"><span>1</span><span id="replay-max">1</span></div></div>
   </div>
   <div class="legend" id="legend" aria-label="Map key" data-mode="area">
     <div class="seg bar-by" role="group" aria-label="Bars show">
@@ -1842,7 +1915,7 @@ function updateCrumbs() {
   if (sig === crumbSig) return;
   crumbSig = sig;
   const lvlName = { uk: "Country", region: "Region", county: "County", ward: "Ward", place: "Place" };
-  $("crumbs").innerHTML = items.map((it, i) => (i ? `<span class="sep" aria-hidden="true">›</span>` : "") +
+  $("crumbs").innerHTML = items.length < 2 ? "" : items.map((it, i) => (i ? `<span class="sep" aria-hidden="true">›</span>` : "") +
     `<button type="button" data-crumb="${it.k}" data-name="${esc(it.name)}" ${i === items.length - 1 ? 'aria-current="location"' : ""} title="Go to ${esc(lvlName[it.k].toLowerCase())} view">${i === 0 ? `<span class="lvl">${lvlName[it.k]}</span>` : ""}${esc(it.label)}</button>`).join("");
 }
 function queueCrumbs() { if (!crumbsQueued) { crumbsQueued = true; requestAnimationFrame(updateCrumbs); } }
@@ -3364,6 +3437,7 @@ function fit() {
 function updateLegend(pm, pb) {
   const lg = $("legend");
   lg.dataset.mode = pm ? "place" : "area";
+  $("replay-key").hidden = !!pm;
   const grp = document.querySelector('[aria-label="Group sightings by"]');
   if (grp) { grp.classList.toggle("dim", viewState.zoom >= PLACE_ZOOM); grp.title = viewState.zoom >= PLACE_ZOOM ? "Counties and regions apply to the country view" : ""; }
   const unit = state.level;
@@ -3383,6 +3457,8 @@ function updateLegend(pm, pb) {
     const wardView = viewState.zoom >= PLACE_ZOOM;
     $("legend-title").textContent = wardView ? `Raised wards: species heard per ward${who}` : `Height and colour: species heard per ${unit}${who}`;
     $("legend-max").textContent = wardView ? Math.max(1, ...[...(current.aggBy.ward || new Map()).values()].map((a) => a.n)) : current.maxN;
+    $("replay-max").textContent = $("legend-max").textContent;
+    $("replay-key").title = $("legend-title").textContent;
     $("legend-note").textContent = wardView ? "Zoom in to street level for bars at each spot." : state.level === "ward" ? "Each pillar is a ward you've birded in. Zoom in to see the ward tiles." : "Zoom in for wards, then for bars at each spot.";
   }
 }
@@ -3744,7 +3820,7 @@ function renderFav(force) {
   if (!c.fav) {
     pill.classList.add("empty"); pill.style.removeProperty("--bird");
     $("fav-thumb").innerHTML = `<span class="fav-empty">${HEART}</span>`;
-    $("fav-name").textContent = "Pick a favourite";
+    $("fav-name").textContent = "Pick a favourite"; pill.title = "Pick a favourite bird";
     cardEl.innerHTML = `<div class="body"><h3>Pick your favourite</h3><div class="where">Open any bird you've heard and tap <b>Make favourite</b> in its story.</div>
       <div class="acts"><button type="button" data-fav-pick>Choose from my birds</button></div></div>`;
     return;
@@ -3754,7 +3830,7 @@ function renderFav(force) {
   pill.style.removeProperty("--bird"); if (col) pill.style.setProperty("--bird", col);
   cardEl.style.removeProperty("--bird"); if (col) cardEl.style.setProperty("--bird", col);
   $("fav-thumb").innerHTML = Photos.slot(f.sci, "ph-thumb", col || "var(--accent)") + `<span class="fav-heart">${HEART}</span>`;
-  $("fav-name").textContent = f.name;
+  $("fav-name").textContent = f.name; pill.title = `${label}: ${f.name}`;
   const recs = state.data.filter((d) => d.name === f.name || (f.sci && sci2(d.sci) === sci2(f.sci)));
   const days = new Set(recs.map((d) => d.date)), first = recs.map((d) => d.date).sort()[0];
   cardEl.innerHTML = `${Photos.slot(f.sci, "ph-hero", col || "var(--accent)", true)}
@@ -4028,6 +4104,8 @@ function setTools(open) {
 $("tools-toggle").addEventListener("click", () => setTools(!$("map-tools").classList.contains("open")));
 $("layers-btn").addEventListener("click", () => setTools(!$("map-tools").classList.contains("open")));
 $("fit").addEventListener("click", () => setTools(false));
+document.addEventListener("pointerdown", (e) => { if (innerWidth > 760 && $("map-tools").classList.contains("open") && !e.target.closest("#map-tools, #layers-btn")) setTools(false); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") setTools(false); });
 $("help-btn").addEventListener("click", () => setTools(false));
 document.addEventListener("keydown", (e) => {
   if (e.target.closest("input, textarea, select") || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -4594,6 +4672,32 @@ function setView(v) {
 document.addEventListener("click", (e) => {
   if (viewMode !== "map" && e.target.closest("[data-flyto], [data-only], #places button, #places li")) setView("map");
 }, true);
+
+/* ---------- quiet mode: fade the pieces around the map after a few seconds without a touch ---------- */
+const Quiet = (() => {
+  let on = true, timer = 0, lastWake = 0;
+  try { on = localStorage.getItem("birb-quiet") !== "off"; } catch (e) {}
+  const CHROME = ".map-card, #crumbs, .layers-btn, .me-btn, .bell-btn, .legend, .replay, .view-top, .map-tools, .maplibregl-ctrl";
+  const busy = () => viewMode === "collection" || $("map-tools").classList.contains("open") || !$("bell-card").hidden || !$("latest-card").hidden || !$("fav-card").hidden || !$("help").hidden || !$("lite-bar").hidden
+    || !!document.querySelector(".acct:not([hidden]), .mem-pop:not([hidden]), .guide:not([hidden])") || [...document.querySelectorAll(CHROME)].some((el) => el.matches(":hover"));
+  const arm = () => { clearTimeout(timer); if (on) timer = setTimeout(() => { if (busy()) arm(); else document.body.classList.add("quiet"); }, 6000); };
+  const wake = () => { const now = Date.now(); if (now - lastWake < 300 && !document.body.classList.contains("quiet")) return; lastWake = now; document.body.classList.remove("quiet"); arm(); };
+  ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"].forEach((t) => addEventListener(t, wake, { passive: true, capture: true }));
+  const paint = () => document.querySelectorAll("[data-quiet]").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.quiet === "on") === on)));
+  const set = (v) => { on = v; try { localStorage.setItem("birb-quiet", v ? "on" : "off"); } catch (e) {} paint(); document.body.classList.remove("quiet"); arm(); };
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-quiet]"); if (b) set(b.dataset.quiet === "on"); });
+  paint(); arm();
+  return { set, wake, get on() { return on; } };
+})();
+
+/* phones: the latest and favourite birds share one tile, which turns over every few seconds */
+setInterval(() => {
+  const L = $("latest"), fav = $("fav-pill");
+  if (innerWidth > 760 || document.hidden || L.hidden) return;
+  if (fav.hidden || fav.classList.contains("empty")) { L.classList.remove("show-fav"); return; }
+  if (!$("latest-card").hidden || !$("fav-card").hidden) return;
+  L.classList.toggle("show-fav");
+}, 6000);
 document.addEventListener("click", (e) => {
   const v = e.target.closest("[data-view]"); if (v) { setView(v.dataset.view); return; }
   const sw = e.target.closest("[data-see-world]"); if (sw) { const n = sw.dataset.seeWorld; setView("world"); World.showBird(n); if (window.innerWidth >= 760) openSpecies(n); return; }
@@ -4812,6 +4916,8 @@ const Acct = (() => {
     b.innerHTML = me ? `${nReq ? `<span class="req-dot" aria-hidden="true">${nReq}</span>` : ""}${Avatar.html(me.avatar, "")}<span class="me-txt"><small>${me.admin ? "You · admin" : "You"}</small><b>${esc(nameOf(me))}</b></span>`
       : `${Avatar.html(null)}<span class="me-txt"><small>Flock</small><b>Join or sign in</b></span>`;
     const tn = $("tab-flock-n"); if (tn) { tn.hidden = !nReq; tn.textContent = String(nReq); }
+    b.classList.toggle("in", !!me);
+    requestAnimationFrame(() => document.body.style.setProperty("--opt-right", 14 + b.offsetWidth + 8 + "px"));
     b.setAttribute("aria-label", me ? `Your profile, ${nameOf(me)}${nReq ? `. ${nReq} friend ${nReq === 1 ? "request" : "requests"}` : ""}` : "Join BIRB or sign in");
     const w = $("who");
     const flockers = members.filter((m) => m.birds);
