@@ -863,6 +863,42 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
   .world-focus button { padding-left: 11px; padding-right: 11px; white-space: nowrap; }
 }
 
+
+/* ---------- bird cards in the family and habitat panel: folded rows that open into a photo card ---------- */
+.sp-card.v2 { display: block; padding: 0; overflow: hidden; border-radius: 14px; background: var(--bg); }
+.sp-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 12px; background: transparent; border: 0; border-radius: 0; box-shadow: none; color: var(--ink); text-align: left; white-space: normal; }
+.sp-head:hover { background: color-mix(in srgb, var(--surface) 60%, transparent); border-color: transparent; }
+.sp-head .ph-card { width: 48px; height: 48px; }
+.sp-head .nm { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.sp-head .nm b { font-size: 15px; font-weight: 600; }
+.sp-head .nm small { font-size: 12px; color: var(--muted); }
+.sp-head > svg { flex: none; color: var(--muted); }
+.sp-card.v2.open .sp-head, .sp-card.v2:not(.open) .sp-body { display: none; }
+.sp-hero { position: relative; min-height: 46px; }
+.ph-wide { width: 100%; aspect-ratio: 16 / 9; }
+.ph-wide img { object-position: 50% 35%; }
+.sp-hero .badge { position: absolute; top: 10px; right: 10px; padding: 3px 10px; border-radius: 999px; background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.22); }
+.sp-fold { position: absolute; top: 8px; left: 8px; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.22); }
+.sp-info { display: grid; gap: 2px; padding: 12px 14px 10px; }
+.sp-info .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.sp-info h3 { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+.hab-pill { flex: none; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.sp-span { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.sp-days { display: flex; align-items: flex-end; gap: 1px; height: 14px; }
+.sp-days i { flex: 1; min-width: 0; height: 3px; border-radius: 1px; background: var(--line); }
+.sp-days i.on { height: 14px; background: var(--bird, var(--accent)); }
+.sp-sum { margin-top: 6px; font-size: 12px; color: var(--muted); }
+.sp-acts { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-top: 1px solid var(--line); }
+.sp-acts > * { display: grid; justify-items: center; gap: 2px; padding: 9px 2px 8px; background: transparent; border: 0; border-radius: 0; box-shadow: none; color: var(--muted); font-size: 11px; font-weight: 500; text-decoration: none; white-space: nowrap; }
+.sp-acts > *:hover { background: color-mix(in srgb, var(--surface) 60%, transparent); color: var(--ink); border-color: transparent; }
+.sp-acts svg { width: 19px; height: 19px; color: var(--accent); }
+.sp-more { border-top: 1px solid var(--line); }
+.sp-more summary { display: flex; justify-content: space-between; align-items: center; padding: 9px 14px; font-size: 12px; color: var(--muted); cursor: pointer; list-style: none; }
+.sp-more summary::-webkit-details-marker { display: none; }
+.sp-more summary svg { transition: transform .2s; }
+.sp-more[open] summary svg { transform: rotate(180deg); }
+.sp-more .in { display: grid; gap: 8px; padding: 2px 14px 12px; }
+
 /* ---------- timeline: how busy each day was ---------- */
 .replay-bars { display: flex; align-items: stretch; gap: 1px; height: 22px; padding: 0 8px; margin-bottom: -2px; }
 .replay-bars i { flex: 1; min-width: 0; cursor: pointer; border-radius: 1.5px 1.5px 0 0; --c: color-mix(in srgb, var(--accent) 58%, transparent);
@@ -2832,7 +2868,7 @@ const Photos = (() => {
       el.dataset.done = "1";
       get(el.dataset.photo).then((v) => {
         if (PLUMAGE[el.dataset.photo]) paint(el, el.dataset.photo, v || {});
-        if (!v) { if (el.classList.contains("ph-hero") || el.classList.contains("ph-tip")) el.classList.add("none"); return; }
+        if (!v) { if (el.classList.contains("ph-hero") || el.classList.contains("ph-tip") || el.classList.contains("ph-wide")) el.classList.add("none"); return; }
         const img = new Image();
         img.alt = ""; img.decoding = "async"; img.referrerPolicy = "no-referrer";
         img.onload = () => { el.classList.add("ok"); if (!PLUMAGE[el.dataset.photo]) paint(el, el.dataset.photo, v); };
@@ -2915,32 +2951,51 @@ function openDetail({ fam, hab, cluster, focus }) {
   const timesHere = species.reduce((n, s) => n + s.dates.size, 0);
   const placeNames = cluster.places.map((p) => p.loc);
   const colour = hab ? habColour(hab) : famColour(fam);
-  const card = (s) => {
-    const dates = [...s.dates.keys()].sort();
+  const short = (d) => fmtDate(d).replace(/ \d{4}$/, "");
+  const ico = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const CHEV = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+  /* each bird is a card that folds: a one-line row when closed; a wide photo, the days you heard it and its actions when open */
+  const card = (s, idx) => {
+    const dates = [...s.dates.keys()].sort(), n = dates.length;
     const elsewhere = new Map();
     for (const d of pool) if (d.name === s.name && !locIds.has(d.locId)) { if (!elsewhere.has(d.loc)) elsewhere.set(d.loc, new Set()); elsewhere.get(d.loc).add(d.date); }
     const allDays = new Set(pool.filter((d) => d.name === s.name).map((d) => d.date)).size;
     const chips = dates.map((dt) => { const url = ebirdLink(s.dates.get(dt)); return url ? `<a href="${url}" target="_blank" rel="noopener" title="Open this save on eBird">${esc(fmtDate(dt))}</a>` : `<a>${esc(fmtDate(dt))}</a>`; }).join("");
-    return `<article class="sp-card${focus === s.name ? " focus" : ""}" data-sp="${esc(s.name)}">
-      <div class="top has-ph">${Photos.slot(s.sci, "ph-card", colour)}<div><h3>${esc(s.name)}</h3><div class="latin">${esc(s.sci)}</div></div>
-        <div class="days"><b>${s.dates.size}</b>${s.dates.size === 1 ? "day" : "days"} here</div></div>
-      <dl>
-        ${hab ? `<dt>Family</dt><dd>${esc(famName(s.fam))}</dd>` : ""}
-        <dt>Habitat</dt><dd>${esc(habName(s.hab.id))} <span class="src">(${esc(s.hab.src)})</span></dd>
-        <dt>First heard here</dt><dd>${esc(fmtDate(dates[0]))}</dd>
-        <dt>Last heard here</dt><dd>${esc(fmtDate(dates.at(-1)))}</dd>
-        <dt>Saves in Merlin</dt><dd>${s.saves}${s.saves > s.dates.size ? ` (${s.saves - s.dates.size} repeat ${s.saves - s.dates.size === 1 ? "save" : "saves"} on the same day)` : ""}</dd>
-        <dt>Everywhere</dt><dd>${allDays} ${allDays === 1 ? "day" : "days"} in total</dd>
-        <dt>Also heard at</dt><dd>${elsewhere.size ? [...elsewhere].map(([l, ds]) => `${esc(l)} (${ds.size})`).join(", ") : "Only here so far"}</dd>
-        <dt>Field guide order</dt><dd>${s.tax < 1e8 ? "#" + Math.round(s.tax) + " in the eBird taxonomy" : "Not given"}</dd>
-      </dl>
-      <div class="datechips" aria-label="Days heard here, each opens the eBird checklist">${chips}</div>
-      <div class="acts">
-        <button type="button" data-only="${esc(s.name)}">Show only this bird on the map</button>
-        <button type="button" data-share-bird="${esc(s.name)}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Share</button>
-        <a href="${wikiLink(s.sci)}" target="_blank" rel="noopener">Read about it</a>
-        <a href="${xcLink(s.sci)}" target="_blank" rel="noopener" title="Hear recordings of this bird on xeno-canto">Listen</a>
-        ${viewMode === "map" ? `<button type="button" data-see-world="${esc(s.name)}">See in habitat world</button>` : ""}
+    const open = focus && bySp.has(focus) ? focus === s.name : idx === 0;
+    const here = `${n} ${n === 1 ? "day" : "days"} here`;
+    const span = replayDays.length ? replayDays : dates, bins = Math.max(1, Math.min(span.length, 64));
+    const hit = new Set(dates.map((dt) => { const i = span.indexOf(dt); return i < 0 ? -1 : Math.min(bins - 1, Math.floor((i * bins) / span.length)); }));
+    const strip = Array.from({ length: bins }, (_, i) => `<i${hit.has(i) ? ' class="on"' : ""}></i>`).join("");
+    return `<article class="sp-card v2${open ? " open" : ""}${focus === s.name ? " focus" : ""}" data-sp="${esc(s.name)}" data-sci="${esc(s.sci)}" data-col="${esc(colour)}">
+      <button type="button" class="sp-head" aria-expanded="${open}">${Photos.slot(s.sci, "ph-card", colour)}<span class="nm"><b>${esc(s.name)}</b><small>${here} · ${n === 1 ? esc(short(dates[0])) : "last " + esc(short(dates.at(-1)))}</small></span>${CHEV}</button>
+      <div class="sp-body">
+        <div class="sp-hero">${open ? Photos.slot(s.sci, "ph-wide", colour, true) : ""}<button type="button" class="sp-fold" aria-label="Fold this card" title="Fold this card"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button><span class="badge">${here}</span></div>
+        <div class="sp-info">
+          <div class="top"><h3>${esc(s.name)}</h3><span class="hab-pill">${esc(habName(s.hab.id))}</span></div>
+          <div class="latin">${esc(s.sci)}</div>
+          <div class="sp-span">${n === 1 ? `<span>Heard ${esc(short(dates[0]))}</span>` : `<span>First ${esc(short(dates[0]))}</span><span>Last ${esc(short(dates.at(-1)))}</span>`}</div>
+          <div class="sp-days" title="The days you heard it here, across your whole season">${strip}</div>
+          <div class="sp-sum">Heard on ${allDays} ${allDays === 1 ? "day" : "days"} in total${elsewhere.size ? `, at ${elsewhere.size} other ${elsewhere.size === 1 ? "place" : "places"}` : ", only here so far"}</div>
+        </div>
+        <div class="sp-acts">
+          <button type="button" data-only="${esc(s.name)}" title="Show only this bird on the map">${ico('<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>')}Only this</button>
+          ${viewMode === "map" ? `<button type="button" data-see-world="${esc(s.name)}" title="See it in Habitat world">${ico('<path d="M12 3c-2 4-6 6-6 11a6 6 0 0 0 12 0c0-5-4-7-6-11z"/><path d="M12 21v-6"/>')}World</button>` : ""}
+          <button type="button" data-share-bird="${esc(s.name)}" title="Share this bird">${ico('<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>')}Share</button>
+          <a href="${xcLink(s.sci)}" target="_blank" rel="noopener" title="Hear recordings of this bird on xeno-canto">${ico('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>')}Listen</a>
+          <a href="${wikiLink(s.sci)}" target="_blank" rel="noopener" title="Read about it on Wikipedia">${ico('<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>')}Read</a>
+        </div>
+        <details class="sp-more"><summary><span>More details</span>${CHEV}</summary><div class="in">
+          <dl>
+            ${hab ? `<dt>Family</dt><dd>${esc(famName(s.fam))}</dd>` : ""}
+            <dt>Habitat</dt><dd>${esc(habName(s.hab.id))} <span class="src">(${esc(s.hab.src)})</span></dd>
+            <dt>First heard here</dt><dd>${esc(fmtDate(dates[0]))}</dd>
+            <dt>Last heard here</dt><dd>${esc(fmtDate(dates.at(-1)))}</dd>
+            <dt>Saves in Merlin</dt><dd>${s.saves}${s.saves > n ? ` (${s.saves - n} repeat ${s.saves - n === 1 ? "save" : "saves"} on the same day)` : ""}</dd>
+            <dt>Also heard at</dt><dd>${elsewhere.size ? [...elsewhere].map(([l, ds]) => `${esc(l)} (${ds.size})`).join(", ") : "Only here so far"}</dd>
+            <dt>Field guide order</dt><dd>${s.tax < 1e8 ? "#" + Math.round(s.tax) + " in the eBird taxonomy" : "Not given"}</dd>
+          </dl>
+          <div class="datechips" aria-label="Days heard here, each opens the eBird checklist">${chips}</div>
+        </div></details>
       </div>
     </article>`;
   };
@@ -2950,7 +3005,7 @@ function openDetail({ fam, hab, cluster, focus }) {
     <div class="dt-head">
       <h2>${esc(hab ? habName(hab) : famName(fam))}</h2>
       <div class="where">${placeNames.map(esc).join(" · ")}</div>
-      <div class="nums"><div><b>${species.length}</b><span>species here</span></div><div><b>${timesHere}</b><span>bird-days here</span></div><div><b>${new Set(here.map((d) => d.date)).size}</b><span>visits heard on</span></div></div>
+      <div class="where">${species.length} species · heard on ${new Set(here.map((d) => d.date)).size} ${new Set(here.map((d) => d.date)).size === 1 ? "visit" : "visits"}</div>
     </div>
     ${species.length ? species.map(card).join("") : `<p class="empty">No birds from this ${hab ? "habitat" : "family"} here with the current filters.</p>`}`;
   Photos.fill(el);
@@ -2961,6 +3016,18 @@ function openDetail({ fam, hab, cluster, focus }) {
   if (focus) setTimeout(() => { const c = el.querySelector(`[data-sp="${CSS.escape(focus)}"]`); if (c) c.scrollIntoView({ block: "center", behavior: "smooth" }); }, 320);
 }
 function closeDetail() { $("detail").hidden = true; $("panel").classList.remove("detail-mode"); }
+document.addEventListener("click", (e) => {
+  const h = e.target.closest(".sp-head, .sp-fold"); if (!h) return;
+  const c = h.closest(".sp-card.v2"); if (!c) return;
+  const open = !c.classList.contains("open");
+  c.classList.toggle("open", open);
+  c.querySelector(".sp-head").setAttribute("aria-expanded", String(open));
+  if (open) {   // the wide photo is only fetched once a card is opened
+    const hero = c.querySelector(".sp-hero");
+    if (!hero.querySelector(".ph")) hero.insertAdjacentHTML("afterbegin", Photos.slot(c.dataset.sci, "ph-wide", c.dataset.col, true));
+    Photos.fill(c);
+  }
+});
 document.addEventListener("click", (e) => {
   if (e.target.closest("#detail-back")) { closeDetail(); $("panel").scrollTop = 0; return; }
   const hb = e.target.closest("[data-hide-bird]");
