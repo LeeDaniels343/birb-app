@@ -693,6 +693,7 @@ body.coll-on #crumbs, body.coll-on #map-tools, body.coll-on #legend, body.coll-o
 .latest[hidden] { display: none; }
 .latest-pill { display: flex; align-items: center; gap: 9px; padding: 5px 12px 5px 5px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); color: var(--ink); border: 1.5px solid var(--bird, var(--line)); box-shadow: 0 1px 3px rgba(0,0,0,.12); text-align: left; cursor: pointer; }
 .latest-pill:hover { background: var(--surface); }
+.latest-pill[hidden] { display: none; }
 .latest-thumb .ph-thumb { width: 34px; height: 34px; }
 .latest-txt { display: grid; line-height: 1.15; }
 .latest-txt small { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-family: var(--font-mono); }
@@ -861,6 +862,90 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
   .world-focus .lg, .world-focus .lvl { display: none; }
   .world-focus button { padding-left: 11px; padding-right: 11px; white-space: nowrap; }
 }
+
+/* ---------- timeline: how busy each day was ---------- */
+.replay-bars { display: flex; align-items: stretch; gap: 1px; height: 22px; padding: 0 8px; margin-bottom: -2px; }
+.replay-bars i { flex: 1; min-width: 0; cursor: pointer; border-radius: 1.5px 1.5px 0 0; --c: color-mix(in srgb, var(--accent) 58%, transparent);
+  background: linear-gradient(to top, var(--c) var(--h, 1px), transparent var(--h, 1px)); }
+.replay-bars i.z { --c: var(--line); cursor: default; }
+.replay-bars i.top { --c: var(--hot); }
+.replay-bars i.off { opacity: .3; }
+.replay-bars i:not(.z):hover { --c: var(--accent); }
+
+/* ---------- summary panel: tiles, milestone, days-out calendar ---------- */
+.panel .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.panel .stat { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 9px; }
+.panel .stat b { font-size: 26px; }
+.milestone { display: grid; gap: 5px; font-size: 12px; color: var(--muted); }
+.milestone[hidden] { display: none; }
+.milestone .row { display: flex; justify-content: space-between; gap: 8px; }
+.milestone .row b { color: var(--ink); font-weight: 600; }
+.milestone .track { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.milestone .track i { display: block; height: 100%; border-radius: 4px; background: var(--hot); transition: width .6s ease; }
+.daycal { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.daycal:empty { display: none; }
+.daycal .cap { display: flex; justify-content: space-between; gap: 8px; }
+.daycal .cap span:last-child { font-size: 11px; display: inline-flex; align-items: center; gap: 3px; }
+.daycal .cap u { width: 9px; height: 9px; border-radius: 2px; display: inline-block; background: var(--accent); }
+.daycal .months { display: grid; font-family: var(--font-mono); font-size: 10px; height: 13px; }
+.daycal .months span { white-space: nowrap; min-width: 0; }
+.daycal .grid { display: grid; grid-template-rows: repeat(7, auto); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+.daycal .grid i { aspect-ratio: 1; border-radius: 3px; background: color-mix(in srgb, var(--line) 55%, transparent); }
+.daycal .grid i.l1 { background: color-mix(in srgb, var(--accent) 30%, var(--surface)); }
+.daycal .grid i.l2 { background: color-mix(in srgb, var(--accent) 55%, var(--surface)); }
+.daycal .grid i.l3 { background: color-mix(in srgb, var(--accent) 78%, var(--surface)); }
+.daycal .grid i.l4 { background: var(--accent); }
+.daycal .grid i.out { background: transparent; }
+.insight i svg { width: 15px; height: 15px; }
+
+/* ---------- phones: tab bar, options button, labelled corner buttons ---------- */
+.tabbar, .layers-btn, .pill-cap { display: none; }
+@media (max-width: 760px) {
+  body { --tabh: calc(58px + env(safe-area-inset-bottom)); }
+  .tabbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 9; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--surface) 96%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line); }
+  .tabbar button { position: relative; display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 46px; padding: 3px 0 2px; background: transparent; border: 0; border-radius: 12px; box-shadow: none; color: var(--muted); font-size: 11px; font-weight: 500; }
+  .tabbar button svg { width: 22px; height: 22px; }
+  .tabbar button[aria-pressed="true"] { color: var(--accent); font-weight: 600; background: var(--accent-soft); }
+  .tabbar .tab-n { position: absolute; top: 2px; left: calc(50% + 6px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--hot); color: #fff; font-style: normal; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
+  .tabbar .tab-n[hidden] { display: none; }
+  body:not(.has-me) .tabbar [data-tab-flock] { display: none; }
+  body.panel-open .tabbar { display: none; }
+
+  /* top row: the card, then the bell and you */
+  .bell-btn { top: calc(12px + env(safe-area-inset-top)); right: calc(66px + env(safe-area-inset-right)) !important; }
+  .bell-card { top: calc(66px + env(safe-area-inset-top)); }
+  body.has-me .open-panel { max-width: calc(100vw - 24px - 56px); }
+  body.has-bell .open-panel { max-width: calc(100vw - 24px - 110px); }
+  .open-panel > span { min-width: 0; }
+  .open-panel small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .open-panel .lg { display: none; }
+  #crumbs { max-width: calc(100vw - 20px - 64px); }
+
+  /* right-hand column: options, then the latest and favourite birds, each with a caption */
+  .layers-btn { position: absolute; z-index: 7; top: calc(12px + env(safe-area-inset-top)); right: calc(6px + env(safe-area-inset-right)); width: 58px; display: grid; justify-items: center; gap: 1px; padding: 6px 2px 4px;
+    border-radius: 16px; background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line); box-shadow: 0 1px 3px rgba(0,0,0,.12); color: var(--ink); font-size: 10px; font-weight: 600; line-height: 1.3; }
+  body.has-me .layers-btn { top: calc(64px + env(safe-area-inset-top)); }
+  .layers-btn svg { width: 22px; height: 22px; color: var(--accent); }
+  .layers-btn[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  body.world-on .layers-btn, body.coll-on .layers-btn, body.panel-open .layers-btn { display: none; }
+  .latest { top: calc(66px + env(safe-area-inset-top)) !important; right: calc(6px + env(safe-area-inset-right)); }
+  body.has-me .latest { top: calc(118px + env(safe-area-inset-top)) !important; }
+  .latest-pill { flex-direction: column; gap: 1px; width: 58px; padding: 4px 2px 3px; border-radius: 16px; }
+  #latest-pill[aria-expanded="true"] ~ #fav-pill { display: none; }
+  .pill-cap { display: block; max-width: 54px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 600; line-height: 1.3; color: var(--ink); }
+
+  /* view options open as a sheet above the tab bar */
+  #map-tools { display: none; }
+  #map-tools.open { display: flex; flex-wrap: wrap; left: 10px; right: 10px; bottom: calc(var(--tabh) + 8px); z-index: 10; padding: 10px; gap: 6px; }
+  #map-tools .seg[data-k="View"], .world-tools .seg[data-k="View"], .coll-views { display: none !important; }
+  #map-tools.open .tools-toggle { order: 3; margin-left: auto; background: var(--accent); color: #fff; border-color: var(--accent); }
+  body.night #map-tools.open .tools-toggle { color: #0f191d; }
+  .replay, body.panel-open .replay { bottom: calc(var(--tabh) + 8px); }
+  .maplibregl-ctrl-bottom-right { margin-bottom: var(--tabh); }
+  .coll, .world { bottom: var(--tabh); }
+  .world-tools { right: 10px; }
+}
 </style>
 </head>
 <body>
@@ -869,7 +954,7 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
     <button type="button" class="close-panel" id="close-panel" aria-label="Close the bird panel" title="Close (Esc)">&times;</button>
     <h1>BIRB app</h1>
     <p class="sub">Where I've heard birds with Merlin Sound ID, from my eBird export</p>
-    <p class="updated">Last updated 10 Nov 2026</p>
+    <p class="updated">Last updated 12 Nov 2026</p>
     <div class="seg view-switch" role="group" aria-label="Choose a view">
       <button type="button" data-view="map" aria-pressed="true">Map</button>
       <button type="button" data-view="world" aria-pressed="false">Habitat world</button>
@@ -884,10 +969,12 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
       <div class="stat"><b id="st-days">0</b><span>days out</span></div>
       <div class="stat"><b id="st-places">0</b><span>places</span></div>
     </div>
+    <div class="milestone" id="milestone" hidden></div>
     <figure class="growth">
       <figcaption><span>Life list growth</span><span class="range" id="st-range"></span></figcaption>
       <svg id="growth" viewBox="0 0 320 70" preserveAspectRatio="none" role="img" aria-label="How your species count has grown over time"></svg>
     </figure>
+    <div class="daycal" id="daycal"></div>
     <div class="insights" id="insights"></div>
     <div class="newest" id="newest"></div>
   </section>
@@ -946,12 +1033,14 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
       <button type="button" class="latest-pill" id="latest-pill" aria-expanded="false" aria-controls="latest-card">
         <span class="latest-thumb" id="latest-thumb"></span>
         <span class="latest-txt"><small>Latest bird</small><b id="latest-name"></b></span>
+        <span class="pill-cap">Latest</span>
         <svg class="latest-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="latest-card" id="latest-card" hidden></div>
       <button type="button" class="latest-pill fav-pill" id="fav-pill" aria-expanded="false" aria-controls="fav-card" hidden>
         <span class="latest-thumb" id="fav-thumb"></span>
         <span class="latest-txt"><small id="fav-label">Favourite bird</small><b id="fav-name"></b></span>
+        <span class="pill-cap">Favourite</span>
         <svg class="latest-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="latest-card" id="fav-card" hidden></div>
@@ -998,6 +1087,13 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
     <button type="button" id="fit">Fit to sightings</button>
     <button type="button" id="help-btn" class="icon-btn" aria-label="How to explore this map" title="How to explore (?)">?</button>
   </div>
+  <button type="button" class="layers-btn" id="layers-btn" aria-label="View options" aria-expanded="false" aria-controls="map-tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 8 12 13l9.5-5L12 3z"/><path d="m2.5 12.5 9.5 5 9.5-5"/><path d="m2.5 17 9.5 5 9.5-5"/></svg><span>Options</span></button>
+  <nav class="tabbar" id="tabbar" aria-label="Main views">
+    <button type="button" data-view="map" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Map</span></button>
+    <button type="button" data-view="world" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c-2 4-6 6-6 11a6 6 0 0 0 12 0c0-5-4-7-6-11z"/><path d="M12 21v-6"/></svg><span>World</span></button>
+    <button type="button" data-view="collection" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 7h.01"/><path d="M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20"/><path d="m20 7 2 .5-2 .5"/><path d="M10 18v3M14 17.75V21"/><path d="M7 18a6 6 0 0 0 3.84-10.61"/></svg><span>Birds</span></button>
+    <button type="button" data-tab-flock><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 4.8"/></svg><span>Flock</span><i class="tab-n" id="tab-flock-n" hidden></i></button>
+  </nav>
   <section class="coll" id="coll" hidden aria-label="Collection: every bird on eBird's UK list, with the ones you've heard">
     <div class="coll-in">
       <div class="coll-head">
@@ -1097,6 +1193,7 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
       <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path id="replay-icon" d="M7 4v16l13-8z" fill="currentColor"/></svg>
     </button>
     <div class="replay-track">
+      <div class="replay-bars" id="replay-bars" aria-hidden="true"></div>
       <input type="range" id="replay-range" min="0" max="1" step="1" value="1" aria-label="Show birds heard up to this date">
       <div class="replay-labels"><span id="replay-start"></span><span id="replay-now"></span><span id="replay-end"></span></div>
     </div>
@@ -1252,7 +1349,7 @@ S409005443,Common Chaffinch,Fringilla coelebs,32187,X,GB-ENG,Manchester,L1235382
 S408753465,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
 S408998227,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
 S408998307,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1</script>
-<script type="text/plain" id="embedded-meta">MyEBirdData.csv (10 Nov 2026)</script>
+<script type="text/plain" id="embedded-meta">MyEBirdData.csv (12 Nov 2026)</script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -1661,12 +1758,14 @@ function pushLayers() {
   setAllLayers();
   if (vizAnimated() && !animOn) { animOn = true; requestAnimationFrame(animTick); }
 }
+let labelView = null;   // set when county labels are close together, so they are spaced again as the view changes
 function handleView(v) {
+  const lv = labelView, relabel = lv && v.zoom < PLACE_ZOOM && (Math.abs(v.zoom - lv.z) > 0.1 || Math.abs((v.bearing || 0) - lv.b) > 3 || Math.abs((v.pitch || 0) - lv.p) > 3);
   const crossed = (v.zoom >= PLACE_ZOOM) !== (viewState.zoom >= PLACE_ZOOM) || (v.zoom >= WARD_ZOOM) !== (viewState.zoom >= WARD_ZOOM);
   viewState = { ...viewState, longitude: v.longitude, latitude: v.latitude, zoom: v.zoom, pitch: v.pitch, bearing: v.bearing };
   if (v.zoom >= WARD_ZOOM - 1.5) fetchWards();
   queueCrumbs();
-  if ((crossed || (v.zoom >= PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.12) || (v.zoom >= WARD_ZOOM && wardWindowStale()) || (v.zoom > SCULPT_FADE_START - 0.3 && v.zoom < MODEL_ZOOM + 0.1 && Math.abs(v.zoom - layoutZoom) > 0.06) || ((v.zoom >= MODEL_ZOOM) !== (viewState.zoom >= MODEL_ZOOM)) || (state.level === "ward" && v.zoom < PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.15)) && !relayoutQueued) {
+  if ((crossed || relabel || (v.zoom >= PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.12) || (v.zoom >= WARD_ZOOM && wardWindowStale()) || (v.zoom > SCULPT_FADE_START - 0.3 && v.zoom < MODEL_ZOOM + 0.1 && Math.abs(v.zoom - layoutZoom) > 0.06) || ((v.zoom >= MODEL_ZOOM) !== (viewState.zoom >= MODEL_ZOOM)) || (state.level === "ward" && v.zoom < PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.15)) && !relayoutQueued) {
     relayoutQueued = true;
     requestAnimationFrame(() => { relayoutQueued = false; pushLayers(); });
   }
@@ -1725,12 +1824,12 @@ $("crumbs").addEventListener("click", (e) => {
 /* ---------- basemap look ---------- */
 const THEMES = {
   day: {
-    background: "#f0f2f0", land: "#f0f2f0", residential: "#ebeeec", industrial: "#e9ecea",
-    park: "#dfebd9", wood: "#d6e6d0", grass: "#e4eddf", farmland: "#edf1e8", wetland: "#dbe9e4", sand: "#f2efe6",
-    water: "#c9dde5", waterLine: "#bad6e0", building: "#e4e8e6", building3d: "#fbfcfb",
+    background: "#f3f2ec", sea: "#d5e4e9", land: "#f3f2ec", residential: "#eeede6", industrial: "#ebe9e2",
+    park: "#d5e8cb", wood: "#cbe2c3", grass: "#dfecd5", farmland: "#eef0e3", wetland: "#d3e7e0", sand: "#f2eddd",
+    water: "#badae6", waterLine: "#a8cfdf", building: "#e8e5dc", building3d: "#fdfcf8",
     motorway: "#ffffff", major: "#ffffff", road: "#ffffff", minor: "#ffffff", path: "#dde3e0", rail: "#d8dedc",
-    casing: "#e0e5e3", motorwayCasing: "#d6dcda", boundary: "#c0cac8",
-    label: "#3f5055", labelMinor: "#8a989c", roadLabel: "#9aa7aa", waterLabel: "#5d8fa3", halo: "#f6f8f6",
+    casing: "#e2dfd6", motorwayCasing: "#d8d5cb", boundary: "#c0cac8",
+    label: "#3f5055", labelMinor: "#8a989c", roadLabel: "#9aa7aa", waterLabel: "#5d8fa3", halo: "#f8f6ef",
     sky: { "sky-color": "#bcdbea", "horizon-color": "#e9f3f6", "fog-color": "#eef2f1", "sky-horizon-blend": 0.7, "horizon-fog-blend": 0.8, "fog-ground-blend": 0.9 },
   },
   night: {
@@ -1778,7 +1877,7 @@ function restyleBasemap() {
   const cls = (m, fallback) => ["match", ["coalesce", ["get", "class"], ""], ...Object.entries(m).flatMap(([k, v]) => [k, v]), fallback];
   for (const L of style.layers) {
     const id = L.id, sl = L["source-layer"] || "", lid = id.toLowerCase();
-    if (L.type === "background") { set(id, "background-color", c.background); continue; }
+    if (L.type === "background") { set(id, "background-color", c.sea ? ["interpolate", ["linear"], ["zoom"], SCULPT_FADE_START, c.sea, MODEL_ZOOM, c.background] : c.background); continue; }
     if (id.startsWith("birdmap-")) continue;
     if (HIDE_SOURCE_LAYERS.has(sl) || /poi|housenum/.test(lid)) { try { mlmap.setLayoutProperty(id, "visibility", "none"); } catch (e) {} continue; }
     if (L.type === "fill") {
@@ -2879,7 +2978,7 @@ document.addEventListener("click", (e) => {
 const SCULPT_FADE_START = MODEL_ZOOM - 0.6;
 const SCULPT_BASE = 4500;
 const SCULPT = {
-  day: { ground: [233, 236, 233], slab: [249, 250, 248], slabIE: [239, 245, 236], edge: [214, 220, 219], label: [96, 110, 115] },
+  day: { ground: [213, 228, 233], slab: [249, 247, 240], slabIE: [238, 243, 230], edge: [216, 214, 203], label: [96, 110, 115] },
   night: { ground: [14, 23, 27], slab: [36, 53, 60], slabIE: [40, 61, 55], edge: [58, 80, 88], label: [150, 172, 178] },
 };
 let lighting = null;
@@ -2986,6 +3085,27 @@ function layers() {
     : slabColour;
   const shadowScale = wardZone ? 2 ** (6 - z) : 1;
   const shadowSets = wardZone ? shadowsAt(Math.round(z * 4) / 4) : SHADOWS;
+  const lblOff = new Map();
+  labelView = null;
+  if (zone === "county" && bars.length > 1) {
+    try {
+      const mapEl = $("map");
+      const vp = new deck.WebMercatorViewport({ width: mapEl.clientWidth || innerWidth, height: mapEl.clientHeight || innerHeight, longitude: viewState.longitude, latitude: viewState.latitude, zoom: viewState.zoom, pitch: viewState.pitch || 0, bearing: viewState.bearing || 0 });
+      const L = bars.map((b) => { const q = vp.project([b.cx, b.cy, tilted ? SCULPT_BASE + (b.n / maxN) * sculptMax + 800 : 0]); return { b, x: q[0], y: q[1], x0: q[0], w: String(b.n).length * 8.5 + 14 }; });
+      let near = false;
+      for (let it = 0; it < 10; it++) {
+        let moved = false;
+        for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+          const a = L[i], c = L[j], need = (a.w + c.w) / 2 + 3, dx = c.x - a.x;
+          if (Math.abs(c.y - a.y) < 60 && Math.abs(dx) < need + 40) near = true;
+          if (Math.abs(c.y - a.y) < 23 && Math.abs(dx) < need) { const push = (need - Math.abs(dx)) / 2 + 0.5, dir = dx >= 0 ? 1 : -1; a.x -= push * dir; c.x += push * dir; moved = true; }
+        }
+        if (!moved) break;
+      }
+      for (const l of L) if (Math.abs(l.x - l.x0) > 0.5) lblOff.set(l.b.name, Math.round(l.x - l.x0));
+      if (near) labelView = { z: viewState.zoom, b: viewState.bearing || 0, p: viewState.pitch || 0 };
+    } catch (e) {}
+  }
   const townLabels = wardZone ? GEO.towns.filter((p) => wardWindow && p[1] >= wardWindow[0] && p[1] <= wardWindow[2] && p[2] >= wardWindow[1] && p[2] <= wardWindow[3]).slice(0, 220) : [];
   return [
     sculpt && new deck.SolidPolygonLayer({
@@ -3127,9 +3247,9 @@ function layers() {
       id: "bar-labels", parameters: { depthCompare: "always", depthWriteEnabled: false, depthTest: false }, data: bars, getPosition: (b) => [b.cx, b.cy, tilted ? SCULPT_BASE + (b.n / maxN) * sculptMax + 800 : 0], getText: (b) => String(b.n),
       getSize: 13, getColor: [27, 42, 47], fontFamily: "'IBM Plex Mono', Menlo, monospace", fontWeight: 600, characterSet: "0123456789",
       background: true, getBackgroundColor: [255, 255, 255, 235], backgroundPadding: [5, 2, 5, 2], getBorderColor: [184, 194, 196], getBorderWidth: 1,
-      getTextAnchor: "middle", getAlignmentBaseline: "bottom", getPixelOffset: [0, tilted ? -4 : -14], billboard: true,
+      getTextAnchor: "middle", getAlignmentBaseline: "bottom", getPixelOffset: (b) => [lblOff.get(b.name) || 0, tilted ? -4 : -14], billboard: true,
       opacity: fade,
-      updateTriggers: { getPosition: [sig, tilted] },
+      updateTriggers: { getPosition: [sig, tilted], getPixelOffset: [tilted, [...lblOff].join()] },
     }),
     // ward view: species count on each raised ward, placed over your own spots so it always sits on the ward
     wardZone && new deck.TextLayer({
@@ -3273,7 +3393,7 @@ function renderStats(rows) {
     ? `<span>Newest additions to your list</span>` + newest.map((s) => `<div class="lifer"><span><span class="swatch" style="display:inline-block;margin-right:6px;background:${famColour(s.family)}"></span><b>${esc(s.name)}</b></span><span>${esc(fmtDate(s.first))}</span></div>`).join("")
     : "";
   const f = activeFilters();
-  $("open-summary").textContent = `${sp.length} species · ${new Set(rows.map((d) => d.locId)).size} places${f.length ? " shown" : ""} · tap for details`;
+  $("open-summary").innerHTML = `${sp.length} species · ${new Set(rows.map((d) => d.locId)).size} places${f.length ? " shown" : ""}<span class="lg"> · tap for details</span>`;
   renderChips();
 }
 function renderSpecies() {
@@ -3639,11 +3759,42 @@ function setupReplay() {
   r.value = state.upTo ? String(Math.max(0, replayDays.indexOf(state.upTo))) : r.max;
   $("replay-start").textContent = fmtDate(replayDays[0]).replace(/ \d{4}$/, "");
   $("replay-end").textContent = fmtDate(replayDays.at(-1)).replace(/ \d{4}$/, "");
+  buildReplayBars();
   updateReplayLabel();
 }
+/* a small bar for each day (or run of days), as tall as the number of species heard */
+let replayBins = [];
+function buildReplayBars() {
+  const el = $("replay-bars");
+  const per = new Map();
+  for (const d of state.data) { if (!d.date) continue; if (!per.has(d.date)) per.set(d.date, new Set()); per.get(d.date).add(d.name); }
+  const n = replayDays.length, count = Math.min(n, 90), size = n / count;
+  replayBins = Array.from({ length: count }, (_, i) => {
+    const a = Math.floor(i * size), b = Math.min(n, Math.max(a + 1, Math.floor((i + 1) * size)));
+    let v = 0, day = replayDays[a];
+    for (let k = a; k < b; k++) { const c = per.get(replayDays[k]); if (c && c.size > v) { v = c.size; day = replayDays[k]; } }
+    return { a, b: b - 1, v, day };
+  });
+  const max = Math.max(1, ...replayBins.map((x) => x.v)), top = replayBins.findIndex((x) => x.v === max);
+  el.innerHTML = replayBins.map((x, i) => x.v
+    ? `<i class="${i === top ? "top" : ""}" style="--h:${Math.round(3 + Math.sqrt(x.v / max) * 19)}px" title="${esc(fmtDate(x.day))} · ${x.v} species"></i>`
+    : `<i class="z"></i>`).join("");
+  paintReplayBars();
+}
+function paintReplayBars() {
+  const el = $("replay-bars"); if (!replayBins.length) return;
+  const cur = state.upTo ? replayDays.indexOf(state.upTo) : replayDays.length - 1;
+  [...el.children].forEach((c, i) => c.classList.toggle("off", replayBins[i] && replayBins[i].a > cur));
+}
+$("replay-bars").addEventListener("click", (e) => {
+  const i = [...$("replay-bars").children].indexOf(e.target.closest("i"));
+  if (i < 0 || !replayBins[i] || !replayBins[i].v) return;
+  stopReplay(); setUpTo(Math.max(0, replayDays.indexOf(replayBins[i].day)));
+});
 function updateReplayLabel() {
   const n = new Set(filtered({ ignoreSpecies: true }).map((d) => d.name)).size;
   $("replay-now").textContent = state.upTo ? `${fmtDate(state.upTo)} · ${n} species` : `All · ${n} species`;
+  paintReplayBars();
 }
 function setUpTo(i) {
   const last = replayDays.length - 1;
@@ -3679,20 +3830,63 @@ $("replay-range").addEventListener("input", (e) => { stopReplay(); setUpTo(Numbe
 function renderInsights(rows) {
   const sp = speciesStats(rows);
   const daysOut = new Set(rows.map((d) => d.date).filter(Boolean));
-  if (!sp.length) { $("insights").innerHTML = ""; return; }
+  if (!sp.length) { $("insights").innerHTML = ""; $("daycal").innerHTML = ""; $("milestone").hidden = true; return; }
   const reliable = [...sp].sort((a, b) => b.days.size - a.days.size || a.tax - b.tax)[0];
   const byDay = new Map();
   for (const d of rows) { if (!byDay.has(d.date)) byDay.set(d.date, { sp: new Set(), locs: new Set() }); byDay.get(d.date).sp.add(d.name); byDay.get(d.date).locs.add(d.loc); }
   const [bestDate, best] = [...byDay].sort((a, b) => b[1].sp.size - a[1].sp.size || b[0].localeCompare(a[0]))[0];
   const oneOffs = sp.filter((s) => s.days.size === 1).length;
   const famCount = new Set(sp.map((s) => s.family)).size;
+  const ic = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const IC = {
+    R: ic('<path d="m17 2 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'),
+    D: ic('<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.2L5.8 21 7 14.2 2 9.3l6.9-1z"/>'),
+    1: ic('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>'),
+    F: ic('<path d="m12 2 10 5-10 5L2 7l10-5z"/><path d="m2 12 10 5 10-5"/><path d="m2 17 10 5 10-5"/>'),
+  };
+  renderMilestone(sp.length);
+  renderDayCal(byDay);
   const items = [
-    ["R", `<b>${esc(reliable.name)}</b> is your most reliable bird, heard on ${reliable.days.size} of your ${daysOut.size} days out.`],
+    ["R", `<b>${esc(reliable.name)}</b> is your most reliable bird, heard on ${reliable.days.size} of your ${daysOut.size} ${daysOut.size === 1 ? "day" : "days"} out.`],
     ["D", `Your best day was <b>${esc(fmtDate(bestDate))}</b>, with ${best.sp.size} species at ${[...best.locs].map(esc).join(" and ")}.`],
     ["1", `<b>${oneOffs} ${oneOffs === 1 ? "bird has" : "birds have"}</b> only been heard once. Listen out for them again.`],
     ["F", `You've heard birds from <b>${famCount} of ${FAMILIES.length - 1} families</b>.`],
   ];
-  $("insights").innerHTML = `<span style="font-size:12px;color:var(--muted)">Listening highlights</span>` + items.map(([k, h]) => `<div class="insight"><i>${k}</i><span>${h}</span></div>`).join("");
+  $("insights").innerHTML = `<span style="font-size:12px;color:var(--muted)">Listening highlights</span>` + items.map(([k, h]) => `<div class="insight"><i>${IC[k]}</i><span>${h}</span></div>`).join("");
+}
+/* how far to the next round number, shown when nothing is filtered */
+function renderMilestone(n) {
+  const el = $("milestone");
+  const next = [5, 10, 20, 30, 40, 50, 75, 100, 125, 150, 200, 250, 300, 400, 500].find((x) => x > n);
+  if (!next || !n || activeFilters().length) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = `<div class="row"><span>Next milestone</span><span><b>${next - n} more</b> to reach ${next} species</span></div><div class="track"><i style="width:${Math.round((n / next) * 100)}%"></i></div>`;
+}
+/* a small calendar of the days you went out, darker the more species you heard */
+function renderDayCal(byDay) {
+  const el = $("daycal");
+  const dates = [...byDay.keys()].filter(Boolean).sort();
+  if (!dates.length) { el.innerHTML = ""; return; }
+  const DAY = 864e5, monday = (t) => t - ((new Date(t).getUTCDay() + 6) % 7) * DAY;
+  const end = monday(Date.parse(dates.at(-1))) + 6 * DAY;
+  let start = monday(Date.parse(dates[0]));
+  let weeks = Math.round((end - start) / DAY + 1) / 7;
+  if (weeks > 53) weeks = 53;
+  if (weeks < 12) weeks = 12;
+  start = end - (weeks * 7 - 1) * DAY;
+  const max = Math.max(...dates.map((d) => byDay.get(d).sp.size));
+  let cells = "", months = [], prevM = -1;
+  for (let i = 0; i < weeks * 7; i++) {
+    const t = start + i * DAY, iso = new Date(t).toISOString().slice(0, 10), e = byDay.get(iso), v = e ? e.sp.size : 0;
+    if (i % 7 === 0) { const m = new Date(t + 6 * DAY).getUTCMonth(); if (m !== prevM) { months.push([i / 7, new Date(t + 6 * DAY).toLocaleString("en-GB", { month: "short", timeZone: "UTC" })]); prevM = m; } }
+    const lvl = !v ? "" : v / max > 0.75 ? "l4" : v / max > 0.5 ? "l3" : v / max > 0.2 ? "l2" : "l1";
+    cells += `<i class="${lvl}"${v ? ` title="${esc(fmtDate(iso))} · ${v} species"` : ""}></i>`;
+  }
+  if (months.length > 1 && months[1][0] - months[0][0] < 3) months.shift();
+  const gap = weeks > 30 ? 2 : 3, maxW = weeks * (16 + gap);
+  el.innerHTML = `<div class="cap"><span>Your days out</span><span>fewer <u style="opacity:.3"></u><u style="opacity:.55"></u><u style="opacity:.78"></u><u></u> more species</span></div>
+    <div class="months" style="grid-template-columns:repeat(${weeks},minmax(0,1fr));max-width:${maxW}px">${months.map(([c, m]) => `<span style="grid-column:${c + 1}">${m}</span>`).join("")}</div>
+    <div class="grid" style="gap:${gap}px;max-width:${maxW}px">${cells}</div>`;
 }
 
 /* ---------- a bird's full story, from the species list ---------- */
@@ -3758,12 +3952,16 @@ $("copy-view").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText(location.href); $("copied").textContent = "Link copied. It opens the map at this exact view."; }
   catch (e) { $("copied").textContent = "Copy the address from your browser's address bar. It holds this view."; }
 });
-$("tools-toggle").addEventListener("click", () => {
-  const open = !$("map-tools").classList.contains("open");
+function setTools(open) {
   $("map-tools").classList.toggle("open", open);
   $("tools-toggle").setAttribute("aria-expanded", String(open));
   $("tools-toggle").textContent = open ? "Done" : "View options";
-});
+  $("layers-btn").setAttribute("aria-expanded", String(open));
+}
+$("tools-toggle").addEventListener("click", () => setTools(!$("map-tools").classList.contains("open")));
+$("layers-btn").addEventListener("click", () => setTools(!$("map-tools").classList.contains("open")));
+$("fit").addEventListener("click", () => setTools(false));
+$("help-btn").addEventListener("click", () => setTools(false));
 document.addEventListener("keydown", (e) => {
   if (e.target.closest("input, textarea, select") || e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key.toLowerCase();
@@ -4205,6 +4403,7 @@ const World = (() => {
 let viewMode = "map";
 function setView(v) {
   viewMode = v;
+  setTools(false);
   const on = v === "world", co = v === "collection";
   document.body.classList.toggle("world-on", on);
   document.body.classList.toggle("coll-on", co);
@@ -4439,6 +4638,7 @@ const Acct = (() => {
     const nReq = me ? requests.in.length : 0;
     b.innerHTML = me ? `${nReq ? `<span class="req-dot" aria-hidden="true">${nReq}</span>` : ""}${Avatar.html(me.avatar, "")}<span class="me-txt"><small>${me.admin ? "You · admin" : "You"}</small><b>${esc(nameOf(me))}</b></span>`
       : `${Avatar.html(null)}<span class="me-txt"><small>Flock</small><b>Join or sign in</b></span>`;
+    const tn = $("tab-flock-n"); if (tn) { tn.hidden = !nReq; tn.textContent = String(nReq); }
     b.setAttribute("aria-label", me ? `Your profile, ${nameOf(me)}${nReq ? `. ${nReq} friend ${nReq === 1 ? "request" : "requests"}` : ""}` : "Join BIRB or sign in");
     const w = $("who");
     const flockers = members.filter((m) => m.birds);
@@ -5135,6 +5335,7 @@ const Acct = (() => {
       if (t === $("mem-pop") || t.closest("[data-mem-close]")) { closeMember(); return; }
     }
     if (t.closest("#me-btn")) { open(me ? (requests.in.length ? "flock" : "profile") : "signin"); return; }
+    if (t.closest("[data-tab-flock]")) { open(me ? "flock" : "signin"); return; }
     const sc = t.closest("[data-scope]");
     if (sc) {
       if (sc.dataset.scope === "flock") { if (scope !== "flock") { sc.classList.add("busy"); await showFlock(); sc.classList.remove("busy"); } }
@@ -5524,7 +5725,7 @@ const Guide = (() => {
     if (k === "full") PERF.choose("off"); else if (k === "lite") PERF.choose("on"); else if (k === "reload") location.reload(); else if (k === "keep") { PERF.choose("off", false); $("lite-bar").hidden = true; }
     else $("lite-bar").hidden = true;
   });
-  if (LITE && PERF.why !== "chosen" && !PERF.told()) setTimeout(() => liteBar(`<span class="tx"><b>Lite mode is on</b>${PERF.why === "lost" || PERF.why === "crashed" || PERF.why === "auto" ? "The map struggled on this phone, so it's now flatter and lighter." : "To keep the map smooth on this phone, it's flatter and lighter."} Change it any time in View options.</span><span class="bt"><button type="button" class="ghost" data-lite="full">Try full 3D</button><button type="button" class="ghost" data-lite="close">OK</button></span>`), 2500);
+  if (LITE && PERF.why !== "chosen" && !PERF.told()) setTimeout(() => liteBar(`<span class="tx"><b>Lite mode is on</b>${PERF.why === "lost" || PERF.why === "crashed" || PERF.why === "auto" ? "The map struggled on this phone, so it's now flatter and lighter." : "To keep the map smooth on this phone, it's flatter and lighter."} ${innerWidth <= 760 ? "Tap Options to change it any time." : "Change it any time with the Detail setting."}</span><span class="bt"><button type="button" class="ghost" data-lite="full">Try full 3D</button><button type="button" class="ghost" data-lite="close">OK</button></span>`), 2500);
   let lostOnce = false;
   addEventListener("webglcontextlost", (e) => {
     const t = e.target;
