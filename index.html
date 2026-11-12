@@ -2954,14 +2954,14 @@ function openDetail({ fam, hab, cluster, focus }) {
   const short = (d) => fmtDate(d).replace(/ \d{4}$/, "");
   const ico = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const CHEV = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
-  /* each bird is a card that folds: a one-line row when closed; a wide photo, the days you heard it and its actions when open */
+  /* each bird is a card with a wide photo, the days you heard it and its actions; it can be folded down to a one-line row */
   const card = (s, idx) => {
     const dates = [...s.dates.keys()].sort(), n = dates.length;
     const elsewhere = new Map();
     for (const d of pool) if (d.name === s.name && !locIds.has(d.locId)) { if (!elsewhere.has(d.loc)) elsewhere.set(d.loc, new Set()); elsewhere.get(d.loc).add(d.date); }
     const allDays = new Set(pool.filter((d) => d.name === s.name).map((d) => d.date)).size;
     const chips = dates.map((dt) => { const url = ebirdLink(s.dates.get(dt)); return url ? `<a href="${url}" target="_blank" rel="noopener" title="Open this save on eBird">${esc(fmtDate(dt))}</a>` : `<a>${esc(fmtDate(dt))}</a>`; }).join("");
-    const open = focus && bySp.has(focus) ? focus === s.name : idx === 0;
+    const open = true;   // every card starts open; the arrow on the photo folds one away
     const here = `${n} ${n === 1 ? "day" : "days"} here`;
     const span = replayDays.length ? replayDays : dates, bins = Math.max(1, Math.min(span.length, 64));
     const hit = new Set(dates.map((dt) => { const i = span.indexOf(dt); return i < 0 ? -1 : Math.min(bins - 1, Math.floor((i * bins) / span.length)); }));
