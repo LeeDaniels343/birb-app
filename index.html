@@ -994,6 +994,25 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
 }
 
 
+
+/* ---------- night birds: the moon badge, and the founder's note ---------- */
+.cb-moon { position: absolute; top: -3px; left: -3px; width: 18px; height: 18px; border-radius: 50%; background: #2c3566; display: grid; place-items: center; box-shadow: 0 0 0 2px var(--bg); }
+.cb-moon svg, .cb .cb-c .cb-moon svg { width: 11px; height: 11px; fill: #ffe9a8; }
+.cb.miss .cb-moon { opacity: .8; }
+.coll-key.night .cb-moon { position: static; box-shadow: none; }
+.night-hero { height: 110px; background: #0b1620; }
+.night-hero svg { display: block; width: 100%; height: 100%; }
+.wel-card .mem-body.night-body { padding-top: 12px; text-align: left; }
+.night-from { display: flex; align-items: center; gap: 10px; }
+.night-from .av { width: 40px; height: 40px; flex: none; }
+.night-from span { display: grid; }
+.night-from b { font-size: 15px; display: flex; align-items: center; gap: 7px; }
+.night-from .tag-owner { margin: 0; }
+.night-from small { font-size: 12px; color: var(--muted); }
+.night-body h2 { margin: 8px 0 0; }
+.night-list { margin: 4px 0 8px; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; }
+.nt.night .eyebrow { display: block; font-size: 10.5px; font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+
 /* ---------- choosing whose birds the flock view shows ---------- */
 .flock-pick { position: absolute; top: calc(100% + 8px); left: 0; z-index: 4; width: 280px; max-height: min(420px, calc(100dvh - 200px)); overflow-y: auto; padding: 12px; border-radius: 14px;
   background: var(--surface); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,.2); display: grid; gap: 8px; animation: latestIn .2s ease; }
@@ -1089,7 +1108,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
     <button type="button" class="close-panel" id="close-panel" aria-label="Close the bird panel" title="Close (Esc)">&times;</button>
     <h1>BIRB app</h1>
     <p class="sub">Where I've heard birds with Merlin Sound ID, from my eBird export</p>
-    <p class="updated">Last updated 12 Nov 2026</p>
+    <p class="updated">Last updated 13 Nov 2026</p>
     <div class="seg view-switch" role="group" aria-label="Choose a view">
       <button type="button" data-view="map" aria-pressed="true">Map</button>
       <button type="button" data-view="world" aria-pressed="false">Habitat world</button>
@@ -1259,6 +1278,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
         </div>
         <input type="search" id="coll-q" placeholder="Find a bird" aria-label="Find a bird in the collection">
         <span class="coll-key"><i></i>Rarer visitor</span>
+        <span class="coll-key night"><span class="cb-moon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg></span>Night bird</span>
       </div>
       <div id="coll-wall"></div>
       <p class="coll-note">The wall holds every species on eBird's United Kingdom list (native, naturalised and provisional, 634 in all). Birds with a lilac frame are rarer visitors: species nobody has logged in the UK on eBird in the past year.</p>
@@ -1269,9 +1289,10 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
     <div id="world-gl"></div>
     <nav class="crumbs world-focus" aria-label="Focus on a habitat">
       <button type="button" data-wfocus="all" aria-current="location"><span class="lvl">Habitats</span>All<span class="n"></span></button>
-      <button type="button" data-wfocus="pond" aria-current="false"><span>Pond<span class="lg"> and wetland</span></span><span class="n"></span></button>
+      <button type="button" data-wfocus="pond" aria-current="false">Pond<span class="n"></span></button>
       <button type="button" data-wfocus="wood" aria-current="false">Woodland<span class="n"></span></button>
-      <button type="button" data-wfocus="farm" aria-current="false"><span>Farm<span class="lg">land and hedgerow</span></span><span class="n"></span></button>
+      <button type="button" data-wfocus="farm" aria-current="false"><span>Farm<span class="lg">land</span></span><span class="n"></span></button>
+      <button type="button" data-wfocus="night" aria-current="false">Night<span class="n"></span></button>
     </nav>
     <div class="map-tools world-tools">
       <div class="seg" data-k="View" role="group" aria-label="Choose a view">
@@ -1325,6 +1346,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
       <li><b>Switch to Habitat world</b> in the menu or the view options to see every bird you've heard together in one scene.</li>
     </ol>
     <p style="margin:0;font-size:13px"><button type="button" class="linkish" data-guide>New to Merlin or eBird? How to get your birds into BIRB</button></p>
+    <p style="margin:0;font-size:13px"><button type="button" class="linkish" data-night-help>Staying safe when you listen at night</button></p>
     <p class="keys k-touch"><span>Pinch to zoom</span><span>Drag two fingers up or down to tilt</span><span>Twist two fingers to turn</span><span>Tap anything for its details</span></p>
     <p class="keys k-desk"><span><kbd>/</kbd> search</span><span><kbd>N</kbd> night</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> totem, flock, habitat</span><span><kbd>W</kbd> habitat world</span><span><kbd>Space</kbd> play</span><span><kbd>U</kbd> UK view</span><span><kbd>F</kbd> fit</span><span><kbd>Esc</kbd> close</span><span>Right-drag or Ctrl-drag to tilt and turn</span></p>
     <div class="help-acts">
@@ -1495,7 +1517,7 @@ S409005443,Common Chaffinch,Fringilla coelebs,32187,X,GB-ENG,Manchester,L1235382
 S408753465,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
 S408998227,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
 S408998307,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1</script>
-<script type="text/plain" id="embedded-meta">MyEBirdData.csv (12 Nov 2026)</script>
+<script type="text/plain" id="embedded-meta">MyEBirdData.csv (13 Nov 2026)</script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -3706,6 +3728,11 @@ function heardBy(recs) {
   for (const d of recs) if (d.by) { const x = m.get(d.by); if (!x || d.date < x.first) m.set(d.by, { u: d.by, first: d.date }); }
   return [...m.values()].sort((a, b) => (a.first < b.first ? -1 : 1));
 }
+/* ---------- night birds: owls, nightjars and the others you mostly hear after dark ---------- */
+const NIGHT_GENUS = new Set(["Tyto", "Strix", "Asio", "Athene", "Bubo", "Otus", "Surnia", "Aegolius", "Glaucidium", "Ninox", "Caprimulgus", "Chordeiles", "Antrostomus", "Scolopax", "Burhinus"]);
+const NIGHT_SP = new Set(["Rallus aquaticus", "Luscinia megarhynchos", "Luscinia luscinia", "Crex crex"]);
+const isNightBird = (sci) => { const w = String(sci || "").trim().split(/\s+/); return NIGHT_GENUS.has(w[0]) || NIGHT_SP.has(w.slice(0, 2).join(" ")); };
+const MOON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>`;
 const byStack = (list, max = 3) => `<span class="by-stack">${list.slice(0, max).map((x) => { const m = Acct.member(x.u); return Avatar.html(m && m.avatar, m ? m.name || m.u : x.u); }).join("")}${list.length > max ? `<span class="by-more">+${list.length - max}</span>` : ""}</span>`;
 const byName = (u) => { const m = Acct.member(u); return m ? m.name || m.u : u; };
 
@@ -3728,12 +3755,13 @@ const Coll = (() => {
   const col = (w) => PLUMAGE[w[1]] || famColour(w[2]);
   function badge(w) {
     const h = heard.get(w[1]);
+    const NB = isNightBird(w[1]), MN = NB ? `<span class="cb-moon" title="Night bird">${MOON}</span>` : "";
     const GEM = w[3] === 2 ? `<span class="cb-gem" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9z"/></svg></span>` : "";
     const rr = w[3] === 2 ? " rare" : "";
-    if (h) return `<button type="button" class="cb got${rr}${sel === w[1] ? " sel" : ""}" data-cb="${esc(w[1])}" aria-label="${esc(w[0])}, heard on ${h.days.size} ${h.days.size === 1 ? "day" : "days"}">
-      <span class="cb-c" style="--rim:${col(w)}">${Photos.slot(w[1], "ph-badge", col(w))}${h.isNew ? '<span class="cb-new">NEW</span>' : ""}${GEM}</span>
+    if (h) return `<button type="button" class="cb got${rr}${sel === w[1] ? " sel" : ""}" data-cb="${esc(w[1])}" aria-label="${esc(w[0])}, ${NB ? "night bird, " : ""}heard on ${h.days.size} ${h.days.size === 1 ? "day" : "days"}">
+      <span class="cb-c" style="--rim:${col(w)}">${Photos.slot(w[1], "ph-badge", col(w))}${h.isNew ? '<span class="cb-new">NEW</span>' : ""}${GEM}${MN}</span>
       <span class="cb-n">${esc(w[0])}</span>${flockOn() && h.recs.length ? byStack(heardBy(h.recs)) : `<span class="cb-d">${h.days.size} ${h.days.size === 1 ? "day" : "days"}</span>`}</button>`;
-    return `<button type="button" class="cb miss${rr}${sel === w[1] ? " sel" : ""}" data-cb="${esc(w[1])}" aria-label="${esc(w[0])}, ${w[3] === 2 ? "rarer visitor, " : ""}not heard yet"><span class="cb-c">${SIL}${GEM}</span><span class="cb-n">${esc(w[0])}</span></button>`;
+    return `<button type="button" class="cb miss${rr}${sel === w[1] ? " sel" : ""}" data-cb="${esc(w[1])}" aria-label="${esc(w[0])}, ${w[3] === 2 ? "rarer visitor, " : ""}${NB ? "night bird, " : ""}not heard yet"><span class="cb-c">${SIL}${GEM}${MN}</span><span class="cb-n">${esc(w[0])}</span></button>`;
   }
   function render() {
     if ($("coll").hidden) return;
@@ -3771,7 +3799,7 @@ const Coll = (() => {
     el.style.setProperty("--bird", col(w));
     el.innerHTML = `<button type="button" class="x" id="coll-pop-x" aria-label="Close">×</button>
       <h3>${esc(w[0])}</h3>
-      <div class="s"><i>${esc(w[1])}</i> · ${esc(famName(w[2]))}<span class="tag">${w[3] === 1 ? "Seen in the UK this year" : "Rarer visitor"}</span></div>
+      <div class="s"><i>${esc(w[1])}</i> · ${esc(famName(w[2]))}<span class="tag">${w[3] === 1 ? "Seen in the UK this year" : "Rarer visitor"}</span>${isNightBird(w[1]) ? '<span class="tag">Night bird</span>' : ""}</div>
       <div class="s">Not heard yet. Listen to its song so you know it when Merlin picks it up.</div>
       <div class="acts"><a href="${xcLink(w[1])}" target="_blank" rel="noopener">Listen</a><a href="${wikiLink(w[1])}" target="_blank" rel="noopener">Read about it</a>${w[5] ? `<a href="https://ebird.org/species/${w[5]}/GB" target="_blank" rel="noopener">Where it's been seen</a>` : ""}</div>`;
     el.hidden = false;
@@ -4170,7 +4198,8 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && document
 
 /* ---------- habitat world: every bird you've heard, together in one scene ---------- */
 const World = (() => {
-  const HAB_SHORT = { pond: "Pond and wetland", wood: "Woodland", farm: "Farmland and hedgerow" };
+  const HAB_SHORT = { pond: "Pond and wetland", wood: "Woodland", farm: "Farmland and hedgerow", night: "Night birds" };
+  const HABS = ["pond", "wood", "farm", "night"], hCol = (h) => (h === "night" ? "#5d63b0" : habColour(h));
   /* each light has a sky (zenith, eye level, haze band, below, far below), fog, lamp colours and a sun or moon */
   const LIGHTS = {
     day: { sky: 0xc4e2ef, grad: ["#5ea9de", "#a6d3ee", "#eef8fa", "#bfe0ee", "#86bfe2"], fog: 0xd3ebf3, hemi: [0xffffff, 0xb9cfa6, 0.58], sun: [0xfff3e2, 0.68], pos: [12, 20, 9], flies: false,
@@ -4182,7 +4211,7 @@ const World = (() => {
   };
   const ISL = [1, -0.3];   // the middle of the island
   const BS = 1.4;          // birds are drawn a little larger than life so they read from afar
-  const FOCUS = { all: [[1, 0, -0.2], 36], pond: [[-6, 0, 1.5], 14], wood: [[1.5, 2.4, -4.6], 18], farm: [[8.6, 0, 3.8], 13] };
+  const FOCUS = { all: [[1, 0, 1.6], 48], pond: [[-8.2, 0, 1.2], 16], wood: [[3.2, 2.4, -6.4], 22], farm: [[10.4, 0, 4.6], 16], night: [[-9.4, 1.4, -7.2], 14] };
   let R = null, S = null, C = null, sun = null, hemi = null, host = null;
   let visible = false, dirty = true, raf = 0, last = 0, T = 0, idle = 0, rebuildTimer = 0;
   let light = "day", spin = !REDUCE_MOTION;
@@ -4190,7 +4219,7 @@ const World = (() => {
   /* glowing birbs at night: switched off for now, kept for later */
   const BIRD_GLOW = false;
   let birds = [], sway = [], song = [], swim = [], flyers = [], peckers = [], ripples = [], notes = [], leaves = [], clouds = [], flies = [], climbers = [], labels = [], signs = [], boards = [];
-  let PX = -6, PZ = 1.5, PR = 1;
+  let PX = -8.2, PZ = 1.2, PR = 1;
   const tgt = { x: 1, y: 0, z: -1 }, tgtGo = { x: 1, y: 0, z: -1 };
   let fit = 1, dist = 30, distGo = 30, th = 0.5, ph = 0.62, drag = null, hov = null, shift = 0;
   let seed = 5;
@@ -4238,12 +4267,12 @@ const World = (() => {
     window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
     el.addEventListener("pointermove", (e) => {
       if (pts.has(e.pointerId)) pts.set(e.pointerId, [e.clientX, e.clientY]);
-      if (pinch && pts.size === 2) { const g = two(); distGo = Math.max(7, Math.min(60, (pinch.dist * pinch.d) / Math.max(20, g.d))); ph = Math.max(0.14, Math.min(1.3, pinch.ph + (g.y - pinch.y) * 0.005)); idle = 0; return; }
+      if (pinch && pts.size === 2) { const g = two(); distGo = Math.max(7, Math.min(74, (pinch.dist * pinch.d) / Math.max(20, g.d))); ph = Math.max(0.14, Math.min(1.3, pinch.ph + (g.y - pinch.y) * 0.005)); idle = 0; return; }
       if (drag) { drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.x, e.clientY - drag.y)); th = drag.th - (e.clientX - drag.x) * 0.007; ph = Math.max(0.14, Math.min(1.3, drag.ph + (e.clientY - drag.y) * 0.005)); idle = 0; return; }
       if (e.pointerType === "mouse") pick(e, false);
     });
     el.addEventListener("pointerleave", () => { $("world-tip").hidden = true; });
-    el.addEventListener("wheel", (e) => { e.preventDefault(); distGo = Math.max(7, Math.min(60, distGo * (1 + e.deltaY * 0.001))); idle = 0; }, { passive: false });
+    el.addEventListener("wheel", (e) => { e.preventDefault(); distGo = Math.max(7, Math.min(74, distGo * (1 + e.deltaY * 0.001))); idle = 0; }, { passive: false });
     el.style.cursor = "grab";
     return true;
   }
@@ -4294,7 +4323,7 @@ const World = (() => {
     S.background = new THREE.Color(L.sky); S.fog = new THREE.Fog(L.fog, 44, 122);
     hemi = new THREE.HemisphereLight(L.hemi[0], L.hemi[1], L.hemi[2]); S.add(hemi);
     sun = new THREE.DirectionalLight(L.sun[0], L.sun[1]); sun.position.set(...L.pos); sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 60 }); sun.shadow.bias = -0.0008; S.add(sun);
+    sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -28, right: 28, top: 28, bottom: -28, near: 1, far: 72 }); sun.shadow.bias = -0.0008; S.add(sun);
     const add = (m, x, y, z, cast) => { m.position.set(x, y, z); if (cast) m.castShadow = true; S.add(m); return m; };
     const puff = (r, d = 1) => { const g = new THREE.IcosahedronGeometry(r, d); g.computeVertexNormals(); return g; };   // a faceted ball: crowns, bushes, rocks
 
@@ -4323,13 +4352,13 @@ const World = (() => {
         const g = new THREE.Group(), m = M(L.cloud[0], { transparent: true, opacity: L.cloud[1], fog: false }), k = 3 + Math.floor(rnd() * 3);
         for (let j = 0; j < k; j++) { const c = new THREE.Mesh(new THREE.SphereGeometry(1.1 + rnd() * 0.9, 10, 7), m); c.position.set((j - (k - 1) / 2) * 1.3, rnd() * 0.5, (rnd() - 0.5) * 0.9); c.scale.y = 0.62; g.add(c); }
         g.scale.setScalar(0.9 + rnd() * 0.9); S.add(g);
-        clouds.push({ g, a: i * (6.283 / nC) + rnd() * 0.4, r: 23 + rnd() * 16, y: i % 3 === 0 ? 9 + rnd() * 4 : -7 + rnd() * 9, sp: LITE ? 0 : 0.007 + rnd() * 0.008 });
+        clouds.push({ g, a: i * (6.283 / nC) + rnd() * 0.4, r: 29 + rnd() * 17, y: i % 3 === 0 ? 9 + rnd() * 4 : -7 + rnd() * 9, sp: LITE ? 0 : 0.007 + rnd() * 0.008 });
       }
       clouds.forEach((o) => o.g.position.set(ISL[0] + Math.cos(o.a) * o.r, o.y, ISL[1] + Math.sin(o.a) * o.r));
     }
 
     /* the island: a grassy top on a slice of earth */
-    const IA = 13.6, IB = 10.3, IN = 2.8;
+    const IA = 17, IB = 13, IN = 2.8;
     const edgeR = (a) => Math.pow(Math.pow(Math.abs(Math.cos(a)) / IA, IN) + Math.pow(Math.abs(Math.sin(a)) / IB, IN), -1 / IN) * (1 + 0.022 * Math.sin(a * 3 + 0.6) + 0.016 * Math.cos(a * 5) + 0.01 * Math.sin(a * 9 + 2));
     const inIsland = (x, z, m = 0) => Math.hypot(x - ISL[0], z - ISL[1]) < edgeR(Math.atan2(z - ISL[1], x - ISL[0])) - m;
     {
@@ -4349,7 +4378,8 @@ const World = (() => {
       const tip = add(new THREE.Mesh(puff(1.5, 0), M(0x5b4d41)), ISL[0], -5.6, ISL[1]); tip.scale.set(1.2, 0.7, 0.9);
       [[0.4, 1.12, -1.9, 0.8], [2.2, 1.08, -2.8, 0.55], [3.6, 1.16, -1.2, 0.45], [4.9, 1.1, -3.2, 0.7], [5.7, 1.14, -2.1, 0.4]].forEach(([a, k, y, r], i) => { const m = add(new THREE.Mesh(puff(r, 0), M(i % 2 ? 0x7a5c40 : 0x67513d)), ISL[0] + Math.cos(a) * edgeR(a) * k, y, ISL[1] + Math.sin(a) * edgeR(a) * k); m.rotation.set(i, i * 2, 0); m.scale.y = 0.75; });
     }
-    const HX = 8.6, HZ = 3.2, hc = Math.cos(-0.5), hs = Math.sin(-0.5);
+    const HX = 10.4, HZ = 3.6, hc = Math.cos(-0.5), hs = Math.sin(-0.5);
+    const NX = -9.6, NZ = -7.6;   // the night corner
     const blob = (cx, cz, rx, rz, y, col, wob, seg = 48) => {
       const sh = new THREE.Shape();
       for (let i = 0; i <= seg; i++) { const a = (i / seg) * Math.PI * 2, r = wob ? wob(a) : 1; const x = Math.cos(a) * rx * r, y2 = Math.sin(a) * rz * r; i ? sh.lineTo(x, y2) : sh.moveTo(x, y2); }
@@ -4389,37 +4419,39 @@ const World = (() => {
       g.traverse((o) => { if (o !== g) o.userData.root = g; }); g.userData.root = g;
       birds.push(g); (par || S).add(g); song.push({ g, next: 2 + (rnd() * 12) / sp.d, rate: sp.d }); return g;
     };
-    const by = { pond: [], wood: [], farm: [] };
-    SP.forEach((b) => (by[b.hab] || by.wood).push(b));
+    /* night birds live in the night corner; everyone else goes to their daytime habitat */
+    const by = { pond: [], wood: [], farm: [], night: [] };
+    SP.forEach((b) => (isNightBird(b.s) ? by.night : by[b.hab] || by.wood).push(b));
 
     // meadow, path, flowers
-    [[-7.5, -5.5, 4.2, 2.6, 0xa5d181], [9.5, -3.5, 3.4, 2.4, 0xa5d181], [-3, 6.3, 5, 2, 0x94c471], [10.5, -7, 2.6, 1.6, 0x94c471]].forEach(([x, z, rx, rz, c]) => blob(x, z, rx, rz, 0.006, c, (a) => 1 + 0.1 * Math.sin(a * 3 + x)));
-    blob(1.8, -4.6, 6.2, 4.4, 0.01, 0x86b964, (a) => 1 + 0.07 * Math.sin(a * 3 + 1) + 0.04 * Math.cos(a * 5));
-    const path = new THREE.CatmullRomCurve3([new THREE.Vector3(-11.3, 0, 6.5), new THREE.Vector3(-3, 0, 6.2), new THREE.Vector3(2, 0, 2.2), new THREE.Vector3(7, 0, -1.5), new THREE.Vector3(14.3, 0, -3.3)]);
+    [[12.6, -6.4, 3.4, 2.4, 0xa5d181], [-2.5, 8.8, 6, 2, 0x94c471], [11.6, -8.2, 2, 1.3, 0x94c471], [-12.4, -1.8, 2, 2.4, 0xa5d181], [5, 9.6, 3, 1.5, 0xa5d181]].forEach(([x, z, rx, rz, c]) => blob(x, z, rx, rz, 0.006, c, (a) => 1 + 0.1 * Math.sin(a * 3 + x)));
+    blob(3.2, -6.6, 7.6, 5.2, 0.01, 0x86b964, (a) => 1 + 0.07 * Math.sin(a * 3 + 1) + 0.04 * Math.cos(a * 5));
+    const path = new THREE.CatmullRomCurve3([new THREE.Vector3(-14.2, 0, 7.6), new THREE.Vector3(-4, 0, 7.6), new THREE.Vector3(2, 0, 2.4), new THREE.Vector3(9.5, 0, -2.6), new THREE.Vector3(17.6, 0, -4)]);
     const pathPts = [];
-    for (let i = 0; i <= 46; i++) {
-      const p = path.getPoint(i / 46), r = 0.42 + rnd() * 0.12; pathPts.push(p);
+    for (let i = 0; i <= 60; i++) {
+      const p = path.getPoint(i / 60), r = 0.42 + rnd() * 0.12; pathPts.push(p);
       const ed = new THREE.Mesh(new THREE.CircleGeometry(r + 0.15, 12), M(0xc4ad82)); ed.rotation.x = -Math.PI / 2; ed.position.set(p.x, 0.012, p.z); ed.receiveShadow = true; S.add(ed);
       const st = new THREE.Mesh(new THREE.CircleGeometry(r, 10), M(i % 2 ? 0xf0e7d0 : 0xe8dcc0)); st.rotation.x = -Math.PI / 2; st.position.set(p.x, 0.018, p.z); st.receiveShadow = true; S.add(st);
     }
     /* open grass: on the island and clear of the pond, the path and the field */
     const clear = (x, z, m = 0) => {
       if (!inIsland(x, z, 0.9 + m)) return false;
-      if (Math.hypot((x - PX) / (4.4 + m), (z - PZ) / (3.5 + m)) < 1) return false;
+      if (Math.hypot((x - PX) / (5.5 + m), (z - PZ) / (4.3 + m)) < 1) return false;
+      if (Math.hypot((x - NX) / (4.5 + m), (z - NZ) / (3.5 + m)) < 1) return false;
       if (pathPts.some((p) => Math.hypot(p.x - x, p.z - z) < 0.8 + m)) return false;
       const dx = x - HX, dz = z - HZ, lx = dx * hc - dz * hs, lz = dx * hs + dz * hc;
-      return !(lx > -4.1 && lx < 5.3 && lz > -0.9 && lz < 4.2);
+      return !(lx > -5 && lx < 6.3 && lz > -0.9 && lz < 4.7);
     };
-    for (let i = 0; i < (LITE ? 30 : 64); i++) { const x = ISL[0] + (rnd() - 0.5) * 27, z = ISL[1] + (rnd() - 0.5) * 20.5; if (clear(x, z)) tuft(x, z, rnd() < 0.5 ? 0x7fb45e : 0x8dc26b, 6, 0.3); }
-    const inWood = (x, z) => Math.hypot((x - 1.8) / 6.4, (z + 4.6) / 4.6) < 1;
-    for (let i = 0, made = 0; i < 60 && made < 9; i++) {
+    for (let i = 0; i < (LITE ? 40 : 90); i++) { const x = ISL[0] + (rnd() - 0.5) * 33.5, z = ISL[1] + (rnd() - 0.5) * 25.5; if (clear(x, z)) tuft(x, z, rnd() < 0.5 ? 0x7fb45e : 0x8dc26b, 6, 0.3); }
+    const inWood = (x, z) => Math.hypot((x - 3.2) / 7.8, (z + 6.6) / 5.4) < 1;
+    for (let i = 0, made = 0; i < 90 && made < 12; i++) {
       const a = rnd() * 6.283, k = 0.62 + rnd() * 0.3, x = ISL[0] + Math.cos(a) * edgeR(a) * k, z = ISL[1] + Math.sin(a) * edgeR(a) * k;
       if (!clear(x, z, 0.5) || inWood(x, z)) continue; made++;
       const g = new THREE.Group(), tone = [M(0x4a8545), M(0x5f9d55), M(0x79b566)];
       [[0, 0.36, 0, 0.5, 0], [0.42, 0.3, 0.1, 0.38, 1], [-0.36, 0.28, -0.12, 0.34, 1], [0.05, 0.6, 0.04, 0.3, 2]].forEach(([bx, by2, bz, r, t]) => { const m = new THREE.Mesh(puff(r), tone[t]); m.position.set(bx, by2, bz); m.scale.y = 0.85; m.castShadow = true; g.add(m); });
       g.position.set(x, 0, z); g.rotation.y = rnd() * 6; g.scale.setScalar(0.8 + rnd() * 0.5); S.add(g);
     }
-    for (let i = 0, made = 0; i < 50 && made < 8; i++) {
+    for (let i = 0, made = 0; i < 70 && made < 10; i++) {
       const a = rnd() * 6.283, k = 0.5 + rnd() * 0.44, x = ISL[0] + Math.cos(a) * edgeR(a) * k, z = ISL[1] + Math.sin(a) * edgeR(a) * k;
       if (!clear(x, z, 0.2)) continue; made++;
       const m = add(new THREE.Mesh(puff(0.22 + rnd() * 0.24, 0), M(rnd() < 0.5 ? 0xbdb8ab : 0xa7a194)), x, 0.08, z, true); m.scale.y = 0.6; m.rotation.y = rnd() * 6; m.receiveShadow = true;
@@ -4445,7 +4477,7 @@ const World = (() => {
         if (lit && !LITE) { const pl = new THREE.PointLight(0xffd38a, light === "night" ? 1.25 : 0.55, 6.5, 2); pl.position.y = 2.3; g.add(pl); }
         g.position.set(x, 0, z); S.add(g);
       };
-      [[0.1, -1], [0.36, 1], [0.6, 1], [0.84, -1]].forEach(([t, side]) => {
+      [[0.08, -1], [0.3, 1], [0.52, 1], [0.72, -1], [0.92, 1]].forEach(([t, side]) => {
         const p = path.getPoint(t), tan = path.getTangent(t);
         lamp(p.x - tan.z * 0.85 * side, p.z + tan.x * 0.85 * side);
       });
@@ -4453,8 +4485,8 @@ const World = (() => {
     const FLW = [0xfdf8ea, 0xf6cf4f, 0xb590dc, 0xee8fb3, 0xff8f6b];
     {
       const beds = FLW.map(() => []), all = [];
-      for (let d = 0; d < 12; d++) {
-        const cx = ISL[0] + (rnd() - 0.5) * 24, cz = ISL[1] + (rnd() - 0.5) * 17.5, c1 = d % 5, c2 = (d * 2 + 1) % 5;
+      for (let d = 0; d < 17; d++) {
+        const cx = ISL[0] + (rnd() - 0.5) * 30, cz = ISL[1] + (rnd() - 0.5) * 22.5, c1 = d % 5, c2 = (d * 2 + 1) % 5;
         for (let i = 0; i < (LITE ? 9 : 18); i++) { const a = rnd() * 6.283, r = Math.sqrt(rnd()) * 1.5, x = cx + Math.cos(a) * r * 1.3, z = cz + Math.sin(a) * r * 0.8; if (!clear(x, z, -0.15)) continue; const f = [x, z, 0.16 + rnd() * 0.16]; beds[rnd() < 0.72 ? c1 : c2].push(f); all.push(f); }
       }
       const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sc = new THREE.Vector3();
@@ -4468,7 +4500,7 @@ const World = (() => {
     const swimmers = by.pond.filter((b) => habitOf(b) === "swim"), waders = by.pond.filter((b) => habitOf(b) === "stand");
     const pondFly = by.pond.filter((b) => !swimmers.includes(b) && !waders.includes(b) && (b.fam === "coastal" || b.fam === "aerial"));
     const edge = by.pond.filter((b) => !swimmers.includes(b) && !waders.includes(b) && !pondFly.includes(b));
-    const pr = 0.85 + Math.min(1, swimmers.length / 10) * 0.25; PR = pr;
+    const pr = 1.05 + Math.min(1, swimmers.length / 10) * 0.3; PR = pr;
     const pw = (a) => 1 + 0.13 * Math.sin(a * 3) + 0.08 * Math.cos(a * 5);
     blob(PX, PZ, 3.6 * pr, 2.75 * pr, 0.012, 0xdccfa6, pw); blob(PX, PZ, 3.25 * pr, 2.45 * pr, 0.02, 0x86cce6, pw); blob(PX, PZ, 2.9 * pr, 2.15 * pr, 0.026, 0x57add8, pw); blob(PX - 0.2, PZ + 0.1, 1.9 * pr, 1.3 * pr, 0.03, 0x4a9fcf, pw);
     [[-0.9, -0.5, 0.9, 0.5], [0.8, 0.9, 0.7, 2.2], [-0.3, 1.1, 0.6, 4]].forEach(([x, z, r, a0]) => { const gl = new THREE.Mesh(new THREE.RingGeometry(r, r + 0.035, 24, 1, a0, 1.1), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: light === "night" ? 0.18 : 0.5 })); gl.rotation.x = -Math.PI / 2; add(gl, PX + x * pr, 0.034, PZ + z * pr); });
@@ -4495,12 +4527,12 @@ const World = (() => {
     [[0, 0.38, 0, 1.4, 0.06, 0.4], [0, 0.68, -0.19, 1.4, 0.28, 0.05]].forEach(([x, y, z, w, h, d]) => { const p = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bm); p.position.set(x, y, z); p.castShadow = true; bench.add(p); });
     [-0.6, 0.6].forEach((x) => { const l = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.38, 0.38), M(0x55606a)); l.position.set(x, 0.19, 0); bench.add(l); });
     /* beside the path, not on it, looking across to the pond */
-    bench.position.set(-5.6, 0, 7.75); bench.rotation.y = Math.PI + 0.1; S.add(bench);
+    bench.position.set(-6.5, 0, 9.3); bench.rotation.y = Math.PI + 0.1; S.add(bench);
     swimmers.forEach((b, i) => { const big = /Swan|Goose/.test(b.n) ? 1.25 : 1; swim.push({ g: addBird(b, big), r: 0.35 + ((i * 0.618) % 1) * 0.6, a: i * 2.4, sp: (i % 2 ? 1 : -1) * (0.1 + (i % 3) * 0.04) }); });
     waders.forEach((b, i) => { const [x, z] = rim(0.9 + i * 0.75, 0.84); const g = addBird(b); g.position.set(x, 0.1 * BS, z); g.rotation.y = 2.8 - i * 0.9; g.userData.home = g.position.clone(); });
-    pondFly.forEach((b, i) => flyers.push({ g: addBird(b, 1.1, null, true), cx: PX, cz: PZ, r: 3.2 + i * 0.9, h: 4.2 + (i % 3) * 0.8, a: i * 3, sp: 0.32 + (i % 3) * 0.08 }));
+    pondFly.forEach((b, i) => flyers.push({ g: addBird(b, 1.1, null, true), cx: PX, cz: PZ, r: 4 + i * 1.1, h: 4.2 + (i % 3) * 0.8, a: i * 3, sp: 0.32 + (i % 3) * 0.08 }));
     edge.forEach((b, i) => { const [x, z] = rim(-0.45 + i * 0.45, 1.06); const g = addBird(b); g.position.set(x, 0.12 * BS, z); g.rotation.y = 2.4 - i; g.userData.home = g.position.clone(); });
-    signpost("pond", "Pond", by.pond.length, PX + 0.8, PZ + 3.7 * pr);
+    signpost("pond", "Pond", by.pond.length, PX - 0.4, PZ + 2.8 * pr + 0.95);
 
     // woodland
     const trunkM = M(0x7d5e42);
@@ -4510,8 +4542,8 @@ const World = (() => {
     let wPerch = by.wood.filter((b) => !isGround(b) && !creeper.includes(b));
     const star = wPerch.slice().sort((a, b) => b.d - a.d)[0];
     if (star) wPerch = wPerch.filter((b) => b !== star);
-    const TREES = [[1, -4.6, 1.35], [3.8, -2.8, 1.05], [-1.7, -3.3, 1], [4.4, -6.2, 1.15], [0.4, -7.2, 0.95], [-2.4, -6, 1], [6, -4.2, 0.95], [2.4, -8.4, 1.05]];
-    const nT = Math.max(3, Math.min(TREES.length, Math.ceil(wPerch.length / 4)));
+    const TREES = [[2.6, -5.8, 1.3], [6.6, -5.4, 1.05], [-1.4, -5.6, 1], [4.8, -8.4, 1.15], [0.8, -8.6, 0.95], [8.8, -8, 1], [-2.8, -8.4, 0.95], [3, -10.6, 1.05], [9.8, -5.2, 0.9], [6.8, -10.4, 0.95], [-0.6, -10.6, 0.9], [0.4, -3.2, 0.85]];
+    const nT = Math.max(4, Math.min(TREES.length, Math.ceil(wPerch.length / 3)));
     const leafSrc = []; let pi = 0;
     TREES.slice(0, nT).forEach(([x, z, s], ti) => {
       add(new THREE.Mesh(new THREE.CylinderGeometry(0.09 * s, 0.17 * s, 3.8 * s, 9), trunkM), x, 1.9 * s, z, true);
@@ -4527,36 +4559,93 @@ const World = (() => {
       }
     });
     creeper.forEach((b, i) => { const [x, , s] = TREES[i % nT], z = TREES[i % nT][1]; const g = addBird(b); g.position.set(x + 0.17 * s, 1.4, z + 0.05); g.rotation.z = Math.PI / 2.3; climbers.push({ g, base: 0.9 * s, span: 1.6 * s, ph: i * 0.4 }); });
-    const log = add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.23, 1.8, 12), M(0x8f7c68)), 2.3, 0.21, -1.6, true); log.rotation.z = Math.PI / 2; log.rotation.y = 0.5;
-    if (star) { const g = addBird(star, 1.1); g.position.set(2.3, 0.6, -1.6); g.rotation.y = -0.6; g.userData.home = g.position.clone(); }
-    [[1.6, -3.4, 0xd96a4a], [-0.4, -5.4, 0xe8dcc8], [2.8, -5.2, 0xd96a4a]].forEach(([x, z, c]) => { add(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.16, 6), M(0xf1ebe0)), x, 0.08, z); add(new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), M(c)), x, 0.15, z, true); });
-    const spots = [[-0.4, -1.6], [1.2, -0.9], [3.2, -0.6], [-2.6, -1.6], [0.4, -2.6], [4.6, -1.6], [-1.4, -0.9], [2.6, -3.6]];
-    wGround.forEach((b, i) => { const [x, z] = spots[i % spots.length]; const g = addBird(b); g.position.set(x + Math.floor(i / spots.length) * 0.5, 0.15 * BS, z); g.rotation.y = i * 1.7; peckers.push({ g, ph: i * 1.3 }); });
-    signpost("wood", "Woodland", by.wood.length, -3.4, -2);
+    const log = add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.23, 1.8, 12), M(0x8f7c68)), 3.6, 0.21, -2.6, true); log.rotation.z = Math.PI / 2; log.rotation.y = 0.5;
+    if (star) { const g = addBird(star, 1.1); g.position.set(3.6, 0.6, -2.6); g.rotation.y = -0.6; g.userData.home = g.position.clone(); }
+    [[2, -4.5, 0xd96a4a], [-0.3, -6.9, 0xe8dcc8], [4.2, -7, 0xd96a4a], [7.4, -6.4, 0xe8dcc8], [1.6, -9.6, 0xd96a4a]].forEach(([x, z, c]) => { add(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.16, 6), M(0xf1ebe0)), x, 0.08, z); add(new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), M(c)), x, 0.15, z, true); });
+    const spots = [[-1.6, -2.2], [1.8, -1.9], [5.4, -2.2], [7.4, -3], [-0.4, -4.4], [2.2, -3.8], [5, -4], [8.4, -4.2], [-2.9, -3.8], [3.8, -4.8], [-1.4, -7], [4.6, -6.8], [7.6, -6.9], [1, -7]];
+    wGround.forEach((b, i) => { const [x, z] = spots[i % spots.length]; const g = addBird(b); g.position.set(x + Math.floor(i / spots.length) * 0.7, 0.15 * BS, z); g.rotation.y = i * 1.7; peckers.push({ g, ph: i * 1.3 }); });
+    signpost("wood", "Woodland", by.wood.length, 0.5, -0.9);
 
     // hedgerow and field
     const hedge = new THREE.Group(); hedge.position.set(HX, 0, HZ); hedge.rotation.y = -0.5; S.add(hedge);
     const hms = [M(0x4d8a48), M(0x5f9d55)];
-    for (let i = 0; i < 11; i++) { const h = new THREE.Mesh(puff(0.5 + rnd() * 0.1), hms[i % 2]); h.rotation.y = rnd() * 6; h.scale.set(1, 0.95, 0.75); h.position.set(-2.8 + i * 0.56, 0.45 + rnd() * 0.1, (rnd() - 0.5) * 0.12); h.castShadow = true; hedge.add(h); }
-    for (let i = 0; i < 60; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), M(rnd() < 0.75 ? 0xc23b3b : 0x3b2f4f)); b.position.set(-3 + rnd() * 6, 0.25 + rnd() * 0.6, (rnd() < 0.5 ? 1 : -1) * (0.33 + rnd() * 0.07)); hedge.add(b); }
-    [-3.4, 3.3].forEach((x) => { const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.9, 0.1), M(0xa08e78)); p.position.set(x, 0.45, 0); p.castShadow = true; hedge.add(p); });
+    for (let i = 0; i < 15; i++) { const h = new THREE.Mesh(puff(0.5 + rnd() * 0.1), hms[i % 2]); h.rotation.y = rnd() * 6; h.scale.set(1, 0.95, 0.75); h.position.set(-3.92 + i * 0.56, 0.45 + rnd() * 0.1, (rnd() - 0.5) * 0.12); h.castShadow = true; hedge.add(h); }
+    for (let i = 0; i < 84; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), M(rnd() < 0.75 ? 0xc23b3b : 0x3b2f4f)); b.position.set(-4.1 + rnd() * 8.2, 0.25 + rnd() * 0.6, (rnd() < 0.5 ? 1 : -1) * (0.33 + rnd() * 0.07)); hedge.add(b); }
+    [-4.5, 4.45].forEach((x) => { const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.9, 0.1), M(0xa08e78)); p.position.set(x, 0.45, 0); p.castShadow = true; hedge.add(p); });
     const gate = new THREE.Group();
     for (let i = 0; i < 4; i++) { const r = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.06, 0.05), M(0xb59a7a)); r.position.set(0, 0.2 + i * 0.18, 0); gate.add(r); }
-    const dg = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.06, 0.05), M(0xb59a7a)); dg.position.set(0, 0.47, 0); dg.rotation.z = 0.48; gate.add(dg); gate.position.set(4.05, 0, 0); hedge.add(gate);
-    const field = new THREE.Mesh(new THREE.PlaneGeometry(7, 3), M(0xdcc27c)); field.rotation.x = -Math.PI / 2; field.position.set(0, 0.012, 2.1); field.receiveShadow = true; hedge.add(field);
+    const dg = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.06, 0.05), M(0xb59a7a)); dg.position.set(0, 0.47, 0); dg.rotation.z = 0.48; gate.add(dg); gate.position.set(5.2, 0, 0); hedge.add(gate);
+    const field = new THREE.Mesh(new THREE.PlaneGeometry(9.4, 3.8), M(0xdcc27c)); field.rotation.x = -Math.PI / 2; field.position.set(0, 0.012, 2.5); field.receiveShadow = true; hedge.add(field);
     /* ploughed ridges, a post-and-rail fence along the front and two hay bales */
-    for (let i = 0; i < 9; i++) { const fr = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.07, 0.15), M(i % 2 ? 0xc9aa60 : 0xd2b56b)); fr.position.set(0, 0.035, 0.8 + i * 0.32); fr.receiveShadow = true; hedge.add(fr); }
+    for (let i = 0; i < 11; i++) { const fr = new THREE.Mesh(new THREE.BoxGeometry(9.2, 0.07, 0.15), M(i % 2 ? 0xc9aa60 : 0xd2b56b)); fr.position.set(0, 0.035, 0.85 + i * 0.33); fr.receiveShadow = true; hedge.add(fr); }
     const fm = M(0xa68862);
-    for (let i = 0; i <= 7; i++) { const fp = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.62, 0.09), fm); fp.position.set(-3.5 + i, 0.31, 3.68); fp.castShadow = true; hedge.add(fp); }
-    [0.26, 0.5].forEach((y) => { const rl = new THREE.Mesh(new THREE.BoxGeometry(7.1, 0.06, 0.04), fm); rl.position.set(0, y, 3.68); rl.castShadow = true; hedge.add(rl); });
-    [[2.75, 2.95, 0.3], [2.1, 3.2, -0.5]].forEach(([x, z, r]) => { const bl = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.6, 14), M(0xdcb85a)); bl.rotation.z = Math.PI / 2; bl.rotation.y = r; bl.position.set(x, 0.34, z); bl.castShadow = true; hedge.add(bl); const cap = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 5, 16), M(0xc19a3f)); cap.rotation.y = Math.PI / 2 + r; cap.position.set(x + Math.cos(r) * 0.305, 0.34, z - Math.sin(r) * 0.305); hedge.add(cap); });
-    for (let i = 0; i < 30; i++) { const x = -3 + rnd() * 6, z = 0.55 + rnd() * 0.4, h = 0.14 + rnd() * 0.16; const st = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.009, h, 4), M(0x86a46a)); st.position.set(x, h / 2, z); hedge.add(st); const fh = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), M(FLW[i % 4])); fh.position.set(x, h, z); hedge.add(fh); }
+    for (let i = 0; i <= 9; i++) { const fp = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.62, 0.09), fm); fp.position.set(-4.7 + i * (9.4 / 9), 0.31, 4.46); fp.castShadow = true; hedge.add(fp); }
+    [0.26, 0.5].forEach((y) => { const rl = new THREE.Mesh(new THREE.BoxGeometry(9.5, 0.06, 0.04), fm); rl.position.set(0, y, 4.46); rl.castShadow = true; hedge.add(rl); });
+    [[3.95, 3.5, 0.3], [3.3, 3.85, -0.5]].forEach(([x, z, r]) => { const bl = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.6, 14), M(0xdcb85a)); bl.rotation.z = Math.PI / 2; bl.rotation.y = r; bl.position.set(x, 0.34, z); bl.castShadow = true; hedge.add(bl); const cap = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 5, 16), M(0xc19a3f)); cap.rotation.y = Math.PI / 2 + r; cap.position.set(x + Math.cos(r) * 0.305, 0.34, z - Math.sin(r) * 0.305); hedge.add(cap); });
+    for (let i = 0; i < 42; i++) { const x = -4.1 + rnd() * 8.2, z = 0.5 + rnd() * 0.3, h = 0.14 + rnd() * 0.16; const st = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.009, h, 4), M(0x86a46a)); st.position.set(x, h / 2, z); hedge.add(st); const fh = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), M(FLW[i % 4])); fh.position.set(x, h, z); hedge.add(fh); }
     const fGround = by.farm.filter((b) => b.fam === "corvids" || b.fam === "pigeons" || b.fam === "game" || habitOf(b) === "stand"), fAir = by.farm.filter((b) => b.fam === "aerial");
     const fPerch = by.farm.filter((b) => !fGround.includes(b) && !fAir.includes(b));
-    fPerch.forEach((b, i) => { const n = fPerch.length, row = i % 2 && n > 6 ? -0.25 : 0; const g = addBird(b, 1, hedge); g.position.set(n === 1 ? 0 : -2.4 + (i / (n - 1)) * 4.8, 1.08 + (row ? -0.08 : 0), row); g.rotation.y = i % 2 ? 0.5 : -0.5; g.userData.home = g.position.clone(); });
-    fGround.forEach((b, i) => { const g = addBird(b, 1, hedge); g.position.set(-1.6 + ((i * 0.618) % 1) * 3.2, 0.15 * BS + 0.05, 1.5 + (i % 3) * 0.45); g.rotation.y = i * 2; peckers.push({ g, ph: i * 2 }); });
-    fAir.forEach((b, i) => flyers.push({ g: addBird(b, 1, null, true), cx: HX, cz: HZ + 1.5, r: 2.4 + i * 0.6, h: 2.6 + (i % 2) * 0.6, a: i * 2, sp: 0.6 + (i % 2) * 0.15 }));
-    signpost("farm", "Farmland", by.farm.length, 4.9, 6.9);
+    fPerch.forEach((b, i) => { const n = fPerch.length, row = i % 2 && n > 9 ? -0.25 : 0; const g = addBird(b, 1, hedge); g.position.set(n === 1 ? 0 : -3.5 + (i / (n - 1)) * 7, 1.08 + (row ? -0.08 : 0), row); g.rotation.y = i % 2 ? 0.5 : -0.5; g.userData.home = g.position.clone(); });
+    fGround.forEach((b, i) => { const g = addBird(b, 1, hedge); g.position.set(-3.2 + ((i * 0.618) % 1) * 6.2, 0.15 * BS + 0.05, 1.45 + (i % 4) * 0.62); g.rotation.y = i * 2; peckers.push({ g, ph: i * 2 }); });
+    fAir.forEach((b, i) => flyers.push({ g: addBird(b, 1, null, true), cx: HX, cz: HZ + 1.8, r: 3 + i * 0.8, h: 2.6 + (i % 2) * 0.6, a: i * 2, sp: 0.6 + (i % 2) * 0.15 }));
+    signpost("farm", "Farmland", by.farm.length, 4.4, 6.9);
+
+    // the night corner: an old barn, a bare tree and dark firs, for owls and the other birds of the dark
+    {
+      const NB = by.night, lit = light !== "day";
+      blob(NX, NZ, 4.4, 3.4, 0.008, 0x6f9f7c, (a) => 1 + 0.08 * Math.sin(a * 3 + 2) + 0.05 * Math.cos(a * 4));
+      blob(NX - 0.2, NZ - 0.1, 3.4, 2.5, 0.011, 0x5f8d72, (a) => 1 + 0.07 * Math.cos(a * 3));
+      [[-2.8, -1.7, 1.25], [-1.5, -2.7, 1.5], [0.4, -2.9, 1.2], [2.3, -2.5, 1.4], [3.5, -1.4, 1.05]].forEach(([dx, dz, sc], i) => {
+        const x = NX + dx, z = NZ + dz, fm = M(i % 2 ? 0x2f5d49 : 0x386a50);
+        add(new THREE.Mesh(new THREE.CylinderGeometry(0.1 * sc, 0.14 * sc, 0.9 * sc, 7), M(0x5a4636)), x, 0.45 * sc, z, true);
+        [[1, 1.5, 1.2], [0.78, 1.3, 2.1], [0.55, 1.1, 2.9], [0.3, 0.8, 3.55]].forEach(([r, h, y]) => { const c = add(new THREE.Mesh(new THREE.ConeGeometry(r * sc, h * sc, 7), fm), x, y * sc, z, true); c.rotation.y = i + y; });
+      });
+      /* the barn: stone footing, timber walls, a dark loft opening with a ledge, and a moon for a weathervane */
+      const barn = new THREE.Group(), stone = M(0x9a958a), timber = M(0x6b4f3a), roofM = M(0x4a3a35), dark = M(0x16110e);
+      const bx = (w, h, d, mat, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; barn.add(m); return m; };
+      bx(2.4, 0.5, 1.9, stone, 0, 0.25, 0); bx(2.3, 1.1, 1.8, timber, 0, 1.05, 0);
+      const gab = new THREE.Shape(); gab.moveTo(-1.35, 0); gab.lineTo(1.35, 0); gab.lineTo(0, 1.05); gab.lineTo(-1.35, 0);
+      const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(gab, { depth: 2.1, bevelEnabled: false }), roofM); roof.position.set(0, 1.6, -1.05); roof.castShadow = true; barn.add(roof);
+      bx(0.7, 0.9, 0.06, dark, 0, 0.95, 0.9).castShadow = false; bx(0.52, 0.5, 0.06, dark, 0, 1.98, 1.04).castShadow = false; bx(0.9, 0.05, 0.34, timber, 0, 1.7, 1.2);
+      bx(0.04, 0.6, 0.04, M(0x2c2c2c), 0, 2.95, 0);
+      const vane = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.04, 6, 18, Math.PI * 1.25), lit ? new THREE.MeshBasicMaterial({ color: 0xffe9a8 }) : M(0xe8c860)); vane.position.set(0, 3.36, 0); vane.rotation.z = 0.9; barn.add(vane);
+      const lampM = lit ? new THREE.MeshBasicMaterial({ color: light === "night" ? 0xffd98a : 0xffe9bd }) : M(0xdfe7e6, { transparent: true, opacity: 0.8 });
+      bx(0.05, 0.05, 0.3, M(0x2c2c2c), 0.75, 1.5, 1.02); const lan = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.22, 0.16), lampM); lan.position.set(0.75, 1.34, 1.14); barn.add(lan);
+      if (lit && !LITE) { const pl = new THREE.PointLight(0xffd38a, light === "night" ? 1.1 : 0.5, 5.5, 2); pl.position.set(0.75, 1.3, 1.5); barn.add(pl); }
+      barn.position.set(NX - 1.3, 0, NZ - 0.6); barn.rotation.y = 0.42; S.add(barn);
+      /* a bare old tree whose branch tips are perches */
+      const tx = NX + 2, tz = NZ - 0.3, deadM = M(0x6f6055), tips = [];
+      add(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.22, 2.9, 8), deadM), tx, 1.45, tz, true);
+      [[0.3, 1.5, 1.35], [2.3, 1.95, 1.25], [4.2, 2.35, 1.15], [1.2, 2.7, 0.95], [5.4, 1.2, 1.2]].forEach(([a, y, len], i) => {
+        const dir = new THREE.Vector3(Math.cos(a) * 0.86, 0.5, Math.sin(a) * 0.86).normalize();
+        const br = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.06, len, 6), deadM); br.position.set(tx, y, tz).addScaledVector(dir, len / 2); br.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir); br.castShadow = true; S.add(br);
+        tips.push(new THREE.Vector3(tx, y, tz).addScaledVector(dir, len));
+        const d2 = new THREE.Vector3(Math.cos(a + 0.9) * 0.6, 0.8, Math.sin(a + 0.9) * 0.6).normalize(), tw = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.03, 0.5, 5), deadM);
+        tw.position.set(tx, y, tz).addScaledVector(dir, len * 0.55).addScaledVector(d2, 0.25); tw.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d2); S.add(tw);
+      });
+      const posts = [[NX + 1, NZ + 3], [NX + 2.1, NZ + 2.75], [NX + 3.2, NZ + 2.35]];
+      posts.forEach(([x, z]) => add(new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.8, 0.11), M(0x8a7560)), x, 0.4, z, true));
+      for (let i = 0; i < 2; i++) { const a = posts[i], b = posts[i + 1], rl = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(b[0] - a[0], b[1] - a[1]), 0.05, 0.04), M(0x8a7560)); rl.position.set((a[0] + b[0]) / 2, 0.52, (a[1] + b[1]) / 2); rl.rotation.y = -Math.atan2(b[1] - a[1], b[0] - a[0]); S.add(rl); }
+      const nlog = add(new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.2, 1.5, 10), M(0x7a6a58)), NX - 0.9, 0.18, NZ + 1.6, true); nlog.rotation.z = Math.PI / 2; nlog.rotation.y = -0.3;
+      [[-3.3, 1.1], [0.3, 1.3], [2.9, 1.6], [-2.2, 2.3], [3.6, 0.3], [-0.2, 2.9]].forEach(([dx, dz]) => tuft(NX + dx, NZ + dz, 0x3f7353, 8, 0.55));
+      [[-2.6, 1.6], [1.4, 0.6], [0.6, 2.2], [2.6, 2.9], [-3.6, 0.6]].forEach(([dx, dz], i) => { add(new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, 0.14, 6), M(0xf1ebe0)), NX + dx, 0.07, NZ + dz); add(new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), lit ? new THREE.MeshBasicMaterial({ color: 0xbfe6ff }) : M(0xdfe9f2)), NX + dx, 0.13, NZ + dz); });
+      /* who sits where: ground birds in the bracken, nightjars on the log, owls and the rest on the ledge, the bare tree, the fence and the roof */
+      const grounders = NB.filter((b) => /^(Scolopax|Burhinus|Rallus|Crex)\b/.test(b.s)), jars = NB.filter((b) => /^(Caprimulgus|Chordeiles|Antrostomus)\b/.test(b.s));
+      const perchers = NB.filter((b) => !grounders.includes(b) && !jars.includes(b));
+      const seats = [
+        (b) => { const g = addBird(b, 1.1, barn); g.position.set(0, 1.73 + 0.15 * BS, 1.22); g.rotation.y = -Math.PI / 2; return g; },
+        ...tips.map((t, i) => (b) => { const g = addBird(b, 1.05); g.position.copy(t); g.position.y += 0.14 * BS; g.rotation.y = -Math.PI / 2 + (i - 2) * 0.3; return g; }),
+        ...posts.map(([x, z], i) => (b) => { const g = addBird(b); g.position.set(x, 0.8 + 0.15 * BS, z); g.rotation.y = -Math.PI / 2 + (i - 1) * 0.4; return g; }),
+        ...[0.55, -0.55].map((z) => (b) => { const g = addBird(b, 1, barn); g.position.set(0, 2.65 + 0.14 * BS, z); g.rotation.y = -Math.PI / 2; return g; }),
+      ];
+      perchers.forEach((b, i) => { const g = i < seats.length ? seats[i](b) : (() => { const q = addBird(b); q.position.set(NX - 3.4 + (i - seats.length) * 0.8, 0.15 * BS, NZ + 3); return q; })(); g.userData.home = g.position.clone(); });
+      jars.forEach((b, i) => { const g = addBird(b); g.position.set(NX - 0.9 + (i - (jars.length - 1) / 2) * 0.6, 0.36 + 0.13 * BS, NZ + 1.6); g.rotation.y = -Math.PI / 2 + 0.4; g.userData.home = g.position.clone(); });
+      const gs = [[1.5, 1.5], [-2.7, 1.2], [2.9, 0.9], [0.3, 2.5], [-1.8, 2.7], [-3.5, 0.1]];
+      grounders.forEach((b, i) => { const [dx, dz] = gs[i % gs.length]; const g = addBird(b); g.position.set(NX + dx + Math.floor(i / gs.length) * 0.6, 0.15 * BS, NZ + dz); g.rotation.y = -1.2 + i * 0.9; peckers.push({ g, ph: i * 1.7 }); });
+      /* a few fireflies drift here whatever the light */
+      for (let i = 0; i < (LITE ? 5 : 12); i++) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 4), new THREE.MeshBasicMaterial({ color: 0xfff1a0, transparent: true, opacity: light === "day" ? 0.75 : 0.95 })); const x = NX - 3.4 + rnd() * 6.8, z = NZ - 1.5 + rnd() * 4.4; f.position.set(x, 0.4 + rnd() * 1.8, z); S.add(f); flies.push({ f, x, z, y: f.position.y, ph: rnd() * 6 }); }
+      signpost("night", "Night", NB.length, NX - 3.5, NZ + 3.1);
+    }
 
     // leaves and fireflies
     const LEAFC = [0xd9822b, 0xe0a83a, 0xb8562b, 0xc9a23a, 0xa8b84f];
@@ -4566,16 +4655,16 @@ const World = (() => {
       o.reset = () => { const p = leafSrc[Math.floor(rnd() * leafSrc.length)]; l.position.set(p.x + (rnd() - 0.5) * 1.4, p.y - 0.3 + rnd() * 0.5, p.z + (rnd() - 0.5) * 1.4); o.rest = 0; };
       o.reset(); l.position.y = rnd() * 4; leaves.push(o);
     }
-    for (let i = 0; i < 40; i++) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), new THREE.MeshBasicMaterial({ color: 0xfff1a0, transparent: true, opacity: 0.9 })); const x = -3 + rnd() * 15, z = -8 + rnd() * 13; f.position.set(x, 0.4 + rnd() * 1.6, z); f.visible = LIGHTS[light].flies; S.add(f); flies.push({ f, x, z, y: f.position.y, ph: rnd() * 6 }); }
+    for (let i = 0; i < 40; i++) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), new THREE.MeshBasicMaterial({ color: 0xfff1a0, transparent: true, opacity: 0.9 })); const x = -4 + rnd() * 17, z = -11 + rnd() * 14; f.position.set(x, 0.4 + rnd() * 1.6, z); f.visible = LIGHTS[light].flies; S.add(f); flies.push({ f, x, z, y: f.position.y, ph: rnd() * 6 }); }
     dirty = false;
     updateUi(SP, by);
   }
 
   function updateUi(SP, by) {
-    $("world-sum").textContent = `${SP.length} species · ${["pond", "wood", "farm"].filter((h) => by[h].length).length} habitats`;
+    $("world-sum").textContent = `${SP.length} species · ${HABS.filter((h) => by[h].length).length} habitats`;
     const n = (h) => by[h].length;
     document.querySelectorAll("[data-wfocus]").forEach((b) => { const k = b.dataset.wfocus; const c = b.querySelector(".n"); if (c) c.textContent = k === "all" ? SP.length : n(k); });
-    $("world-hab-list").innerHTML = ["pond", "wood", "farm"].map((h) => `<button type="button" class="wl-row" data-wfocus="${h}"><i style="background:${habColour(h)}"></i><span>${HAB_SHORT[h]}</span><b>${n(h)}</b></button>`).join("");
+    $("world-hab-list").innerHTML = HABS.map((h) => `<button type="button" class="wl-row" data-wfocus="${h}"><i style="background:${hCol(h)}"></i><span>${HAB_SHORT[h]}</span><b>${n(h)}</b></button>`).join("");
   }
 
   function sing(g) {
@@ -4653,7 +4742,7 @@ const World = (() => {
       climbers.forEach((o) => { o.g.position.y = o.base + ((T * 0.18 + o.ph) % 1) * o.span; });
       leaves.forEach((o) => { const l = o.l; if (l.position.y > 0.03) { l.position.y -= o.v * dt; l.position.x += Math.sin(T * 1.5 + o.ph) * dt * 0.3; l.rotation.x += dt * o.sp; l.rotation.y += dt * o.sp * 0.7; } else { l.position.y = 0.02; l.rotation.set(-Math.PI / 2, 0, o.ph); o.rest += dt; if (o.rest > 4) o.reset(); } });
       clouds.forEach((o) => { if (!o.sp) return; o.a += dt * o.sp; o.g.position.set(ISL[0] + Math.cos(o.a) * o.r, o.y, ISL[1] + Math.sin(o.a) * o.r); });
-      if (LIGHTS[light].flies) flies.forEach((o) => { o.f.position.set(o.x + Math.sin(T * 0.7 + o.ph) * 0.6, o.y + Math.sin(T * 1.3 + o.ph) * 0.25, o.z + Math.cos(T * 0.6 + o.ph) * 0.6); o.f.material.opacity = 0.45 + 0.45 * Math.sin(T * 3 + o.ph * 2); });
+      flies.forEach((o) => { if (!o.f.visible) return; o.f.position.set(o.x + Math.sin(T * 0.7 + o.ph) * 0.6, o.y + Math.sin(T * 1.3 + o.ph) * 0.25, o.z + Math.cos(T * 0.6 + o.ph) * 0.6); o.f.material.opacity = 0.45 + 0.45 * Math.sin(T * 3 + o.ph * 2); });
       song.forEach((s) => { s.next -= dt; if (s.next <= 0) { s.next = 3 + (Math.random() * 16) / s.rate; sing(s.g); } });
     }
     for (let i = ripples.length - 1; i >= 0; i--) { const rp = ripples[i]; rp.userData.t += dt; const s = 1 + rp.userData.t * 3; rp.scale.set(s, s, s); rp.material.opacity = 0.45 * (1 - rp.userData.t / 1.4); if (rp.userData.t > 1.4) { S.remove(rp); rp.geometry.dispose(); rp.material.dispose(); ripples.splice(i, 1); } }
@@ -5051,7 +5140,7 @@ const Acct = (() => {
     b.hidden = !me; document.body.classList.toggle("has-bell", !!me);
     if (!me) { $("bell-card").hidden = true; return; }
     if (innerWidth > 760) b.style.setProperty("--bell-right", 14 + $("me-btn").offsetWidth + 8 + "px");
-    const n = inbox.unread, rare = inbox.items.some((x) => x.kind === "rare" && x.t > inbox.read);
+    const ck = clockNote(), n = inbox.unread + (ck && !ck.seen ? 1 : 0), rare = inbox.items.some((x) => x.kind === "rare" && x.t > inbox.read);
     const bn = $("bell-n"); bn.hidden = !n; bn.textContent = n > 9 ? "9+" : String(n); bn.classList.toggle("rare", rare);
     b.setAttribute("aria-label", n ? `Notifications, ${n} new` : "Notifications");
   }
@@ -5089,13 +5178,15 @@ const Acct = (() => {
   }
   function renderBell() {
     const c = $("bell-card"), items = inbox.items || [];
-    c.innerHTML = `<header><b>Notifications</b><small>${items.length ? "From your flock" : ""}</small></header>` +
-      (items.length ? items.map(ntHTML).join("") : `<div class="bell-empty">Nothing yet. When friends add birds, find something rare or accept your requests, you'll see it here.</div>`);
+    const clock = clockHTML();
+    c.innerHTML = `<header><b>Notifications</b><small>${items.length ? "From your flock" : ""}</small></header>` + clock +
+      (items.length ? items.map(ntHTML).join("") : clock ? "" : `<div class="bell-empty">Nothing yet. When friends add birds, find something rare or accept your requests, you'll see it here.</div>`);
     Photos.fill(c);
   }
   async function openBell() {
     inboxShownRead = inbox.read || ""; renderBell();
     $("bell-card").hidden = false; $("bell-btn").setAttribute("aria-expanded", "true");
+    const ck = clockNote(); if (ck && !ck.seen) { try { localStorage.setItem(CLOCK_KEY(), "1"); } catch (e) {} paintBell(); }
     if (inbox.unread) { const r = await call("inbox", { method: "POST" }); if (r.ok) { inbox.read = r.data.read; inbox.unread = 0; paintBell(); } }
   }
   function closeBell() { $("bell-card").hidden = true; $("bell-btn").setAttribute("aria-expanded", "false"); }
@@ -5231,6 +5322,7 @@ const Acct = (() => {
     else if (invite) await showInvite(invite);
     else if (!me && !seen()) showWelcome();
     else document.body.classList.remove("welcoming");
+    if (me) setTimeout(maybeNightNote, 2500);
   }
 
   /* ---------- the front door: a welcome card on a first visit, an invite card from a friend's link ---------- */
@@ -5246,6 +5338,53 @@ const Acct = (() => {
       <li><span class="ic">${ICON.world}</span><span><b>Habitat world</b>All your birds in one 3D scene</span></li>
       <li><span class="ic">${ICON.wall}</span><span><b>Collection</b>Fill a wall of every UK species</span></li>
       <li><span class="ic">${ICON.friends}</span><span><b>Your flock</b>See what your friends have heard</span></li></ul>`;
+  /* ---------- a note from the founder about listening after dark ---------- */
+  const NIGHT_KEY = () => `birb-night-note:${me ? me.u : ""}`;
+  const founder = () => (owner && member(owner)) || { name: "Lee" };
+  function nightNote(first) {
+    const o = founder(), c = $("wel-card");
+    c.style.setProperty("--mbg", "#0b1620"); c.style.setProperty("--mrim", "#2c3566");
+    c.innerHTML = `<button type="button" class="acct-x mem-x" data-wel-close aria-label="Close">×</button>
+      <div class="night-hero" aria-hidden="true"><svg viewBox="0 0 400 110" preserveAspectRatio="xMidYMax slice">
+        <circle cx="338" cy="36" r="17" fill="#f4f2e6"/><circle cx="331" cy="31" r="3.5" fill="#d9d6c8"/><circle cx="343" cy="42" r="2.5" fill="#d9d6c8"/>
+        <g fill="#fff"><circle cx="46" cy="24" r="1.5"/><circle cx="104" cy="46" r="1.1"/><circle cx="176" cy="18" r="1.4"/><circle cx="246" cy="40" r="1.1"/><circle cx="292" cy="14" r="1.3"/><circle cx="140" cy="70" r="1"/><circle cx="22" cy="66" r="1.1"/><circle cx="380" cy="72" r="1"/></g>
+        <path d="M0 100 Q140 84 260 98 T400 92 V110 H0Z" fill="var(--surface)"/>
+        <g transform="translate(76 58)"><path d="M-34 32 L46 27" stroke="#5a4636" stroke-width="5" stroke-linecap="round"/><ellipse cx="0" cy="14" rx="14" ry="17" fill="#8a6a4f"/><ellipse cx="0" cy="18" rx="9" ry="11" fill="#e8dcc4"/><circle cx="-6" cy="3" r="6" fill="#f4f0e6"/><circle cx="6" cy="3" r="6" fill="#f4f0e6"/><circle cx="-6" cy="3" r="2.4" fill="#1b1b1b"/><circle cx="6" cy="3" r="2.4" fill="#1b1b1b"/><path d="M-1.5 8 L1.5 8 L0 12Z" fill="#d9a441"/></g></svg></div>
+      <div class="mem-body night-body">
+        <div class="night-from">${Avatar.html(o.avatar, "")}<span><b>${esc(nameOf(o))}<span class="tag-owner">founder</span></b><small>A note on listening at night</small></span></div>
+        <h2 id="wel-h">${first ? `${esc(first)} is your first night bird` : "Listening for birds at night"}</h2>
+        <p class="lede">${first ? "It has moved into the Night corner of your Habitat world. " : ""}Before you head out after dark, a few things I'd ask:</p>
+        <ul class="night-list">
+          <li>Tell someone where you're going and when you'll be back, or share your live location with a friend.</li>
+          <li>Take a torch and a charged phone, and stick to paths you know.</li>
+          <li>Listen, don't chase. Keep away from roosts and nests, and skip playing calls back to owls.</li>
+          <li>Stay off private land unless you have permission.</li>
+        </ul>
+        <div class="wel-acts"><button type="button" class="primary" data-wel-close>Got it</button>${first ? '<span class="hint" style="text-align:center">You can read this again in Help.</span>' : ""}</div>
+      </div>`;
+    $("wel-pop").hidden = false;
+    const f = c.querySelector(".primary"); if (f) setTimeout(() => f.focus({ preventScroll: true }), 60);
+  }
+  /* shown once, when the first owl, nightjar or other night bird turns up in your own birds */
+  let nightT = 0;
+  async function maybeNightNote(tries = 0) {
+    clearTimeout(nightT);
+    if (!me || !me.birds) return;
+    try { if (localStorage.getItem(NIGHT_KEY())) return; } catch (e) { return; }
+    let recs; try { recs = await getRecs(me.u); } catch (e) { return; }
+    const nb = recs.filter((d) => isNightBird(d.sci)); if (!nb.length) return;
+    const busy = document.body.classList.contains("welcoming") || !$("acct").hidden || !!document.querySelector(".mem-pop:not([hidden])") || !$("help").hidden;
+    if (busy) { if (tries < 40) nightT = setTimeout(() => maybeNightNote(tries + 1), 4000); return; }
+    const first = nb.slice().sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")))[0];
+    try { localStorage.setItem(NIGHT_KEY(), "1"); } catch (e) {}
+    nightNote(first.name);
+  }
+  /* once a year, when the clocks go back, a short reminder from the founder sits in the bell for three weeks */
+  const clocksBack = () => { const d = new Date(new Date().getFullYear(), 9, 31); d.setDate(31 - d.getDay()); return d; };
+  const CLOCK_KEY = () => `birb-clocks:${new Date().getFullYear()}:${me ? me.u : ""}`;
+  const clockNote = () => { if (!me) return null; const t0 = clocksBack(), gap = Date.now() - t0; if (gap < 0 || gap > 21 * 864e5) return null; let seen = false; try { seen = !!localStorage.getItem(CLOCK_KEY()); } catch (e) {} return { seen }; };
+  const clockHTML = () => { const k = clockNote(); if (!k) return ""; const o = founder(); return `<div class="nt night${k.seen ? "" : " new"}">${Avatar.html(o.avatar, "")}<div class="tx"><span class="eyebrow">From the founder</span><b>${esc(nameOf(o))}</b>: dark evenings are here. If you're out listening after dark, tell someone where you're going.<div class="acts"><button type="button" class="ghost" data-night-help>Staying safe at night</button></div></div></div>`; };
+
   function popCard(avatar, html) {
     const A = Avatar.norm(avatar), c = $("wel-card");
     c.style.setProperty("--mbg", A.bg); c.style.setProperty("--mrim", A.cBody);
@@ -5839,6 +5978,7 @@ const Acct = (() => {
     if (s.rare && s.rare.length) notice += ` ${andList(s.rare)} ${s.rare.length === 1 ? "is a rare find" : "are rare finds"}, so ${s.rare.length === 1 ? "it's" : "they're"} in lilac on your Collection wall. Your friends will see a special note.`;
     if (scope === "flock") await showFlock(); else await show(me.u);
     joinStep = 1; view = "profile"; render(); paintChrome();
+    setTimeout(maybeNightNote, 1500);
   }
   async function afterAuth(r) {
     const url = new URL(location.href); if (url.searchParams.has("invite")) { url.searchParams.delete("invite"); history.replaceState(null, "", url.pathname + url.search + location.hash); }
@@ -5856,6 +5996,7 @@ const Acct = (() => {
     if (t.closest("#bell-btn")) { $("bell-card").hidden ? openBell() : closeBell(); return; }
     const nt = t.closest("[data-nt]"); if (nt) { nt.disabled = true; await ntAct(nt.dataset.nt, nt.dataset.u, nt.dataset.bird); return; }
     if (!$("bell-card").hidden && !t.closest("#bell-card")) closeBell();
+    if (t.closest("[data-night-help]")) { try { setHelp(false); } catch (x) {} $("bell-card").hidden = true; $("bell-btn").setAttribute("aria-expanded", "false"); nightNote(""); return; }
     if (!$("wel-pop").hidden) {
       if (t === $("wel-pop") || t.closest("[data-wel-close]")) { closeWel(); return; }
       const w = t.closest("[data-wel]"); if (!w) return;
