@@ -3636,7 +3636,10 @@ function initMap() {
 }
 function fit() {
   if ((!deckgl && !mlmap) || !current.groups.length) return flyTo(HOME);
-  const lngs = current.groups.map((g) => g.lng), lats = current.groups.map((g) => g.lat);
+  /* frame the UK and Ireland birds; a sighting abroad (a holiday in Spain, say) shouldn't pull the map right out */
+  const home = current.groups.filter((g) => g.lng > -11 && g.lng < 2.5 && g.lat > 49.4 && g.lat < 61.5);
+  const use = home.length ? home : current.groups;
+  const lngs = use.map((g) => g.lng), lats = use.map((g) => g.lat);
   const el = $("map");
   const vp = new deck.WebMercatorViewport({ width: el.clientWidth || 800, height: el.clientHeight || 600 });
   const pad = Math.min(140, Math.max(40, Math.min(el.clientWidth, el.clientHeight) / 4));
