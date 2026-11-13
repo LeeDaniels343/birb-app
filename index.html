@@ -1136,7 +1136,8 @@ body.welcoming .empty-card { display: none; }
 .prof-bd-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .prof-bd-h .lab { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .prof-bd .hint { margin: 0; }
-.acct .pv2-band { height: 64px; margin: 10px -22px 0; background: color-mix(in srgb, var(--band) 55%, var(--surface)); }
+.acct .pv2-band { height: 64px; margin: 10px -22px 0; background: linear-gradient(120deg, color-mix(in srgb, var(--band) 42%, var(--surface)), color-mix(in srgb, var(--band) 16%, var(--surface))); }
+.acct-card { overflow-x: hidden; }
 .acct .pv2-head { display: flex; align-items: flex-end; gap: 14px; margin-top: -40px; }
 .acct .pv2-head .av { width: 84px; height: 84px; flex: none; border: 4px solid var(--surface); border-radius: 50%; }
 .acct .pv2-head h2 { margin: 0; font-size: 22px; }
@@ -6418,7 +6419,7 @@ const Acct = (() => {
       let shelf = (me.pins || []).map((id) => Badges.def(id)).filter(Boolean);
       if (!shelf.length) shelf = Object.entries(me.badges || {}).sort((x, y) => (x[1] < y[1] ? 1 : -1)).slice(0, 3).map(([id]) => Badges.def(id)).filter(Boolean);
       const link = me.invite ? `${location.origin}/?invite=${encodeURIComponent(me.invite)}` : "";
-      h = `${X}${tabs()}<div class="pv2-band" style="--band:${esc(A.bg)}"></div>
+      h = `${X}${tabs()}<div class="pv2-band" style="--band:${esc(A.cBody || A.bg)}"></div>
         <div class="pv2-head">${Avatar.html(me.avatar)}<div><h2 id="acct-h">${esc(nameOf(me))}</h2><p class="sub">@${esc(me.u)}${me.admin ? '<span class="tag-owner">admin</span>' : ""}${since ? ` · since ${esc(since)}` : ""}</p></div></div>
         ${nB ? `<div class="pv2-shelf">${shelf.map((x) => `<span title="${esc(x.name)}">${Badges.medal(x, 44)}</span>`).join("")}<button type="button" class="linkish" data-acct-badges>${nB} ${nB === 1 ? "badge" : "badges"} ›</button></div>` : ""}
         ${notice ? `<p class="ok" role="status">${notice}</p>` : ""}
