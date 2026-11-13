@@ -475,6 +475,12 @@ body.night .fr-row .btns .primary { color: #0f191d; }
 .pv p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--muted); }
 .share-prev { display: grid; place-items: center; margin: 10px 0; min-height: 200px; }
 .share-prev img { width: min(320px, 100%); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.share-kind { width: fit-content; margin: 2px auto 0; }
+.share-kind button { padding: 6px 12px; font-size: 13px; }
+.share-prev.tall img { width: min(230px, 70%); }
+.story-steps { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.story-steps b { color: var(--ink); }
+
 .acct textarea { font: inherit; font-size: 15px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); resize: vertical; }
 .rep { padding: 9px 0; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
 .rep-h { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 13px; }
@@ -4878,7 +4884,8 @@ const Acct = (() => {
   try { if (API && (new URLSearchParams(location.search).get("invite") || (!token && !localStorage.getItem(WELCOMED)))) document.body.classList.add("welcoming"); } catch (e) {}
   let requests = { in: [], out: [] }, findRes = null;
   let inbox = { items: [], read: "", unread: 0 }, inboxShownRead = "", pollT = 0;
-  let phrase = "", phraseNext = "profile", shareUrl = "", shareBlob = null;
+  let phrase = "", phraseNext = "profile", shareUrl = "", shareBlob = null, shareKind = "post";
+  const inviteLink = () => me && me.invite ? `${location.origin}/?invite=${encodeURIComponent(me.invite)}` : location.origin + "/";
   let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "";
   let scope = "", backTo = "me", memberU = "";
   const cache = new Map();
@@ -5255,8 +5262,15 @@ const Acct = (() => {
           <div class="err" id="acct-err" role="alert"></div>
           <div class="acts"><button type="button" class="ghost" data-acct="profile">Cancel</button><button type="submit" class="danger">Delete my account</button></div></form>`;
     } else if (view === "share" && me) {
-      h = `${X}${tabs()}<h2 id="acct-h">Share your birds</h2><p class="sub">A picture of your birds to send in a chat or post anywhere. It shows your birb, your counts and a few birds, but not where you heard them.</p>
-        <div class="share-prev" id="share-prev">${shareUrl ? `<img src="${shareUrl}" alt="Your BIRB share card">` : `<p class="hint">Drawing your card…</p>`}</div>
+      const story = shareKind === "story";
+      h = `${X}${tabs()}<h2 id="acct-h">Share your birds</h2><p class="sub">${story ? "A tall card for your Instagram story that invites people to join BIRB as your friend. It shows your birb, your counts and a few birds, but not where you heard them." : "A picture of your birds to send in a chat or post anywhere. It shows your birb, your counts and a few birds, but not where you heard them."}</p>
+        <div class="seg share-kind" role="group" aria-label="Card size"><button type="button" data-share-kind="post" aria-pressed="${!story}">Post or chat</button><button type="button" data-share-kind="story" aria-pressed="${story}">Instagram story</button></div>
+        <div class="share-prev${story ? " tall" : ""}" id="share-prev">${shareUrl ? `<img src="${shareUrl}" alt="Your BIRB share card">` : `<p class="hint">Drawing your card…</p>`}</div>
+        ${story ? `<ol class="story-steps">
+          <li>Tap <b>Share</b> and pick Instagram, then Story. On a computer, save the image and send it to your phone.</li>
+          <li>In Instagram, tap the sticker button, choose <b>Link</b> and paste your invite link. Tapping Share copies it for you.</li>
+          <li>Drop the sticker in the space under "Tap the link". You can change its words to something like "Join my flock".</li></ol>
+          <div class="copybox"><code>${esc(inviteLink())}</code><button type="button" data-copy="${esc(inviteLink())}">Copy link</button></div>` : ""}
         <div class="err" id="acct-err" role="alert"></div>
         <div class="acts"><button type="button" class="ghost" data-acct="profile">Back</button><span style="display:flex;gap:6px"><button type="button" data-share-save ${shareBlob ? "" : "disabled"}>Save image</button><button type="button" class="primary" data-share-send ${shareBlob ? "" : "disabled"}>Share</button></span></div>`;
     } else if (view === "passcode") {
@@ -5330,7 +5344,7 @@ const Acct = (() => {
     } catch (e) { return null; }
   }
   const loadImg = (src) => new Promise((res) => { if (!src) return res(null); const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
-  async function makeShareCard() {
+  async function makeShareCard(story) {
     const recs = await getRecs(me.u);
     const by = new Map();
     for (const d of recs) { const x = by.get(d.name) || { name: d.name, sci: d.sci, fam: d.family, days: new Set(), last: "" }; x.days.add(d.date); const w = d.date + (d.time || ""); if (w > x.last) x.last = w; by.set(d.name, x); }
@@ -5339,18 +5353,19 @@ const Acct = (() => {
     const top = all.slice().sort((a, b) => b.days.size - a.days.size || a.name.localeCompare(b.name)).filter((x) => x !== latest).slice(0, 3);
     const wallSci = new Map(WALL.map((w) => [sci2(w[1]), w[3]]));
     const inWall = all.filter((x) => wallSci.has(sci2(x.sci))), rare = inWall.filter((x) => wallSci.get(sci2(x.sci)) === 2);
-    const W = 1080, H = 1350, c = document.createElement("canvas"); c.width = W; c.height = H;
+    const W = 1080, H = story ? 1920 : 1350, c = document.createElement("canvas"); c.width = W; c.height = H;
     const g = c.getContext("2d");
     await (document.fonts ? document.fonts.ready : Promise.resolve());
     const DISP = "'Bricolage Grotesque', 'IBM Plex Sans', sans-serif", BODY = "'IBM Plex Sans', Helvetica, Arial, sans-serif", MONO = "'IBM Plex Mono', Menlo, monospace";
     const A = Avatar.norm(me.avatar);
     const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#14343f"); bg.addColorStop(1, "#0b1d24"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
     g.globalAlpha = 0.07; g.strokeStyle = "#ffffff"; g.lineWidth = 2;
-    for (let i = 0; i < 9; i++) { g.beginPath(); for (let x = -20; x <= W + 20; x += 20) { const y = 140 + i * 140 + Math.sin(x / 90 + i) * 18; x === -20 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); }
+    for (let i = 0; i < (story ? 13 : 9); i++) { g.beginPath(); for (let x = -20; x <= W + 20; x += 20) { const y = 140 + i * 140 + Math.sin(x / 90 + i) * 18; x === -20 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); }
     g.globalAlpha = 1;
     const circleImg = (im, x, y, r, ring, fill) => { g.save(); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.closePath(); g.fillStyle = fill || "#24424d"; g.fill(); g.clip(); if (im) { const s = Math.max((2 * r) / im.width, (2 * r) / im.height); g.drawImage(im, x - (im.width * s) / 2, y - (im.height * s) / 2, im.width * s, im.height * s); } g.restore(); if (ring) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.lineWidth = 8; g.strokeStyle = ring; g.stroke(); } };
     const text = (t, x, y, font, col, align = "left") => { g.font = font; g.fillStyle = col; g.textAlign = align; g.fillText(t, x, y); };
     const fit = (t, max, font) => { g.font = font; if (g.measureText(t).width <= max) return t; while (t.length > 3 && g.measureText(t + "…").width > max) t = t.slice(0, -1); return t + "…"; };
+    if (story) return drawStory();
     text("BIRB", 72, 108, `700 52px ${DISP}`, "#ffffff");
     text("birb-app.netlify.app", W - 72, 104, `500 26px ${MONO}`, "#8fc3d3", "right");
     const av = await loadImg(Avatar.snapshot(A));
@@ -5380,16 +5395,52 @@ const Acct = (() => {
     text(`Collection ${inWall.length} of ${WALL.length} UK birds`, 72, by0 + 52, `500 24px ${BODY}`, "#a9c9d3");
     if (rare.length) text(`${rare.length} rare ${rare.length === 1 ? "find" : "finds"}`, W - 72, by0 + 52, `700 24px ${BODY}`, "#c4a6f2", "right");
     return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
+
+    /* the story card: 1080 by 1920, kept clear of Instagram's name bar at the top and reply box at the bottom */
+    async function drawStory() {
+      text("BIRB", W / 2, 255, `700 60px ${DISP}`, "#ffffff", "center");
+      text("the birds I hear, on a map", W / 2, 300, `500 28px ${BODY}`, "#8fc3d3", "center");
+      const av = await loadImg(Avatar.snapshot(A));
+      circleImg(av, W / 2, 470, 130, A.cBody, A.bg);
+      text(fit(`${nameOf(me)}'s birds`, W - 160, `700 58px ${DISP}`), W / 2, 670, `700 58px ${DISP}`, "#ffffff", "center");
+      text(String(all.length), W / 2, 815, `700 140px ${DISP}`, "#ffffff", "center");
+      text("species heard", W / 2, 862, `500 34px ${BODY}`, "#a9c9d3", "center");
+      text(`${places} ${places === 1 ? "place" : "places"} · ${days} ${days === 1 ? "day" : "days"} out listening`, W / 2, 906, `400 28px ${BODY}`, "#7fa6b2", "center");
+      const [li, ...ti] = await Promise.all([latest && photoImg(latest.sci), ...top.map((x) => photoImg(x.sci))]);
+      const col = (x) => PLUMAGE[sci2(x.sci)] || famColour(x.fam);
+      if (latest) {
+        g.fillStyle = "rgba(255,255,255,.07)"; g.beginPath(); g.roundRect(90, 945, W - 180, 146, 28); g.fill();
+        circleImg(li, 90 + 85, 1018, 50, col(latest), col(latest));
+        text("LATEST BIRD", 90 + 160, 990, `500 22px ${MONO}`, "#8fc3d3");
+        text(fit(latest.name, W - 180 - 190, `700 42px ${DISP}`), 90 + 160, 1036, `700 42px ${DISP}`, "#ffffff");
+        text(fmtDate(latest.last.slice(0, 10)), 90 + 160, 1072, `400 25px ${BODY}`, "#a9c9d3");
+      }
+      top.forEach((x, i) => {
+        const cx = 90 + ((W - 180) / 6) * (i * 2 + 1);
+        circleImg(ti[i], cx, 1170, 46, col(x), col(x));
+        text(fit(x.name, 280, `500 24px ${BODY}`), cx, 1248, `500 24px ${BODY}`, "#e7eef3", "center");
+      });
+      // the invitation, then an empty band where the link sticker goes
+      text("Hear birds with Merlin?", W / 2, 1335, `700 46px ${DISP}`, "#ffffff", "center");
+      text("Join my flock on BIRB", W / 2, 1383, `500 34px ${BODY}`, "#a9c9d3", "center");
+      g.strokeStyle = "#5ab8d8"; g.lineWidth = 4; g.lineCap = "round"; g.lineJoin = "round";
+      g.beginPath(); g.moveTo(W / 2, 1408); g.lineTo(W / 2, 1440); g.moveTo(W / 2 - 13, 1428); g.lineTo(W / 2, 1442); g.lineTo(W / 2 + 13, 1428); g.stroke();
+      text("Tap the link", W / 2, 1478, `600 26px ${BODY}`, "#5ab8d8", "center");
+      if (me.invite) text(`or use code ${me.invite} at ${location.host}`, W / 2, 1640, `500 24px ${MONO}`, "#7fa6b2", "center");
+      return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
+    }
   }
   async function openShare() {
     shareBlob = null; if (shareUrl) { URL.revokeObjectURL(shareUrl); shareUrl = ""; }
     view = "share"; render();
-    try { shareBlob = await makeShareCard(); shareUrl = URL.createObjectURL(shareBlob); } catch (e) { console.warn(e); }
+    try { shareBlob = await makeShareCard(shareKind === "story"); shareUrl = URL.createObjectURL(shareBlob); } catch (e) { console.warn(e); }
     if (view === "share") { render(); if (!shareBlob) err("Couldn't draw your card. Try again in a moment."); }
   }
   async function sendShare(saveOnly) {
     if (!shareBlob) return;
-    const file = new File([shareBlob], `birb-${me.u}.png`, { type: "image/png" });
+    // for a story, the invite link goes on the clipboard so it's ready to paste into Instagram's link sticker
+    if (shareKind === "story") { try { navigator.clipboard.writeText(inviteLink()).catch(() => {}); } catch (e) {} }
+    const file = new File([shareBlob], `birb-${me.u}${shareKind === "story" ? "-story" : ""}.png`, { type: "image/png" });
     if (!saveOnly && navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file], title: "My BIRB birds", text: `I've heard ${me.birds ? me.birds.species : ""} species on BIRB` }); return; } catch (e) { if (e && e.name === "AbortError") return; }
     }
@@ -5635,6 +5686,7 @@ const Acct = (() => {
     }
     if (t.closest("[data-export]")) { await exportData(); return; }
     const uh = t.closest("[data-unhide]"); if (uh) { uh.disabled = true; if (await hideBird(uh.dataset.unhide, false)) { notice = `${esc(uh.dataset.unhide)} is back on your map.`; render(); } return; }
+    const sk = t.closest("[data-share-kind]"); if (sk) { if (sk.dataset.shareKind !== shareKind) { shareKind = sk.dataset.shareKind; await openShare(); } return; }
     if (t.closest("[data-share-send]")) { await sendShare(false); return; }
     if (t.closest("[data-share-save]")) { await sendShare(true); return; }
     const sh = t.closest('[data-acct="share"]'); if (sh) { await openShare(); return; }
