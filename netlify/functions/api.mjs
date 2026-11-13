@@ -261,6 +261,13 @@ function toObjs(csv) {
   const head = rows[0];
   return { head, objs: rows.slice(1).map((r) => Object.fromEntries(head.map((h, i) => [h, r[i] || ""]))) };
 }
+/* the newest bird on someone's list: the species whose first sighting is most recent */
+function latestLifer(objs, hid = new Set()) {
+  const first = new Map();
+  for (const r of objs) { const n = r["Common Name"], d = r.Date; if (!n || !d || hid.has(n)) continue; if (!first.has(n) || d < first.get(n)) first.set(n, d); }
+  let best = null; for (const [n, d] of first) if (!best || d > best.date) best = { name: n, date: d };
+  return best;
+}
 function statsOf(objs, privatePlaces = 0) {
   const species = new Set(), places = new Set(); let first = "", last = "";
   for (const r of objs) { species.add(r["Common Name"]); places.add(r["Location ID"] || r.Location); const d = r.Date; if (d && (!first || d < first)) first = d; if (d && d > last) last = d; }
@@ -510,7 +517,7 @@ export default async (req) => {
         if (hid.size) res.stats = { ...res.stats, ...statsOf(visibleRows(me, toObjs(res.csv).objs), res.stats.privatePlaces || 0) };
         const rare = fresh.filter((n) => isRare(after.get(n)));
         res.stats.rare = rare;
-        me.birds = { ...res.stats, updated: new Date().toISOString() };
+        me.birds = { ...res.stats, updated: new Date().toISOString(), latest: latestLifer(toObjs(res.csv).objs, hid) };
         await putUser(me);
         /* tell friends who can see these birds: one note per upload, plus a special one for rare finds */
         if (res.stats.added > 0 && fresh.length + (first ? 1 : 0) + res.stats.added > 0) {
