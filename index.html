@@ -1196,6 +1196,8 @@ body.welcoming .empty-card { display: none; }
 .fl-empty p { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
 .fl-empty > button { display: block; width: 100%; margin-bottom: 6px; }
 .fl-empty .fr-add { margin-top: 12px; }
+.add-pill .add-ic { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
+.add-pill[hidden] { display: none !important; }
 .nt-react { display: flex; align-items: center; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
 .nt-react button { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 16px; line-height: 1.2; min-height: 0; box-shadow: none; cursor: pointer; transition: transform .12s; }
 .nt-react button:hover:not([disabled]) { transform: scale(1.15); }
@@ -1404,6 +1406,12 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
         <svg class="latest-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="latest-card" id="fav-card" hidden></div>
+      <input type="file" id="add-file" accept=".csv,.zip,text/csv,application/zip" hidden>
+      <button type="button" class="latest-pill add-pill" id="add-pill" data-add-birds hidden title="Add a newer eBird file">
+        <span class="latest-thumb add-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M5 20h14"/></svg></span>
+        <span class="latest-txt"><small>Been out listening?</small><b>Add birds</b></span>
+        <span class="pill-cap">Add birds</span>
+      </button>
     </div>
   </div>
   <nav class="crumbs" id="crumbs" aria-label="Where you are on the map"></nav>
@@ -5882,6 +5890,7 @@ const Acct = (() => {
   /* corner button and the "whose birds" chip */
   function paintChrome() {
     setTimeout(paintEmpty, 0);
+    if ($("add-pill")) $("add-pill").hidden = !(me && me.birds);
     if (!API) return;
     const b = $("me-btn"); b.hidden = false;
     document.body.classList.add("has-me");
@@ -6939,6 +6948,9 @@ const Acct = (() => {
   }
 
   /* ---------- events ---------- */
+  /* the Add birds button on the map opens your profile and the file picker in one tap */
+  $("add-pill").addEventListener("click", (e) => { e.stopPropagation(); $("add-file").click(); }, true);
+  $("add-file").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; open("profile"); upload(f); });
   document.addEventListener("input", (e) => { if (e.target.id === "fb-text") $("fb-n").textContent = `${e.target.value.length} / 1500`; });
   document.addEventListener("click", async (e) => {
     const t = e.target;
