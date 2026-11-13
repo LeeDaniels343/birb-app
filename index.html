@@ -410,7 +410,7 @@ body.night .acct .primary { color: #0f191d; }
 .abld { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 18px; align-items: start; }
 .abld-stage { width: 230px; height: 230px; border-radius: 50%; overflow: hidden; border: 3px solid var(--avrim, var(--line)); cursor: grab; touch-action: none; margin: 0 auto; }
 .abld-stage canvas { display: block; }
-.abld-left { display: grid; justify-items: center; gap: 8px; position: sticky; top: 0; }
+.abld-left { display: grid; justify-items: center; gap: 8px; position: sticky; top: 0; z-index: 3; }
 .abld .grp { margin-bottom: 10px; }
 .abld .lab { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
 .abld .opt { display: flex; gap: 5px; flex-wrap: wrap; }
@@ -573,8 +573,11 @@ body.night .mem-acts .primary { color: #0f191d; }
   body.has-who.has-chips .crumbs { top: calc(154px + env(safe-area-inset-top)); }
   body.panel-open .me-btn { display: none; }
   .abld { grid-template-columns: 1fr; }
-  .abld-left { position: static; }
-  .abld-stage { width: 200px; height: 200px; }
+  .abld-left { position: sticky; top: -18px; z-index: 3; margin: -6px -16px 0; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line);
+    grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; justify-items: start; align-items: center; column-gap: 14px; row-gap: 8px; }
+  .abld-stage { width: 132px; height: 132px; grid-row: 1 / 3; }
+  .abld-left .hint { align-self: end; margin: 0; }
+  .abld-left > div { align-self: start; }
   .acct-card { padding: 18px 16px 16px; }
   .acct { padding: 8px; align-items: end; }
 }
