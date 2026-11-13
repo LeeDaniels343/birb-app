@@ -1088,6 +1088,7 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
   .bd-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 12px 4px; }
   .bd-m { --s: 64px; }
 }
+.acct .see-birds { display: block; width: 100%; margin: 4px 0 14px; background: var(--accent); color: #fff; padding: 11px 18px; border-radius: 999px; font-size: 15px; font-weight: 600; }
 .nt-react { display: flex; align-items: center; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
 .nt-react button { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 16px; line-height: 1.2; min-height: 0; box-shadow: none; cursor: pointer; transition: transform .12s; }
 .nt-react button:hover:not([disabled]) { transform: scale(1.15); }
@@ -4369,6 +4370,7 @@ const Badges = (() => {
   }
   document.addEventListener("click", (e) => {
     const m = e.target.closest("[data-cmode]"); if (m) { setMode(m.dataset.cmode); return; }
+    if (e.target.closest("[data-go-badges]")) { $("toast").hidden = true; setView("collection"); setMode("badges"); return; }
     if (e.target.closest("[data-bd-x]")) { $("bd-pop").hidden = true; sel = null; document.querySelectorAll("#badges .bd.sel").forEach((x) => x.classList.remove("sel")); return; }
     const p = e.target.closest("[data-bd-pin]"); if (p) { p.disabled = true; togglePin(p.dataset.bdPin); return; }
     const b = e.target.closest("#badges [data-bd]"); if (b) pop(b.dataset.bd);
@@ -5734,7 +5736,9 @@ const Acct = (() => {
   let inbox = { items: [], read: "", unread: 0 }, inboxShownRead = "", pollT = 0;
   let phrase = "", phraseNext = "profile", shareUrl = "", shareBlob = null, shareKind = "post";
   const inviteLink = () => me && me.invite ? `${location.origin}/?invite=${encodeURIComponent(me.invite)}` : location.origin + "/";
-  let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "";
+  let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "", firstUp = false;
+  /* one pop-up note per visit is plenty: later ones become a small toast, and notes never start the Help guide */
+  let notesShown = 0, welNote = false;
   let scope = "", backTo = "me", memberU = "";
   const cache = new Map();
   const SCOPE_KEY = "birb-scope";
@@ -5743,7 +5747,7 @@ const Acct = (() => {
   function toast(html, anchor) {
     const t = $("toast"); t.innerHTML = html; t.hidden = false;
     const a = anchor && anchor.getBoundingClientRect(), host = t.offsetParent ? t.offsetParent.getBoundingClientRect() : { left: 0, top: 0 };
-    if (a) { t.style.left = Math.max(12, a.left - host.left) + "px"; t.style.top = a.bottom - host.top + 8 + "px"; }
+    if (a) { const room = (host.width || innerWidth) - t.offsetWidth - 12; t.style.left = Math.max(12, Math.min(a.left - host.left, room)) + "px"; t.style.top = a.bottom - host.top + 8 + "px"; }
     clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 7000);
   }
   const card = () => $("acct-card");
@@ -6026,6 +6030,9 @@ const Acct = (() => {
   const founder = () => (owner && member(owner)) || { name: "Lee" };
   function nightNote(first) {
     const o = founder(), c = $("wel-card");
+    welNote = true; notesShown++;
+    /* the same advice sits in the bell after the clocks go back; no need to see it twice */
+    if (first) try { localStorage.setItem(CLOCK_KEY(), "1"); paintBell(); } catch (e) {}
     c.style.setProperty("--mbg", "#0b1620"); c.style.setProperty("--mrim", "#2c3566");
     c.innerHTML = `<button type="button" class="acct-x mem-x" data-wel-close aria-label="Close">×</button>
       <div class="night-hero" aria-hidden="true"><svg viewBox="0 0 400 110" preserveAspectRatio="xMidYMax slice">
@@ -6050,15 +6057,19 @@ const Acct = (() => {
   }
   /* new badges: one card, however many arrived at once */
   function badgeNote(list, intro, total) {
-    const c = $("wel-card"), n = list.length, top = list.slice(0, 3);
+    const n = list.length;
+    if (notesShown) { toast(`<span>You earned ${n === 1 ? `the ${esc(list[0].name)} badge` : `${n} badges`}.</span><span class="acts"><button type="button" data-go-badges>See them</button></span>`, $("me-btn")); return; }
+    welNote = true; notesShown++;
+    const c = $("wel-card"), top = list.slice(0, 3);
+    const fresh = intro && me && me.joined && Date.now() - Date.parse(me.joined) < 3 * 864e5;
     c.style.setProperty("--mbg", "#123447"); c.style.setProperty("--mrim", "#1d6b86");
     const names = top.map((b) => b.name);
     const said = n <= 3 ? (names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0]) : `${names.join(", ")} and ${n - 3} more`;
     c.innerHTML = `<button type="button" class="acct-x mem-x" data-wel-close aria-label="Close">×</button>
       <div class="bd-note-hero"><div class="bd-trio">${top.map((b) => Badges.medal(b, 78)).join("")}</div></div>
       <div class="mem-body bd-note-body">
-        <h2 id="wel-h">${intro ? "Badges are here" : n === 1 ? `New badge: ${esc(list[0].name)}` : `${n} new badges`}</h2>
-        <p class="lede">${intro ? `You've already earned ${total} from the birds you've logged, including ${esc(said)}. There are plenty more to find.` : n === 1 ? esc(list[0].ask) + "." : esc(said) + "."}</p>
+        <h2 id="wel-h">${fresh ? "Your first badges" : intro ? "Badges are here" : n === 1 ? `New badge: ${esc(list[0].name)}` : `${n} new badges`}</h2>
+        <p class="lede">${fresh ? `Your birds have already earned you ${total}, including ${esc(said)}. There are lots more to collect, from bird sets to big days.` : intro ? `You've already earned ${total} from the birds you've logged, including ${esc(said)}. There are plenty more to find.` : n === 1 ? esc(list[0].ask) + "." : esc(said) + "."}</p>
         <div class="wel-acts"><button type="button" class="primary" data-wel="badges">See your badges</button></div>
       </div>`;
     $("wel-pop").hidden = false;
@@ -6098,6 +6109,7 @@ const Acct = (() => {
   }
   function closeWel({ tour = true } = {}) {
     if ($("wel-pop").hidden) return;
+    if (welNote) { tour = false; welNote = false; }
     if (welLive) { welLive.destroy(); welLive = null; }
     $("wel-pop").hidden = true;
     try { localStorage.setItem(WELCOMED, "1"); } catch (e) {}
@@ -6152,7 +6164,7 @@ const Acct = (() => {
   function close() {
     closeMember();
     if (live) { live.destroy(); live = null; }
-    $("acct").hidden = true; view = ""; notice = "";
+    $("acct").hidden = true; view = ""; notice = ""; firstUp = false;
   }
   const tabs = () => me ? `<nav class="acct-tabs" aria-label="Account">${[["profile", "Your profile"], ["flock", "Flock"], ...(me.admin ? [["admin", "Admin"]] : [])].map(([k, l]) => `<button type="button" data-acct="${k}" aria-current="${view === k ? "page" : "false"}">${l}${k === "flock" && requests.in.length ? `<span class="tab-n" aria-label="${requests.in.length} new">${requests.in.length}</span>` : ""}</button>`).join("")}</nav>` : "";
   const X = `<button type="button" class="acct-x" data-acct-close aria-label="Close">×</button>`;
@@ -6271,6 +6283,7 @@ const Acct = (() => {
       h = `${X}${tabs()}<div class="prof">${Avatar.html(me.avatar)}<div><h2 id="acct-h">${esc(nameOf(me))}</h2><p class="sub" style="margin:0">@${esc(me.u)}${me.admin ? '<span class="tag-owner">admin</span>' : ""}</p>
           <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" data-acct="avatar">Edit my birb</button><button type="button" data-show-me ${b ? "" : "hidden"}>Show my birds</button>${b ? `<button type="button" data-acct="share">Share my birds</button>` : ""}</div></div></div>
         ${notice ? `<p class="ok" role="status">${notice}</p>` : ""}
+        ${firstUp ? `<button type="button" class="primary see-birds" data-acct-close>See my birds on the map</button>` : ""}
         ${!me.hasRecovery ? `<div class="nudge"><span><b>Set up a recovery phrase</b>Six words that let you reset your passcode yourself if you forget it.</span><button type="button" class="primary" data-acct="phrase-new">Set up</button></div>` : ""}
         ${b ? `<div class="stats"><span><b>${b.species}</b>species</span><span><b>${b.places}</b>places</span><span><b>${b.rows}</b>sightings</span><span><b>${esc(ago(b.updated))}</b>last upload</span></div>` : `<p class="sub">You haven't added any birds yet.</p>`}
         <div style="margin:14px 0">${uploadHTML()}</div>
@@ -6672,10 +6685,11 @@ const Acct = (() => {
     if (typeof CompressionStream !== "undefined") {
       try { body = await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob(); headers["content-type"] = "application/octet-stream"; } catch (e) { body = text; }
     }
-    const replace = $("acct-replace") && $("acct-replace").checked;
+    const replace = $("acct-replace") && $("acct-replace").checked, hadBirds = !!(me && me.birds);
     const r = await call("birds" + (replace ? "?mode=replace" : ""), { method: "POST", body, raw: true, headers });
     if (!r.ok) { err(r.error, "up-err"); if (drop) drop.querySelector("b").textContent = "Try again"; return; }
     me = r.data.me; await refresh(); cache.delete(me.u);
+    firstUp = !hadBirds;
     const s = r.data.stats;
     const nn = (s.newSpecies || []).length;
     notice = s.replaced ? `Saved ${s.species} species from ${s.places} places.${s.privatePlaces ? ` ${s.privatePlaces} private ${s.privatePlaces === 1 ? "spot was" : "spots were"} tidied to the nearest town.` : ""}`
