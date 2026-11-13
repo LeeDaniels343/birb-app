@@ -3994,11 +3994,14 @@ const Badges = (() => {
     { id: "uk", name: "Your UK collection", col: "#2b7f9b" },
     { id: "habitat", name: "Habitats", col: "#4f9d69" },
     { id: "sets", name: "Bird sets", col: "#b5683a" },
+    { id: "families", name: "Bird families", col: "#8a6d3b" },
+    { id: "friends", name: "Old friends", col: "#c0587a" },
     { id: "rare", name: "Rarer visitors", col: "#9a74df" },
     { id: "region", name: "Counties and regions", col: "#7a5bb8" },
     { id: "places", name: "Spots and journeys", col: "#4f6fc0" },
     { id: "bigday", name: "Big days", col: "#2f8f9a" },
     { id: "year", name: "Through the year", col: "#c08a1e" },
+    { id: "fun", name: "Just for fun", col: "#e07b39" },
     { id: "flock", name: "Flock", col: "#c2456a" },
     { id: "secret", name: "Secret badges", col: "#c99a2e" },
   ];
@@ -4027,7 +4030,24 @@ const Badges = (() => {
     ["owls", "Owls", "Barn, Tawny, Little, Long-eared and Short-eared Owl", "Tyto alba|Strix aluco|Athene noctua|Asio otus|Asio flammeus"],
     ["raptor", "Birds of prey", "Buzzard, Kestrel, Sparrowhawk, Red Kite and Peregrine", "Milvus milvus|Buteo buteo|Falco tinnunculus|Accipiter nisus|Falco peregrinus"],
     ["waders", "Waders", "Curlew, Oystercatcher, Lapwing, Redshank and Snipe", "Numenius arquata|Haematopus ostralegus|Vanellus vanellus|Tringa totanus|Gallinago gallinago"],
+    ["larks", "Larks and buntings", "Skylark, Yellowhammer, Reed Bunting and Corn Bunting", "Emberiza citrinella|Alauda arvensis|Emberiza schoeniclus|Emberiza calandra"],
+    ["herons", "Herons and egrets", "Grey Heron, Little Egret, Great White Egret and Bittern", "Ardea cinerea|Egretta garzetta|Ardea alba|Botaurus stellaris"],
+    ["grebes", "Grebes", "Little, Great Crested, Black-necked, Slavonian and Red-necked Grebe", "Podiceps cristatus|Tachybaptus ruficollis|Podiceps nigricollis|Podiceps auritus|Podiceps grisegena"],
+    ["martins", "Swallows and martins", "Swallow, House Martin, Sand Martin and Swift", "Delichon urbicum|Hirundo rustica|Riparia riparia|Apus apus"],
+    ["chats", "Chats", "Stonechat, Whinchat, Wheatear, Redstart and Black Redstart", "Saxicola rubicola|Saxicola rubetra|Oenanthe oenanthe|Phoenicurus phoenicurus|Phoenicurus ochruros"],
+    ["flycatch", "Flycatchers", "Spotted and Pied Flycatcher", "Ficedula hypoleuca|Muscicapa striata"],
+    ["terns", "Terns", "Common, Arctic, Sandwich and Little Tern", "Sterna hirundo|Sterna paradisaea|Thalasseus sandvicensis|Sternula albifrons"],
+    ["auks", "Auks", "Puffin, Guillemot, Razorbill and Black Guillemot", "Fratercula arctica|Uria aalge|Alca torda|Cepphus grylle"],
+    ["seaduck", "Sea ducks", "Eider, Common and Velvet Scoter, and Long-tailed Duck", "Somateria mollissima|Melanitta nigra|Melanitta fusca|Clangula hyemalis"],
+    ["swans", "Three swans", "Mute, Bewick's and Whooper Swan", "Cygnus cygnus|Cygnus olor|Cygnus columbianus"],
   ].map(([id, name, ask, list]) => ({ id, name, ask, list: list.split("|") }));
+  const FAM_BADGES = [
+    ["water", "Waterbird watcher", 5, "Anas platyrhynchos"], ["coastal", "Shorebird", 5, "Haematopus ostralegus"], ["raptors", "Hawk eye", 5, "Buteo buteo"],
+    ["game", "Gamebird spotter", 3, "Phasianus colchicus"], ["pigeons", "Dove fancier", 4, "Streptopelia decaocto"], ["aerial", "Sky dancer", 4, "Hirundo rustica"],
+    ["woodpeckers", "Drummer", 3, "Dendrocopos major"], ["corvids", "Corvid club", 5, "Pica pica"], ["tits", "Tit for tat", 5, "Cyanistes caeruleus"],
+    ["warblers", "Warbler whisperer", 5, "Sylvia atricapilla"], ["creepers", "Small wonders", 3, "Sitta europaea"], ["thrushes", "Thrush lover", 5, "Erithacus rubecula"],
+    ["pipits", "Meadow singer", 4, "Alauda arvensis"], ["finches", "Finch fan", 5, "Carduelis carduelis"],
+  ];
   const SPRING = new Set("Hirundo rustica|Apus apus|Delichon urbicum|Riparia riparia|Cuculus canorus|Phylloscopus trochilus|Curruca communis|Acrocephalus scirpaceus|Acrocephalus schoenobaenus|Muscicapa striata|Streptopelia turtur".split("|"));
   const km = (a, b) => {
     const R = 6371, p1 = (a.lat * Math.PI) / 180, p2 = (b.lat * Math.PI) / 180, dp = p2 - p1, dl = ((b.lng - a.lng) * Math.PI) / 180;
@@ -4125,7 +4145,7 @@ const Badges = (() => {
     const add = (fam, id, name, ask, have, need, date, x = {}) => out.push({ fam, id, name, ask, have: Math.min(have, need), need, date: date || null, got: !!date, ...x });
     /* species */
     add("species", "sp-1", "First bird", "Hear your first bird", spDates.length, 1, reach(spDates, 1), { ic: "bird" });
-    [[10, "bronze"], [25, "bronze"], [50, "silver"], [75, "silver"], [100, "silver"], [150, "gold"], [200, "gold"], [250, "gold"]].forEach(([n, tier]) =>
+    [[10, "bronze"], [25, "bronze"], [50, "silver"], [75, "silver"], [100, "silver"], [150, "gold"], [200, "gold"], [250, "gold"], [300, "gold"], [400, "gold"]].forEach(([n, tier]) =>
       add("species", "sp-" + n, `${n} species`, `Hear ${n} different species`, spDates.length, n, reach(spDates, n), { t: String(n), tier }));
     /* the UK list */
     const WL = WALL.length;
@@ -4151,10 +4171,40 @@ const Badges = (() => {
       return { st, have: have.length, date, cover, list: st.list.map((s) => ({ name: nm(s), sci: s, got: sp.has(s) })) };
     });
     setOut.forEach((o) => add("sets", "set-" + o.st.id, o.st.name, o.st.ask, o.have, o.st.list.length, o.date, { photo: o.cover, list: o.list }));
+    /* bird families: a handful from each, like pages in a field guide */
+    const famHave = new Map(); S.forEach((s2) => { const f = s2.w ? s2.w[2] : null; if (!f) return; if (!famHave.has(f)) famHave.set(f, []); famHave.get(f).push(s2.date); }); famHave.forEach((l) => l.sort());
+    FAM_BADGES.forEach(([id, name, n, cover]) => { const l = famHave.get(id) || [], F = FAMILY_BY_ID.get(id); add("families", "fm-" + id, name, `Hear ${n} ${F ? F.name.toLowerCase() : "birds"}`, l.length, n, reach(l, n), { photo: cover, col: F ? F.colour : null }); });
+    const famFirst = [...famHave.entries()].filter(([f]) => FAM_BADGES.some((x) => x[0] === f)).map(([, l]) => l[0]).sort();
+    add("families", "fm-10", "Ten families", "Hear a bird from 10 different bird families", famFirst.length, 10, reach(famFirst, 10), { ic: "bird", t: "10" });
+    add("families", "fm-all", "Every family", `Hear a bird from all ${FAM_BADGES.length} bird families`, famFirst.length, FAM_BADGES.length, reach(famFirst, FAM_BADGES.length), { ic: "star", t: "All", tier: "gold" });
+    /* old friends: the birds you keep coming back to */
+    const dayCounts = S.map((s2) => s2.days.length), bestDays = Math.max(0, ...dayCounts);
+    const friendAt = (n) => S.filter((s2) => s2.days.length >= n).map((s2) => s2.days[n - 1]).sort()[0] || null;
+    const favBird = S.slice().sort((a, b) => b.days.length - a.days.length)[0];
+    [[10, "Old friend", "bronze"], [30, "Faithful friend", "silver"], [100, "Lifelong friend", "gold"]].forEach(([n, name, tier]) =>
+      add("friends", "of-" + n, name, `Hear the same bird on ${n} different days`, bestDays, n, friendAt(n), { ic: "bird", t: String(n), tier, sub: friendAt(n) ? null : favBird ? `${favBird.name.replace(/^(Eurasian|European|Common) /, "")}, ${bestDays} days` : null }));
+    const circ = S.filter((s2) => s2.days.length >= 10).map((s2) => s2.days[9]).sort();
+    add("friends", "of-circle", "Circle of friends", "Hear five different birds on 10 days each", circ.length, 5, reach(circ, 5), { ic: "flock", t: "5" });
+    add("friends", "of-circle10", "Big circle", "Hear ten different birds on 10 days each", circ.length, 10, reach(circ, 10), { ic: "flock", t: "10" });
+    /* just for fun */
+    const strip = (n) => n.replace(/^(Eurasian|European|Common|Northern|Southern|Western|Eastern|Greater|Lesser|Little|Great|Lesser) /, "");
+    const letters = new Map(); S.forEach((s2) => { const L = strip(s2.name)[0]; if (L && /[A-Z]/i.test(L) && !letters.has(L.toUpperCase())) letters.set(L.toUpperCase(), s2.date); });
+    const lt = [...S].sort((a, b) => (a.date < b.date ? -1 : 1)), letAt = (n) => { const seen2 = new Set(); for (const s2 of lt) { const L = (strip(s2.name)[0] || "").toUpperCase(); if (/[A-Z]/.test(L)) seen2.add(L); if (seen2.size >= n) return s2.date; } return null; };
+    [[10, "ABC"], [15, "Alphabet soup"], [20, "A to Z"]].forEach(([n, name]) => add("fun", "fn-abc" + n, name, `Hear birds whose names start with ${n} different letters`, letters.size, n, letAt(n), { t: name === "ABC" ? "ABC" : String(n) }));
+    const COL = ["black", "blue", "gold", "red", "green", "white", "gray|grey", "yellow", "pink|rose|rosy", "purple", "brown", "scarlet"];
+    const colAt = (n) => { const seen2 = new Set(); for (const s2 of lt) { COL.forEach((c, i) => { if (new RegExp(c, "i").test(s2.name)) seen2.add(i); }); if (seen2.size >= n) return s2.date; } return null; };
+    const colN = new Set(); S.forEach((s2) => COL.forEach((c, i) => { if (new RegExp(c, "i").test(s2.name)) colN.add(i); }));
+    add("fun", "fn-col5", "Colour wheel", "Hear birds with 5 different colours in their names, like Blackbird and Goldfinch", colN.size, 5, colAt(5), { ic: "sun", t: "5" });
+    add("fun", "fn-col8", "Rainbow", "Hear birds with 8 different colours in their names", colN.size, 8, colAt(8), { ic: "sun", t: "8" });
+    const named = lt.filter((s2) => /'s /.test(s2.name));
+    add("fun", "fn-who", "Who's who", "Hear a bird named after a person, like Cetti's Warbler or Bewick's Swan", named.length, 1, named[0] ? named[0].date : null, { ic: "star" });
+    const owls2 = lt.filter((s2) => /Owl\b/.test(s2.name));
+    add("fun", "fn-owls", "Owl prowl", "Hear three kinds of owl", owls2.length, 3, owls2[2] ? owls2[2].date : null, { ic: "moon", t: "3" });
     /* rarer visitors */
     add("rare", "rr-1", "First rarity", "Hear a lilac bird: one nobody logged in the UK on eBird last year", rareDates.length, 1, reach(rareDates, 1), { ic: "gem" });
     add("rare", "rr-5", "Five rarities", "Hear 5 lilac birds", rareDates.length, 5, reach(rareDates, 5), { ic: "gem", t: "5" });
     add("rare", "rr-10", "Ten rarities", "Hear 10 lilac birds", rareDates.length, 10, reach(rareDates, 10), { ic: "gem", t: "10" });
+    add("rare", "rr-25", "Rarity hunter", "Hear 25 lilac birds", rareDates.length, 25, reach(rareDates, 25), { ic: "gem", t: "25", tier: "gold" });
     add("rare", "rr-away", "Far from home", "Log a bird outside the UK", abroad ? 1 : 0, 1, abroad, { ic: "pin" });
     /* counties and regions */
     const UKC = COUNTIES.filter((c) => c.f.properties.country !== "IE").length;
@@ -4195,12 +4245,23 @@ const Badges = (() => {
     [[20, "Big day"], [30, "Bigger day"], [50, "Biggest day"]].forEach(([n, name]) =>
       add("bigday", "bd-" + n, name, `Hear ${n} species in one day`, bestDay, n, firstDay((d, v) => v.size >= n), { t: String(n), sub: bestDay >= n ? null : `Best is ${bestDay} of ${n}` }));
     add("bigday", "bd-new5", "Five new", "Hear 5 birds you've never heard before, in one day", bestNew, 5, newDay(5), { ic: "bolt", t: "+5", sub: bestNew >= 5 ? null : `Best is ${bestNew} of 5` });
+    add("bigday", "bd-new15", "Fifteen new", "Hear 15 birds you've never heard before, in one day", bestNew, 15, newDay(15), { ic: "bolt", t: "+15", sub: bestNew >= 15 ? null : `Best is ${bestNew} of 15` });
     add("bigday", "bd-new10", "Ten new", "Hear 10 birds you've never heard before, in one day", bestNew, 10, newDay(10), { ic: "bolt", t: "+10", sub: bestNew >= 10 ? null : `Best is ${bestNew} of 10` });
     /* through the year */
     [10, 30, 100].forEach((n) => add("year", "yr-d" + n, `${n} days out`, `Log birds on ${n} different days`, days.length, n, reach(days, n), { ic: "cal", t: String(n) }));
     add("year", "yr-w4", "Four weeks running", "Log birds four weeks in a row", bestRun, 4, runAt[4], { t: "4w", sub: runAt[4] ? null : `Best is ${bestRun} of 4` });
     add("year", "yr-w12", "Twelve weeks running", "Log birds twelve weeks in a row", bestRun, 12, runAt[12], { t: "12w", sub: runAt[12] ? null : `Best is ${bestRun} of 12` });
     add("year", "yr-y50", "Year list 50", "Hear 50 species in one calendar year", bestYear, 50, yearAt(50), { t: "Y50", sub: yearAt(50) ? null : `${nowYear} in ${thisYear()}` });
+    add("year", "yr-y150", "Year list 150", "Hear 150 species in one calendar year", bestYear, 150, yearAt(150), { t: "Y150", tier: "gold", sub: yearAt(150) ? null : `${nowYear} in ${thisYear()}` });
+    add("year", "yr-d200", "200 days out", "Log birds on 200 different days", days.length, 200, reach(days, 200), { ic: "cal", t: "200", tier: "gold" });
+    add("year", "yr-w26", "Half a year running", "Log birds 26 weeks in a row", bestRun, 26, runAt[26], { t: "26w", sub: runAt[26] ? null : `Best is ${bestRun} of 26` });
+    add("year", "yr-w52", "A whole year running", "Log birds every week for 52 weeks", bestRun, 52, runAt[52], { t: "52w", tier: "gold", sub: runAt[52] ? null : `Best is ${bestRun} of 52` });
+    { let r2 = 1, best7 = days.length ? 1 : 0, at7 = null; for (let i = 1; i < days.length; i++) { r2 = toN(days[i]) - toN(days[i - 1]) === 1 ? r2 + 1 : 1; best7 = Math.max(best7, r2); if (r2 >= 7 && !at7) at7 = days[i]; }
+      add("year", "yr-7", "Full week", "Log birds seven days in a row", Math.min(best7, 7), 7, at7, { ic: "cal", t: "7", sub: at7 ? null : `Best is ${best7} of 7` }); }
+    { const per = new Map(); let at15 = null, best = 0; for (const d2 of days) { const k2 = d2.slice(0, 7), n2 = (per.get(k2) || 0) + 1; per.set(k2, n2); best = Math.max(best, n2); if (n2 >= 15 && !at15) at15 = d2; }
+      add("year", "yr-month15", "Busy month", "Log birds on 15 days in one month", best, 15, at15, { ic: "cal", t: "15", sub: at15 ? null : `Best is ${best} of 15` }); }
+    { const wk = new Set(); let at10 = null; for (const d2 of days) { const dow = new Date(toN(d2) * DAY).getUTCDay(); if (dow === 0 || dow === 6) { wk.add(Math.floor((toN(d2) + 4) / 7)); if (wk.size >= 10 && !at10) at10 = d2; } }
+      add("year", "yr-wkend", "Weekender", "Log birds on 10 different weekends", wk.size, 10, at10, { ic: "sun", t: "10" }); }
     add("year", "yr-y100", "Year list 100", "Hear 100 species in one calendar year", bestYear, 100, yearAt(100), { t: "Y100", sub: yearAt(100) ? null : `${nowYear} in ${thisYear()}` });
     const sz = ["spring", "summer", "autumn", "winter"].filter((s) => seasons.has(s));
     add("year", "yr-seasons", "All four seasons", "Log birds in spring, summer, autumn and winter", sz.length, 4, sz.length === 4 ? [...seasons.values()].sort().pop() : null, { ic: "sun", sub: sz.length === 4 ? null : sz.length ? `${sz.map((s) => s[0].toUpperCase() + s.slice(1)).join(", ")} so far` : null });
