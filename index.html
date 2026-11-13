@@ -1035,6 +1035,7 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
 .bd-in { position: absolute; inset: 15%; border-radius: 50%; display: grid; place-items: center; overflow: hidden; background: color-mix(in srgb, var(--line) 55%, var(--surface)); color: color-mix(in srgb, var(--muted) 75%, transparent); }
 .bd-m.got .bd-in { background: var(--c); color: #fff; box-shadow: 0 0 0 3px var(--rim), 0 3px 8px rgba(0,0,0,.22), inset 0 -6px 10px rgba(0,0,0,.12), inset 0 6px 10px rgba(255,255,255,.18); }
 .bd-in svg { width: 46%; height: 46%; fill: currentColor; grid-area: 1 / 1; }
+.bd-in svg.shape { width: 70%; height: 70%; fill-rule: evenodd; }
 .bd-in b { grid-area: 1 / 1; font-family: var(--font-display); font-weight: 800; font-size: calc(var(--s) * .27); letter-spacing: -.02em; line-height: 1; }
 .bd-in b.s2 { font-size: calc(var(--s) * .21); }
 .bd-in b.s3 { font-size: calc(var(--s) * .17); }
@@ -3950,7 +3951,8 @@ const Badges = (() => {
     { id: "habitat", name: "Habitats", col: "#4f9d69" },
     { id: "sets", name: "Bird sets", col: "#b5683a" },
     { id: "rare", name: "Rarer visitors", col: "#9a74df" },
-    { id: "places", name: "Places", col: "#7a5bb8" },
+    { id: "region", name: "Counties and regions", col: "#7a5bb8" },
+    { id: "places", name: "Spots and journeys", col: "#4f6fc0" },
     { id: "bigday", name: "Big days", col: "#2f8f9a" },
     { id: "year", name: "Through the year", col: "#c08a1e" },
     { id: "flock", name: "Flock", col: "#c2456a" },
@@ -3988,11 +3990,28 @@ const Badges = (() => {
     return 2 * R * Math.asin(Math.sqrt(Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2));
   };
   const reach = (sorted, n) => (sorted.length >= n ? sorted[n - 1] : null);
+  const ISLANDS = ["Anglesey", "Isle of Wight", "Isles of Scilly", "Eilean Siar", "Orkney", "Shetland Islands"];
+  const EDGE = { n: (d) => d.lat >= 57.5, s: (d) => d.lat <= 50.65, e: (d) => d.lng >= 1.45, w: (d) => d.lng <= -5.15 };
+  const COUNTY_REGION = new Map(COUNTIES.map((c) => [c.name, c.region]));
+  const REG_N = new Map(); COUNTIES.forEach((c) => { if (c.f.properties.country !== "IE") REG_N.set(c.region, (REG_N.get(c.region) || 0) + 1); });
+  /* each region's outline, squeezed into a 24 by 24 icon */
+  function outline(r) {
+    const polys = r.polys.map((p) => p[0]).sort((a, b) => b.length - a.length).slice(0, 8);
+    const lat0 = (r.bbox[1] + r.bbox[3]) / 2, kx = Math.cos((lat0 * Math.PI) / 180);
+    const w = (r.bbox[2] - r.bbox[0]) * kx, h = r.bbox[3] - r.bbox[1], sc = 19 / Math.max(w, h), ox = (24 - w * sc) / 2, oy = (24 - h * sc) / 2;
+    return polys.map((ring) => {
+      const step = Math.max(1, Math.floor(ring.length / 70));
+      const pts = ring.filter((_, i) => i % step === 0).map(([x, y]) => `${(ox + (x - r.bbox[0]) * kx * sc).toFixed(1)} ${(oy + (r.bbox[3] - y) * sc).toFixed(1)}`);
+      return pts.length > 3 ? `M${pts.join("L")}Z` : "";
+    }).join("");
+  }
+  const REGION_LIST = ["Scotland", "North East", "North West", "Yorkshire and the Humber", "Northern Ireland", "Wales", "West Midlands", "East Midlands", "East", "Greater London", "South East", "South West"]
+    .map((name) => { const r = REGIONS.find((x) => x.name === name); return r ? { name, id: name.toLowerCase().replace(/[^a-z]+/g, "").slice(0, 16), the: !/^(Scotland|Wales|Northern Ireland|Greater London|Yorkshire)/.test(name), shape: outline(r) } : null; }).filter(Boolean);
 
   /* ---------- the rules ---------- */
   function compute(recs, fl) {
     const R = recs.filter((d) => d.date).slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-    const sp = new Map(), byDay = new Map(), county = new Map(), spot = new Map(), patch = new Map(), nation = new Map(), months = new Map(), seasons = new Map(), years = new Map(), mmdd = new Map();
+    const sp = new Map(), byDay = new Map(), county = new Map(), region = new Map(), edge = {}, spotSp = new Map(), spotMonth = new Map(), spot = new Map(), patch = new Map(), nation = new Map(), months = new Map(), seasons = new Map(), years = new Map(), mmdd = new Map();
     let abroad = null, spring = null;
     for (const d of R) {
       const k = wallKey(d.name, d.sci);
@@ -4003,10 +4022,15 @@ const Badges = (() => {
       byDay.get(d.date).add(k);
       if (d.region && d.region !== "Outside the UK") {
         if (!county.has(d.county)) county.set(d.county, d.date);
+        if (!region.has(d.region)) region.set(d.region, d.date);
+        if (d.region === "Greater London" && !county.has("__london")) county.set("__london", d.date);
+        for (const k of ["n", "s", "e", "w"]) if (!edge[k] && EDGE[k](d)) edge[k] = d.date;
         const n = /^(Scotland|Wales|Northern Ireland)$/.test(d.region) ? d.region : "England";
         if (!nation.has(n)) nation.set(n, d.date);
       } else if (!abroad) abroad = d.date;
-      if (!spot.has(d.locId)) spot.set(d.locId, { date: d.date, lat: d.lat, lng: d.lng });
+      if (!spot.has(d.locId)) { spot.set(d.locId, { date: d.date, lat: d.lat, lng: d.lng }); const mk = d.date.slice(0, 7); spotMonth.set(mk, [...(spotMonth.get(mk) || []), d.date]); }
+      let ss = spotSp.get(d.locId); if (!ss) spotSp.set(d.locId, (ss = new Map()));
+      if (!ss.has(k)) ss.set(k, d.date);
       let p = patch.get(d.locId); if (!p) patch.set(d.locId, (p = []));
       if (p[p.length - 1] !== d.date) p.push(d.date);
       const mo = +d.date.slice(5, 7);
@@ -4039,8 +4063,13 @@ const Badges = (() => {
     const bestYear = Math.max(0, ...yearLists.map((l) => l.length));
     const yearAt = (n) => yearLists.filter((l) => l.length >= n).map((l) => l[n - 1]).sort()[0] || null;
     const nowYear = (years.get(thisYear()) || new Map()).size;
-    let updown = null; { const L = [...spot.values()].sort((a, b) => (a.date < b.date ? -1 : 1)); outer: for (let i = 1; i < L.length && i < 1500; i++) for (let j = 0; j < i; j++) if (km(L[i], L[j]) >= 300) { updown = L[i].date; break outer; } }
-    const cnt = [...county.values()].sort(), spots = [...spot.values()].map((x) => x.date).sort();
+    const far = {}; { const L = [...spot.values()].sort((a, b) => (a.date < b.date ? -1 : 1)); outer: for (let i = 1; i < L.length && i < 1500; i++) for (let j = 0; j < i; j++) { const k2 = km(L[i], L[j]); for (const t of [300, 500, 900]) if (!far[t] && k2 >= t) far[t] = L[i].date; if (far[900]) break outer; } }
+    const SL = [...spotSp.values()].map((m) => [...m.values()].sort());
+    const bestSpotList = Math.max(0, ...SL.map((l) => l.length));
+    const spotListAt = (n) => SL.filter((l) => l.length >= n).map((l) => l[n - 1]).sort()[0] || null;
+    const bestNewMonth = Math.max(0, ...[...spotMonth.values()].map((l) => l.length));
+    const newMonthAt = [...spotMonth.values()].filter((l) => l.length >= 5).map((l) => l[4]).sort()[0] || null;
+    const cnt = [...county.entries()].filter(([k]) => k !== "__london").map(([, v]) => v).sort(), spots = [...spot.values()].map((x) => x.date).sort();
     /* secrets */
     const thirteen = firstDay((d, v) => d.slice(8) === "13" && v.size >= 13);
     let comeback = null; for (const s of S) for (let i = 1; i < s.days.length; i++) if (toN(s.days[i]) - toN(s.days[i - 1]) >= 180 && (!comeback || s.days[i] < comeback)) comeback = s.days[i];
@@ -4083,15 +4112,41 @@ const Badges = (() => {
     add("rare", "rr-5", "Five rarities", "Hear 5 lilac birds", rareDates.length, 5, reach(rareDates, 5), { ic: "gem", t: "5" });
     add("rare", "rr-10", "Ten rarities", "Hear 10 lilac birds", rareDates.length, 10, reach(rareDates, 10), { ic: "gem", t: "10" });
     add("rare", "rr-away", "Far from home", "Log a bird outside the UK", abroad ? 1 : 0, 1, abroad, { ic: "pin" });
-    /* places */
-    [[3, "Three"], [5, "Five"], [10, "Ten"], [20, "Twenty"]].forEach(([n, w]) => add("places", "pl-c" + n, `${w} counties`, `Hear birds in ${n} counties`, cnt.length, n, reach(cnt, n), { ic: "pin", t: String(n) }));
-    add("places", "pl-s5", "Five spots", "Hear birds at 5 different places", spots.length, 5, reach(spots, 5), { ic: "home", t: "5" });
-    add("places", "pl-s15", "Fifteen spots", "Hear birds at 15 different places", spots.length, 15, reach(spots, 15), { ic: "home", t: "15" });
-    [[10, "Local patch", null], [25, "Patch regular", "25"], [50, "Patch devotee", "50"]].forEach(([n, name, t]) =>
+    /* counties and regions */
+    const UKC = COUNTIES.filter((c) => c.f.properties.country !== "IE").length;
+    [[3, "Three", "bronze"], [5, "Five", "bronze"], [10, "Ten", "bronze"], [20, "Twenty", "silver"], [30, "Thirty", "silver"], [50, "Fifty", "silver"], [100, "A hundred", "gold"]].forEach(([n, w, tier]) =>
+      add("region", "pl-c" + n, `${w} counties`, `Hear birds in ${n} counties`, cnt.length, n, reach(cnt, n), { ic: "pin", t: String(n), tier }));
+    add("region", "pl-c" + UKC, "Grand tour", `Hear birds in every one of the UK's ${UKC} counties`, cnt.length, UKC, reach(cnt, UKC), { ic: "pin", t: "All", tier: "gold" });
+    const regs = [...region.values()].sort();
+    [[3, "Three regions"], [6, "Six regions"], [12, "All twelve regions"]].forEach(([n, name]) => add("region", "pl-r" + n, name, `Hear birds in ${n} of the UK's 12 regions and nations`, regs.length, n, reach(regs, n), { ic: "flag", t: String(n) }));
+    add("region", "pl-n2", "Home nations", "Hear birds in two of England, Scotland, Wales and Northern Ireland", nation.size, 2, reach([...nation.values()].sort(), 2), { ic: "flag" });
+    add("region", "pl-n4", "All four nations", "Hear birds in England, Scotland, Wales and Northern Ireland", nation.size, 4, reach([...nation.values()].sort(), 4), { ic: "flag", t: "4" });
+    add("region", "pl-london", "Capital birds", "Hear birds in London", county.has("__london") ? 1 : 0, 1, county.get("__london") || null, { ic: "star" });
+    const caps = ["__london", "Edinburgh", "Cardiff", "Belfast"].filter((k) => county.has(k));
+    add("region", "pl-caps", "Four capitals", "Hear birds in London, Edinburgh, Cardiff and Belfast", caps.length, 4, caps.length === 4 ? caps.map((k) => county.get(k)).sort().pop() : null, { ic: "star", t: "4" });
+    const isl = ISLANDS.filter((k) => county.has(k)).map((k) => county.get(k)).sort();
+    add("region", "pl-isl1", "Islander", "Hear birds on Anglesey, the Isle of Wight, Scilly, the Western Isles, Orkney or Shetland", isl.length, 1, reach(isl, 1), { ic: "wave" });
+    add("region", "pl-isl3", "Island hopper", "Hear birds on three of those islands", isl.length, 3, reach(isl, 3), { ic: "wave", t: "3" });
+    /* one stamp for each region, drawn as its own outline */
+    REGION_LIST.forEach((r) => {
+      const inR = [...county.entries()].filter(([k]) => COUNTY_REGION.get(k) === r.name).length;
+      add("region", "rg-" + r.id, r.name, `Hear birds anywhere in ${r.the ? "the " : ""}${r.name}`, region.has(r.name) ? 1 : 0, 1, region.get(r.name) || null, { shape: r.shape, sub: region.has(r.name) ? null : `${REG_N.get(r.name) || 0} counties`, note: `${inR} of ${REG_N.get(r.name) || 0} counties so far` });
+    });
+    /* spots, patches and journeys */
+    [[5, "Five spots", "bronze"], [15, "Fifteen spots", "bronze"], [30, "Thirty spots", "silver"], [50, "Fifty spots", "silver"], [100, "A hundred spots", "gold"]].forEach(([n, name, tier]) =>
+      add("places", "pl-s" + n, name, `Hear birds at ${n} different places`, spots.length, n, reach(spots, n), { ic: "home", t: String(n), tier }));
+    [[10, "Local patch", null], [25, "Patch regular", "25"], [50, "Patch devotee", "50"], [100, "Patch legend", "100"]].forEach(([n, name, t]) =>
       add("places", "pl-p" + n, name, `Listen at the same spot on ${n} different days`, bestPatch, n, patchAt(n), { ic: "home", t, sub: patchAt(n) ? null : `${bestPatch} of ${n} visits` }));
-    add("places", "pl-far", "Up and down", "Hear birds at two spots 300 km apart", updown ? 1 : 0, 1, updown, { ic: "swap" });
-    add("places", "pl-n2", "Home nations", "Hear birds in two of England, Scotland, Wales and Northern Ireland", nation.size, 2, reach([...nation.values()].sort(), 2), { ic: "flag" });
-    add("places", "pl-n4", "All four nations", "Hear birds in England, Scotland, Wales and Northern Ireland", nation.size, 4, reach([...nation.values()].sort(), 4), { ic: "flag", t: "4" });
+    [[25, "Patch list 25"], [50, "Patch list 50"]].forEach(([n, name]) =>
+      add("places", "pl-pl" + n, name, `Hear ${n} species at one spot`, bestSpotList, n, spotListAt(n), { ic: "home", t: String(n), sub: spotListAt(n) ? null : `Best spot has ${bestSpotList}` }));
+    add("places", "pl-new5", "New ground", "Hear birds at 5 new places in one month", bestNewMonth, 5, newMonthAt, { ic: "pin", t: "+5", sub: newMonthAt ? null : `Best month has ${bestNewMonth}` });
+    add("places", "pl-far", "Up and down", "Hear birds at two spots 300 km apart", far[300] ? 1 : 0, 1, far[300], { ic: "swap" });
+    add("places", "pl-far500", "Long haul", "Hear birds at two spots 500 km apart", far[500] ? 1 : 0, 1, far[500], { ic: "swap", t: "500" });
+    add("places", "pl-far900", "End to end", "Hear birds at two spots 900 km apart, like Cornwall and Caithness", far[900] ? 1 : 0, 1, far[900], { ic: "swap", t: "900" });
+    [["n", "True north", "Hear birds north of Inverness", "N"], ["s", "Deep south", "Hear birds on the south coast of Devon, Cornwall or the Isle of Wight", "S"], ["e", "Far east", "Hear birds on the East Anglian coast", "E"], ["w", "Wild west", "Hear birds in Cornwall's far west, Pembrokeshire, the Hebrides or Northern Ireland", "W"]].forEach(([k, name, ask, t]) =>
+      add("places", "pl-cp" + k, name, ask, edge[k] ? 1 : 0, 1, edge[k], { ic: "pin", t }));
+    const pts = ["n", "s", "e", "w"].filter((k) => edge[k]);
+    add("places", "pl-cpall", "Compass points", "Earn True north, Deep south, Far east and Wild west", pts.length, 4, pts.length === 4 ? pts.map((k) => edge[k]).sort().pop() : null, { ic: "star", t: "4" });
     /* big days */
     [[20, "Big day"], [30, "Bigger day"], [50, "Biggest day"]].forEach(([n, name]) =>
       add("bigday", "bd-" + n, name, `Hear ${n} species in one day`, bestDay, n, firstDay((d, v) => v.size >= n), { t: String(n), sub: bestDay >= n ? null : `Best is ${bestDay} of ${n}` }));
@@ -4192,6 +4247,7 @@ const Badges = (() => {
     let inner;
     if (hide) inner = `<span class="bd-q">?</span>`;
     else if (b.photo) inner = Photos.slot(b.photo, "ph-badge", col);
+    else if (b.shape) inner = `<svg class="shape" viewBox="0 0 24 24" aria-hidden="true"><path d="${b.shape}"/></svg>`;
     else inner = `${b.ic ? svgIc(b.ic) : ""}${b.t ? `<b class="${b.t.length > 3 ? "s3" : b.t.length > 2 ? "s2" : ""}">${esc(b.t)}</b>` : ""}`;
     return `<span class="bd-m${b.got ? " got" : ""}${hide ? " hid" : ""}${b.photo ? " ph-in" : ""}${b.ic && b.t ? " both" : ""}" style="--c:${col};--rim:${b.got && b.tier ? RIM[b.tier] : "transparent"};--s:${size}px">
       <svg class="bd-ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="${r}"/>${!b.got && p > 0 ? `<circle class="pr" cx="40" cy="40" r="${r}" stroke-dasharray="${(C * p).toFixed(1)} 999" transform="rotate(-90 40 40)"/>` : ""}</svg>
@@ -4276,6 +4332,7 @@ const Badges = (() => {
     el.innerHTML = `<button type="button" class="x" data-bd-x aria-label="Close">×</button>
       <div class="bd-det">${medal(b, 84)}<div><span class="lab">${esc(FAM.get(b.fam).name)}</span><h3>${hide ? "Secret badge" : esc(b.name)}</h3><p>${hide ? "This one stays a surprise until you earn it. Keep listening." : esc(b.ask)}.</p></div></div>
       ${b.got ? `<div class="bd-line"><span>Earned</span><b>${esc(fmtDate(b.date))}</b></div>` : hide ? "" : `<div class="bd-line"><span>${esc(nextLine(b))}</span><span class="bar"><i style="width:${Math.round((b.have / b.need) * 100)}%"></i></span></div>`}
+      ${b.note && !hide ? `<div class="bd-line"><span>Counties</span><b>${esc(b.note)}</b></div>` : ""}
       ${b.list ? `<div class="bd-list">${b.list.map((x) => `<span class="${x.got ? "got" : ""}">${x.got ? "✓ " : ""}${esc(x.name)}</span>`).join("")}</div>` : ""}
       ${b.got && tier ? `<div class="bd-line"><span>Next</span><b>${esc(tier.name)} · ${esc(nextLine(tier))}</b></div>` : ""}
       ${mine && b.got ? `<button type="button" class="bd-pinbtn${pinned ? " on" : ""}" data-bd-pin="${esc(id)}">${svgIc("pin")}${pinned ? "Unpin from your profile" : pins.length >= 3 ? "Pin to your profile (replaces your oldest pin)" : "Pin to your profile"}</button>` : ""}`;
