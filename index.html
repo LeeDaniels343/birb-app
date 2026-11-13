@@ -1089,6 +1089,19 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
   .bd-m { --s: 64px; }
 }
 .acct .see-birds { display: block; width: 100%; margin: 4px 0 14px; background: var(--accent); color: #fff; padding: 11px 18px; border-radius: 999px; font-size: 15px; font-weight: 600; }
+.tip { position: fixed; z-index: 40; width: min(300px, calc(100vw - 24px)); background: var(--ink); color: var(--bg); border-radius: 14px; padding: 12px 14px 10px; box-shadow: 0 10px 30px rgba(0,0,0,.28); opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
+.tip.in { opacity: 1; transform: none; }
+.tip[hidden] { display: none; }
+.tip::after { content: ""; position: absolute; left: calc(var(--ax, 50%) - 8px); bottom: -7px; width: 16px; height: 16px; background: var(--ink); transform: rotate(45deg); border-radius: 3px; }
+.tip.up::after { bottom: auto; top: -7px; }
+.tip b { font-family: var(--font-display); font-size: 16px; }
+.tip p { margin: 3px 0 10px; font-size: 14px; line-height: 1.45; opacity: .92; }
+.tip-f { display: flex; align-items: center; gap: 8px; position: relative; z-index: 1; }
+.tip-dots { display: flex; gap: 4px; margin-right: auto; }
+.tip-dots i { width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--bg) 30%, transparent); }
+.tip-dots i.on { background: var(--bg); }
+.tip .tip-x { background: none; border: 0; color: inherit; opacity: .7; font-size: 12.5px; padding: 6px 4px; box-shadow: none; min-height: 0; }
+.tip .primary { background: var(--bg); color: var(--ink); border: 0; border-radius: 999px; padding: 7px 16px; font-weight: 600; font-size: 13.5px; min-height: 0; }
 .nt-react { display: flex; align-items: center; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
 .nt-react button { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 16px; line-height: 1.2; min-height: 0; box-shadow: none; cursor: pointer; transition: transform .12s; }
 .nt-react button:hover:not([disabled]) { transform: scale(1.15); }
@@ -1440,6 +1453,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
   <div class="acct" id="acct" hidden role="dialog" aria-modal="true" aria-labelledby="acct-h"><div class="acct-card" id="acct-card"></div></div>
   <div class="mem-pop" id="mem-pop" hidden role="dialog" aria-modal="true" aria-labelledby="mem-h"><div class="mem-card" id="mem-card"></div></div>
   <div class="mem-pop wel-pop" id="wel-pop" hidden role="dialog" aria-modal="true" aria-labelledby="wel-h"><div class="mem-card wel-card" id="wel-card"></div></div>
+  <div class="tip" id="tip" role="status" aria-live="polite" hidden></div>
   <div class="help" id="help" role="dialog" aria-labelledby="help-h" hidden>
     <h2 id="help-h">Exploring the map</h2>
     <ol>
@@ -1451,6 +1465,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
     </ol>
     <p style="margin:0;font-size:13px"><button type="button" class="linkish" data-guide>New to Merlin or eBird? How to get your birds into BIRB</button></p>
     <p style="margin:0;font-size:13px"><button type="button" class="linkish" data-night-help>Staying safe when you listen at night</button></p>
+    <p style="margin:0;font-size:13px"><button type="button" class="linkish" data-tips-again>Show the first-time tips again</button></p>
     <p class="keys k-touch"><span>Pinch to zoom</span><span>Drag two fingers up or down to tilt</span><span>Twist two fingers to turn</span><span>Tap anything for its details</span></p>
     <p class="keys k-desk"><span><kbd>/</kbd> search</span><span><kbd>N</kbd> night</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> totem, flock, habitat</span><span><kbd>W</kbd> habitat world</span><span><kbd>Space</kbd> play</span><span><kbd>U</kbd> UK view</span><span><kbd>F</kbd> fit</span><span><kbd>Esc</kbd> close</span><span>Right-drag or Ctrl-drag to tilt and turn</span></p>
     <div class="help-acts">
@@ -4366,7 +4381,7 @@ const Badges = (() => {
     document.querySelectorAll("[data-cmode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cmode === mode)));
     $("coll").scrollTop = 0;
     if (mode === "badges") render(); else Coll.render();
-    paintDot();
+    paintDot(); Tips.hideCur(); Tips.show(mode === "badges" ? "badges" : "coll");
   }
   document.addEventListener("click", (e) => {
     const m = e.target.closest("[data-cmode]"); if (m) { setMode(m.dataset.cmode); return; }
@@ -4537,7 +4552,7 @@ window.addEventListener("dragover", (e) => e.preventDefault());
 window.addEventListener("drop", (e) => { e.preventDefault(); dragDepth = 0; $("overlay").classList.remove("on"); loadFile(e.dataTransfer?.files?.[0]); });
 
 $("basemap-retry").addEventListener("click", () => location.reload());
-try { if (!localStorage.getItem("birdmap-helped")) setTimeout(() => { if (!document.body.classList.contains("welcoming")) setHelp(true); }, 1600); } catch (e) {}
+
 document.querySelectorAll("[data-theme-btn]").forEach((b) => b.addEventListener("click", () => setTheme(b.dataset.themeBtn)));
 if (themeName === "night") { document.body.classList.add("night"); document.querySelectorAll("[data-theme-btn]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.themeBtn === "night"))); }
 
@@ -5447,7 +5462,9 @@ function setView(v) {
   document.body.classList.toggle("coll-on", co);
   $("world").hidden = !on;
   $("coll").hidden = !co;
+  Tips.hideCur();
   if (co) { $("coll").scrollTop = 0; if (Badges.mode === "badges") Badges.render(); else Coll.render(); if (window.innerWidth < 760) setPanel(false); }
+  Tips.show(co ? (Badges.mode === "badges" ? "badges" : "coll") : v);
   Badges.paintDot();
   document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
   if (on) {
@@ -5461,12 +5478,72 @@ document.addEventListener("click", (e) => {
   if (viewMode !== "map" && e.target.closest("[data-flyto], [data-only], #places button, #places li")) setView("map");
 }, true);
 
+
+/* ---------- first-time tips: one short bubble the first time you open each part of the app ---------- */
+const Tips = (() => {
+  const KEY = "birb-tips-seen", phone = () => innerWidth <= 760;
+  const TIPS = {
+    map: { t: "Your map", x: () => `${phone() ? "Pinch" : "Scroll"} in to go from counties down to the exact spot you heard each bird. Press play at the bottom to watch your list grow.`, at: () => (phone() ? ".replay .play, .tabbar [data-view=\"map\"]" : ".replay .play") },
+    world: { t: "Habitat world", x: () => "Every bird you've heard lives here. Tap a signpost to fly to that habitat, or tap a bird to read its story.", at: () => (phone() ? '.tabbar [data-view="world"]' : ".world-focus") },
+    coll: { t: "Your Collection", x: () => "A wall of every UK bird. The coloured ones you've heard, the grey ones are still to find. Tap any bird to listen to its song.", at: () => (phone() ? '.tabbar [data-view="collection"]' : "#coll-main .coll-bar .seg") },
+    badges: { t: "Badges", x: () => "You earn these from the birds you log. Tap a badge to see what it needs, and pin your favourites to your profile.", at: () => '[data-cmode="badges"]' },
+    flock: { t: "Your flock", x: () => "These are your friends' birds, all together. Tap Flock again to pick just a few friends to compare.", at: () => '#who [data-scope="flock"]' },
+  };
+  let seen = {}; try { seen = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(seen)); } catch (e) {} };
+  let want = [], cur = null, timer = 0;
+  const busy = () => document.body.classList.contains("welcoming") || !$("wel-pop").hidden || !$("help").hidden || !$("acct").hidden || !$("rare-pop").hidden || !!document.querySelector(".mem-pop:not([hidden]), .guide:not([hidden])") || !$("bell-card").hidden || (typeof viewMode !== "undefined" && false);
+  const visible = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight; };
+  /* a tip belongs to the screen you're on; leave it waiting if you've moved on */
+  const fits = (k) => (k === "map" ? viewMode === "map" : k === "world" ? viewMode === "world" : k === "coll" ? viewMode === "collection" && !$("coll-main").hidden : k === "badges" ? viewMode === "collection" && !$("badges").hidden : k === "flock" ? state.source === "flock" && viewMode === "map" : false);
+  function place(el) {
+    const tip = $("tip"), a = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    const below = a.top + a.height / 2 < innerHeight / 2;
+    const cx = a.left + a.width / 2, left = Math.max(12, Math.min(innerWidth - w - 12, cx - w / 2));
+    tip.style.left = left + "px";
+    tip.style.top = (below ? a.bottom + 12 : a.top - h - 12) + "px";
+    tip.classList.toggle("up", below); tip.style.setProperty("--ax", Math.max(18, Math.min(w - 18, cx - left)) + "px");
+  }
+  function tryShow() {
+    clearTimeout(timer);
+    if (cur) return;
+    want = want.filter((k) => !seen[k]);
+    const k = want.find(fits);
+    if (!k) { if (want.length) timer = setTimeout(tryShow, 1500); return; }
+    if (busy()) { timer = setTimeout(tryShow, 1500); return; }
+    const T = TIPS[k], el = [...document.querySelectorAll(T.at())].find(visible);
+    if (!el) { timer = setTimeout(tryShow, 1500); return; }
+    cur = k;
+    const tip = $("tip"), n = Object.keys(TIPS).filter((x) => seen[x]).length;
+    tip.innerHTML = `<b>${esc(T.t)}</b><p>${esc(T.x())}</p><div class="tip-f"><span class="tip-dots" aria-hidden="true">${Object.keys(TIPS).map((x) => `<i class="${seen[x] || x === k ? "on" : ""}"></i>`).join("")}</span><button type="button" class="tip-x" data-tip-skip>Hide tips</button><button type="button" class="primary" data-tip-ok>Got it</button></div>`;
+    tip.hidden = false; place(el);
+    requestAnimationFrame(() => tip.classList.add("in"));
+  }
+  function done(all) {
+    if (!cur) return;
+    seen[cur] = 1; if (all) Object.keys(TIPS).forEach((k) => (seen[k] = 1)); save();
+    const tip = $("tip"); tip.classList.remove("in"); tip.hidden = true; cur = null;
+    timer = setTimeout(tryShow, 900);
+  }
+  function show(k) { if (seen[k] || !TIPS[k]) return; if (!want.includes(k)) want.push(k); clearTimeout(timer); timer = setTimeout(tryShow, 1200); }
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-tip-ok]")) { done(false); return; }
+    if (e.target.closest("[data-tip-skip]")) { done(true); return; }
+    if (e.target.closest("[data-tips-again]")) { seen = {}; save(); try { setHelp(false); } catch (x) {} toast2("Tips are back. You'll see each one as you go."); show(viewMode === "collection" ? "coll" : viewMode); return; }
+  });
+  /* if the screen changes under a tip, put it away for now and show it again later */
+  const hideCur = () => { if (!cur) return; const tip = $("tip"); tip.hidden = true; tip.classList.remove("in"); want.unshift(cur); cur = null; };
+  addEventListener("resize", hideCur);
+  const toast2 = (msg) => { const t = $("toast"); if (!t) return; t.innerHTML = `<span>${esc(msg)}</span>`; t.hidden = false; t.style.left = "50%"; t.style.top = "80px"; t.style.transform = "translateX(-50%)"; setTimeout(() => { t.hidden = true; t.style.transform = ""; }, 3500); };
+  setTimeout(() => show("map"), 2500);
+  return { show, hideCur, get open() { return !!cur; } };
+})();
 /* ---------- quiet mode: fade the pieces around the map after a few seconds without a touch ---------- */
 const Quiet = (() => {
   let on = true, timer = 0, lastWake = 0;
   try { on = localStorage.getItem("birb-quiet") !== "off"; } catch (e) {}
   const CHROME = ".map-card, #crumbs, .layers-btn, .me-btn, .bell-btn, .legend, .replay, .view-top, .map-tools, .maplibregl-ctrl";
-  const busy = () => viewMode === "collection" || $("map-tools").classList.contains("open") || !$("bell-card").hidden || !$("latest-card").hidden || !$("fav-card").hidden || !$("help").hidden || !$("lite-bar").hidden
+  const busy = () => viewMode === "collection" || Tips.open || $("map-tools").classList.contains("open") || !$("bell-card").hidden || !$("latest-card").hidden || !$("fav-card").hidden || !$("help").hidden || !$("lite-bar").hidden
     || !!document.querySelector(".acct:not([hidden]), .mem-pop:not([hidden]), .guide:not([hidden]), #flock-pick:not([hidden])") || [...document.querySelectorAll(CHROME)].some((el) => el.matches(":hover"));
   const arm = () => { clearTimeout(timer); if (on) timer = setTimeout(() => { if (busy()) arm(); else document.body.classList.add("quiet"); }, 6000); };
   const wake = () => { const now = Date.now(); if (now - lastWake < 300 && !document.body.classList.contains("quiet")) return; lastWake = now; document.body.classList.remove("quiet"); arm(); };
@@ -5963,6 +6040,7 @@ const Acct = (() => {
     const recs = got.flatMap((g) => (g.status === "fulfilled" ? g.value : []));
     if (!recs.length) { if (!quiet) setStatus("Couldn't load the flock's birds. Try again.", true); return false; }
     const some = list.length < flockAll().length;
+    setTimeout(() => Tips.show("flock"), 500);
     useRecords(recs, "flock", some ? `birds from ${whoLabel(list)}` : `the flock's birds (${list.length} ${list.length === 1 ? "birder" : "birders"})`);
     scope = "flock"; viewing = null; try { localStorage.setItem(SCOPE_KEY, "flock"); } catch (e) {}
     const url = new URL(location.href); url.searchParams.delete("who"); history.replaceState(null, "", url.pathname + url.search + location.hash);
@@ -6114,8 +6192,7 @@ const Acct = (() => {
     $("wel-pop").hidden = true;
     try { localStorage.setItem(WELCOMED, "1"); } catch (e) {}
     document.body.classList.remove("welcoming");
-    let helped = true; try { helped = !!localStorage.getItem("birdmap-helped"); } catch (e) {}
-    if (tour && !helped && $("acct").hidden) setTimeout(() => setHelp(true), 350);
+    /* the first-time tips now show people round, so the Help guide waits in the menu */
   }
   function showWelcome(warn = "") {
     const o = owner && member(owner);
