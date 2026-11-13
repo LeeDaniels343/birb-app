@@ -1088,6 +1088,15 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
   .bd-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 12px 4px; }
   .bd-m { --s: 64px; }
 }
+.nt-react { display: flex; align-items: center; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
+.nt-react button { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 16px; line-height: 1.2; min-height: 0; box-shadow: none; cursor: pointer; transition: transform .12s; }
+.nt-react button:hover:not([disabled]) { transform: scale(1.15); }
+.nt-react button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.nt-react button[disabled]:not([aria-pressed="true"]) { opacity: .35; cursor: default; }
+.nt .tx .nt-react small { display: inline; margin: 0 0 0 4px; font-size: 11.5px; color: var(--muted); }
+.nt .bd-m { flex: none; }
+.nt-emo { width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 21px; background: var(--accent-soft); }
+.nt.badge .eyebrow { display: block; font-size: 10.5px; font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
 .night-hero { height: 110px; background: #0b1620; }
 .night-hero svg { display: block; width: 100%; height: 100%; }
 .wel-card .mem-body.night-body { padding-top: 12px; text-align: left; }
@@ -4385,7 +4394,10 @@ const Badges = (() => {
     if (nw.length) Acct.badgeNote(nw, !seenL, earned.length);
   }
   const ids = () => (last ? last.all : []);
-  return { render, setMode, check, medal, compute, ids, get mode() { return mode; }, forRecs: (recs, who) => keep(compute(recs, null), keptOf(who)), when, paintDot };
+  /* every badge's look and name, for notifications about a friend's badges */
+  let cat = null;
+  const def = (id) => { if (!cat) cat = new Map(compute([], { invited: [], first: null, same: null, union: [], loaded: false }).map((b) => [b.id, b])); const b = cat.get(id); return b ? { ...b, got: true, secret: false } : null; };
+  return { render, setMode, check, medal, compute, ids, get mode() { return mode; }, def, forRecs: (recs, who) => keep(compute(recs, null), keptOf(who)), when, paintDot };
 })();
 
 /* ---------- latest bird card on the map ---------- */
@@ -5801,6 +5813,15 @@ const Acct = (() => {
     if (!$("bell-card").hidden) renderBell();
     celebrate();
   }
+  const REACTS = [["🎉", "Hurray"], ["👏", "Well done"], ["🙌", "Brilliant"], ["❤️", "Love it"], ["😮", "Wow"]];
+  async function react(id, e, btnEl) {
+    const x = (inbox.items || []).find((i) => i.id === id); if (!x || x.reacted) return;
+    btnEl.closest(".nt-react").querySelectorAll("button").forEach((b) => (b.disabled = true));
+    const r = await call("react", { method: "POST", body: { id, e } });
+    if (r.ok) { x.reacted = r.data.reacted; toast(`<span>Sent ${esc(e)} to ${esc(nameOf(x.by))}.</span>`, $("bell-btn")); }
+    else toast(`<span>${esc(r.error)}</span>`, $("bell-btn"));
+    if (!$("bell-card").hidden) renderBell();
+  }
   function ntHTML(x) {
     const by = x.by || {}, nm = `<b>${esc(nameOf(by))}</b>`, isNew = x.t > inboxShownRead;
     const av = Avatar.html(by.avatar, nameOf(by)), when = `<small>${esc(tAgo(x.t))}</small>`;
@@ -5821,14 +5842,27 @@ const Acct = (() => {
       const b0 = (x.birds || [])[0] || {};
       cls = " rare"; lead = Photos.slot(b0.sci, "ph-thumb", "#a982e8");
       tx = `<span class="eyebrow">Rare find</span>${nm} heard ${/^[aeiou]/i.test(b0.name || "") ? "an" : "a"} <b>${esc(b0.name || "")}</b>${x.birds.length > 1 ? ` and ${x.birds.length - 1} more rare ${x.birds.length === 2 ? "bird" : "birds"}` : ""}.${when}${acts(btn("rare", "See it on the map", `data-bird="${esc(b0.name || "")}"`, true))}`;
+    } else if (x.kind === "badges") {
+      const bs = (x.ids || []).map((id) => Badges.def(id)).filter(Boolean);
+      if (!bs.length) return "";
+      cls = " badge"; lead = Badges.medal(bs[0], 40);
+      tx = `<span class="eyebrow">${bs.length === 1 ? "New badge" : "New badges"}</span>${nm} earned ${bs.length === 1 ? `the <b>${esc(bs[0].name)}</b> badge` : `${bs.length} badges: ${andList(bs.map((b) => b.name))}`}.${when}${acts(btn("badges", `See ${esc(nameOf(by))}'s badges`))}`;
+    } else if (x.kind === "react") {
+      const a = x.about || {}, bs = (a.ids || []).map((id) => Badges.def(id)).filter(Boolean);
+      const what = a.kind === "badges" ? (bs.length ? (a.n > 1 ? `your ${a.n} new badges` : `your <b>${esc(bs[0].name)}</b> badge`) : "your new badges")
+        : a.kind === "rare" ? `your rare find${a.bird ? `, <b>${esc(a.bird)}</b>` : ""}` : a.kind === "joined" ? "you joining BIRB" : "your new birds";
+      cls = " react"; lead = `<span class="nt-emo">${esc(x.e || "🎉")}</span>`;
+      tx = `${nm} sent ${esc(x.e || "🎉")} for ${what}.${when}`;
     } else return "";
+    const canReact = ["birds", "rare", "badges", "joined"].includes(x.kind) && by.u && (!me || by.u !== me.u);
+    if (canReact) tx += `<div class="nt-react" role="group" aria-label="React to ${esc(nameOf(by))}'s news">${REACTS.map(([e, label]) => `<button type="button" data-react="${esc(x.id)}" data-e="${e}" aria-label="${label}" title="${label}" aria-pressed="${x.reacted === e}"${x.reacted && x.reacted !== e ? " disabled" : ""}>${e}</button>`).join("")}${x.reacted ? `<small>Sent</small>` : ""}</div>`;
     return `<div class="nt${cls}${isNew ? " new" : ""}">${lead}<div class="tx">${tx}</div></div>`;
   }
   function renderBell() {
     const c = $("bell-card"), items = inbox.items || [];
     const clock = clockHTML();
     c.innerHTML = `<header><b>Notifications</b><small>${items.length ? "From your flock" : ""}</small></header>` + clock +
-      (items.length ? items.map(ntHTML).join("") : clock ? "" : `<div class="bell-empty">Nothing yet. When friends add birds, find something rare or accept your requests, you'll see it here.</div>`);
+      (items.length ? items.map(ntHTML).join("") : clock ? "" : `<div class="bell-empty">Nothing yet. When friends add birds, earn badges, find something rare or accept your requests, you'll see it here.</div>`);
     Photos.fill(c);
   }
   async function openBell() {
@@ -5860,6 +5894,7 @@ const Acct = (() => {
   async function ntAct(k, u, bird) {
     closeBell(); $("rare-pop").hidden = true;
     if (k === "birds") { await show(u); return; }
+    if (k === "badges") { if (await show(u)) { setView("collection"); Badges.setMode("badges"); } return; }
     if (k === "rare") { if (await show(u)) { try { openSpecies(bird); } catch (e) {} } return; }
     if (k === "profile") { if (!member(u)) await refresh(); open("flock"); if (member(u)) openMember(u); return; }
     if (k === "accept" || k === "decline") {
@@ -6666,6 +6701,7 @@ const Acct = (() => {
       if (t === $("rare-pop") || t.closest("[data-rare-close]")) { $("rare-pop").hidden = true; return; }
     }
     if (t.closest("#bell-btn")) { $("bell-card").hidden ? openBell() : closeBell(); return; }
+    const rx = t.closest("[data-react]"); if (rx) { await react(rx.dataset.react, rx.dataset.e, rx); return; }
     const nt = t.closest("[data-nt]"); if (nt) { nt.disabled = true; await ntAct(nt.dataset.nt, nt.dataset.u, nt.dataset.bird); return; }
     if (!$("bell-card").hidden && !t.closest("#bell-card")) closeBell();
     if (t.closest("[data-night-help]")) { try { setHelp(false); } catch (x) {} $("bell-card").hidden = true; $("bell-btn").setAttribute("aria-expanded", "false"); nightNote(""); return; }

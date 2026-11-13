@@ -164,13 +164,17 @@ const mini = (user) => ({ u: user.u, name: user.name || user.u, avatar: user.ava
 
 /* ---------- notifications: a short inbox per person ---------- */
 const INBOX_MAX = 60;
+const REACTIONS = ["🎉", "👏", "🙌", "❤️", "😮"];
 const getInbox = async (u) => (await store().get(`inbox/${u}`, { type: "json" })) || { items: [], read: "" };
 /* adds one item; a run of uploads from the same friend while unread is merged into one item */
 async function notify(u, item, mergeBirds = false) {
   if (!u) return;
   const box = await getInbox(u), now = new Date().toISOString();
   item = { id: crypto.randomBytes(6).toString("base64url"), t: now, ...item };
-  if (mergeBirds) {
+  if (mergeBirds && item.kind === "badges") {
+    const i = box.items.findIndex((x) => x.kind === "badges" && x.by.u === item.by.u && x.t > (box.read || "") && !x.reacted && Date.now() - Date.parse(x.t) < 6 * 3600e3);
+    if (i >= 0) { const old = box.items.splice(i, 1)[0]; item = { ...old, t: now, ids: [...new Set([...(old.ids || []), ...(item.ids || [])])].slice(0, 20) }; }
+  } else if (mergeBirds) {
     const i = box.items.findIndex((x) => x.kind === "birds" && x.by.u === item.by.u && x.t > (box.read || "") && Date.now() - Date.parse(x.t) < 6 * 3600e3);
     if (i >= 0) {
       const old = box.items.splice(i, 1)[0];
@@ -391,8 +395,19 @@ export default async (req) => {
         if (b.visibility != null) { const v = b.visibility === "group" ? "friends" : b.visibility; if (VIS.has(v)) me.visibility = v; }
         if (b.favourite !== undefined) me.favourite = cleanFav(b.favourite);
         if (b.pins !== undefined) me.pins = cleanPins(b.pins);
-        if (b.badges !== undefined) { const add = cleanBadges(b.badges); me.badges = { ...add, ...(me.badges || {}) }; if (Object.keys(me.badges).length > 200) me.badges = Object.fromEntries(Object.entries(me.badges).slice(0, 200)); }
+        let fresh = [];
+        if (b.badges !== undefined) {
+          const had = me.badges || {}, add = cleanBadges(b.badges);
+          fresh = Object.keys(add).filter((k) => !had[k]);
+          /* the very first save fills in badges earned before badges existed, so that one stays quiet */
+          if (!Object.keys(had).length) fresh = [];
+          me.badges = { ...add, ...had }; if (Object.keys(me.badges).length > 200) me.badges = Object.fromEntries(Object.entries(me.badges).slice(0, 200));
+        }
         await putUser(me);
+        if (fresh.length) {
+          const friends = (await Promise.all((me.friends || []).map(findUser))).filter((f) => f && canSee(me, f));
+          for (const f of friends) await notify(f.u, { kind: "badges", by: mini(me), ids: fresh.slice(0, 20) }, true);
+        }
         return json({ me: publicMe(me) });
       }
     }
@@ -512,6 +527,21 @@ export default async (req) => {
         me.birds = null; await putUser(me);
         return json({ me: publicMe(me) });
       }
+    }
+
+    /* a quick reaction to a friend's news: it lands in their bell */
+    if (path === "react" && m === "POST") {
+      if (!me) return fail(401, "Please sign in.");
+      const b = await jsonBody(req), e = String(b.e || "");
+      if (!REACTIONS.includes(e)) return fail(400, "That reaction isn't one of the choices.");
+      const box = await getInbox(me.u), item = box.items.find((x) => x.id === String(b.id || ""));
+      if (!item || !item.by || !["birds", "rare", "badges", "joined"].includes(item.kind)) return fail(404, "That notification has gone.");
+      const them = await findUser(item.by.u);
+      if (!them || !isFriend(me, them)) return fail(403, "You can only react to friends.");
+      const first = !item.reacted;
+      item.reacted = e; await store().setJSON(`inbox/${me.u}`, box);
+      if (first) await notify(them.u, { kind: "react", by: mini(me), e, about: { kind: item.kind, ids: (item.ids || []).slice(0, 3), n: (item.ids || []).length, bird: item.kind === "rare" ? ((item.birds || [])[0] || {}).name || "" : "", added: item.added || 0 } });
+      return json({ reacted: e });
     }
 
     if (path === "inbox") {
