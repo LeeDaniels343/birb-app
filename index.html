@@ -1128,6 +1128,10 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
 .empty-card .primary { background: var(--accent); color: #fff; border-radius: 999px; padding: 11px 16px; font-weight: 600; font-size: 15px; border: 0; }
 .empty-card .ghost { background: none; border: 0; color: var(--accent); font-weight: 600; font-size: 14px; padding: 8px; box-shadow: none; }
 body.welcoming .empty-card { display: none; }
+.prof-bd { margin: 4px 0 16px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; }
+.prof-bd-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.prof-bd-h .lab { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.prof-bd .hint { margin: 0; }
 .nt-react { display: flex; align-items: center; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
 .nt-react button { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 16px; line-height: 1.2; min-height: 0; box-shadow: none; cursor: pointer; transition: transform .12s; }
 .nt-react button:hover:not([disabled]) { transform: scale(1.15); }
@@ -6104,6 +6108,12 @@ const Acct = (() => {
     const f = c.querySelector(".primary"); if (f) setTimeout(() => f.focus({ preventScroll: true }), 60);
   }
   /* new badges: one card, however many arrived at once */
+  /* your pinned badges, shown on your own profile as well as your card in the flock */
+  function pinsHTML() {
+    const pins = (me.pins || []).map((id) => Badges.def(id)).filter(Boolean), n = Object.keys(me.badges || {}).length;
+    return `<div class="prof-bd"><div class="prof-bd-h"><span class="lab">${pins.length ? "Pinned badges" : "Badges"}</span><button type="button" class="linkish" data-acct-badges>${pins.length ? "Change" : n ? `See all ${n}` : "See badges"}</button></div>
+      ${pins.length ? `<div class="mem-bd">${pins.map((x) => `<span class="mem-bdi">${Badges.medal(x, 54)}<small>${esc(x.name)}</small></span>`).join("")}</div>` : `<p class="hint">Tap any badge you've earned and choose "Pin to your profile". Up to three show here and on your card in the flock.</p>`}</div>`;
+  }
   function badgeNote(list, intro, total) {
     const n = list.length;
     if (notesShown) { toast(`<span>You earned ${n === 1 ? `the ${esc(list[0].name)} badge` : `${n} badges`}.</span><span class="acts"><button type="button" data-go-badges>See them</button></span>`, $("me-btn")); return; }
@@ -6203,6 +6213,7 @@ const Acct = (() => {
 
   /* ---------- dialog ---------- */
   function open(v, opts = {}) {
+    try { Tips.hideCur(); } catch (e) {}
     if (!API) return;
     view = v; findRes = null; if (opts.invite) draft = { ...(draft || {}), invite: opts.invite };
     $("acct").hidden = false; render();
@@ -6343,6 +6354,7 @@ const Acct = (() => {
         ${firstUp ? `<button type="button" class="primary see-birds" data-acct-close>See my birds on the map</button>` : ""}
         ${!me.hasRecovery ? `<div class="nudge"><span><b>Set up a recovery phrase</b>Six words that let you reset your passcode yourself if you forget it.</span><button type="button" class="primary" data-acct="phrase-new">Set up</button></div>` : ""}
         ${b ? `<div class="stats"><span><b>${b.species}</b>species</span><span><b>${b.places}</b>places</span><span><b>${b.rows}</b>sightings</span><span><b>${esc(ago(b.updated))}</b>last upload</span></div>` : `<p class="sub">You haven't added any birds yet.</p>`}
+        ${b ? pinsHTML() : ""}
         <div style="margin:14px 0">${uploadHTML()}</div>
         <form id="f-prof" class="stack" novalidate>
           <div class="fld"><label for="pr-name">Display name</label><input id="pr-name" maxlength="40" value="${esc(me.name || "")}"></div>
@@ -6841,6 +6853,7 @@ const Acct = (() => {
     if (t.closest("[data-share-save]")) { await sendShare(true); return; }
     if (t.closest("[data-invite-card]")) { shareKind = "invite"; await openShare(); return; }
     const sh = t.closest('[data-acct="share"]'); if (sh) { if (!me.birds) shareKind = "invite"; await openShare(); return; }
+    if (t.closest("[data-acct-badges]")) { close(); setView("collection"); Badges.setMode("badges"); return; }
     const fk = t.closest("[data-fbk]"); if (fk) { const txt = $("fb-text").value; fbKind = fk.dataset.fbk; render(); $("fb-text").value = txt; $("fb-n").textContent = `${txt.length} / 1500`; return; }
     const go = t.closest("[data-acct]"); if (go) { if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }
     const vu = t.closest("[data-view-u]"); if (vu) { openMember(vu.dataset.viewU); return; }
