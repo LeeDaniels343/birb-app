@@ -1000,6 +1000,93 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
 .cb-moon svg, .cb .cb-c .cb-moon svg { width: 11px; height: 11px; fill: #ffe9a8; }
 .cb.miss .cb-moon { opacity: .8; }
 .coll-key.night .cb-moon { position: static; box-shadow: none; }
+/* ---------- badges ---------- */
+.coll-tabs { display: inline-flex; margin: 0 0 16px; border-radius: 10px; padding: 3px; background: var(--surface); }
+.coll-tabs button { font-size: 14px; font-weight: 600; padding: 7px 16px; border-radius: 8px; position: relative; }
+.coll-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); box-shadow: none; }
+.bd-dot { position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--hot); }
+.bd-dot[hidden] { display: none; }
+.bd-hero { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.bd-hero .coll-ring text { font-family: var(--font-display); font-size: 19px; font-weight: 700; fill: var(--ink); }
+.bd-next { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; flex: 1 1 520px; position: relative; padding-top: 16px; }
+.bd-next .lab { position: absolute; top: 0; left: 2px; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.bd-nx { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; display: grid; gap: 2px; color: var(--ink); cursor: pointer; box-shadow: none; min-width: 0; }
+.bd-nx b { font-size: 13.5px; }
+.bd-nx small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bd-nx .bar, .bd-line .bar { display: block; height: 6px; border-radius: 9px; background: var(--line); overflow: hidden; margin-top: 4px; }
+.bd-nx .bar i, .bd-line .bar i { display: block; height: 100%; border-radius: 9px; background: var(--bird, var(--accent)); }
+.bd-fam { margin-top: 22px; }
+.bd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 14px 6px; margin-top: 12px; }
+.bd { position: relative; background: none; border: 0; padding: 2px 0; display: grid; justify-items: center; align-content: start; gap: 5px; cursor: pointer; color: var(--ink); box-shadow: none; min-height: 0; white-space: normal; }
+.bd:hover .bd-m { transform: translateY(-2px); }
+.bd .cb-new { top: -2px; right: calc(50% - 46px); }
+.bd-n { font-size: 11.5px; line-height: 1.25; text-align: center; max-width: 100px; }
+.bd-s { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); text-align: center; max-width: 104px; line-height: 1.3; margin-top: -2px; }
+.bd:not(.got) .bd-n { color: var(--muted); }
+.bd.sel .bd-m { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 50%; }
+.bd-pin { position: absolute; top: 0; left: calc(50% - 40px); width: 20px; height: 20px; border-radius: 50%; background: var(--accent); display: grid; place-items: center; box-shadow: 0 0 0 2px var(--bg); }
+.bd-pin svg { width: 11px; height: 11px; fill: #fff; }
+/* the medal: a progress ring round a coloured disc */
+.bd-m { --s: 72px; position: relative; width: var(--s); height: var(--s); flex: none; display: block; transition: transform .15s; }
+.bd-ring { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bd-ring circle { fill: none; stroke: color-mix(in srgb, var(--line) 80%, transparent); stroke-width: 5; }
+.bd-ring circle.pr { stroke: var(--c); stroke-linecap: round; }
+.bd-m.got .bd-ring circle { stroke: color-mix(in srgb, var(--c) 22%, var(--surface)); }
+.bd-in { position: absolute; inset: 15%; border-radius: 50%; display: grid; place-items: center; overflow: hidden; background: color-mix(in srgb, var(--line) 55%, var(--surface)); color: color-mix(in srgb, var(--muted) 75%, transparent); }
+.bd-m.got .bd-in { background: var(--c); color: #fff; box-shadow: 0 0 0 3px var(--rim), 0 3px 8px rgba(0,0,0,.22), inset 0 -6px 10px rgba(0,0,0,.12), inset 0 6px 10px rgba(255,255,255,.18); }
+.bd-in svg { width: 46%; height: 46%; fill: currentColor; grid-area: 1 / 1; }
+.bd-in b { grid-area: 1 / 1; font-family: var(--font-display); font-weight: 800; font-size: calc(var(--s) * .27); letter-spacing: -.02em; line-height: 1; }
+.bd-in b.s2 { font-size: calc(var(--s) * .21); }
+.bd-in b.s3 { font-size: calc(var(--s) * .17); }
+.bd-m.both .bd-in svg { width: 26%; height: 26%; align-self: start; margin-top: 16%; }
+.bd-m.both .bd-in b { align-self: end; margin-bottom: 18%; font-size: calc(var(--s) * .2); }
+.bd-m.both .bd-in b.s2 { font-size: calc(var(--s) * .17); }
+.bd-m.ph-in .bd-in { padding: 0; }
+.bd-m.ph-in .bd-in .ph { width: 100%; height: 100%; border-radius: 50%; grid-area: 1 / 1; }
+.bd-m.ph-in .bd-in .ph img { border-radius: 50%; }
+.bd-m.ph-in:not(.got) .bd-in .ph { filter: grayscale(1); opacity: .45; }
+.bd-m.ph-in.got .bd-in { background: var(--c); padding: 3px; }
+.bd-m.hid .bd-in { background: none; border: 2px dashed color-mix(in srgb, var(--muted) 45%, transparent); }
+.bd-q { font-family: var(--font-display); font-weight: 800; font-size: calc(var(--s) * .32); color: color-mix(in srgb, var(--muted) 60%, transparent); }
+.bd-empty { text-align: center; padding: 40px 16px; color: var(--muted); }
+.bd-empty svg { width: 42px; height: 42px; fill: var(--line); }
+.bd-empty h3 { color: var(--ink); margin: 6px 0 4px; }
+/* tap a badge */
+.bd-pop { gap: 10px; padding: 14px 16px 16px; }
+.bd-det { display: flex; gap: 14px; align-items: center; padding-right: 22px; }
+.bd-det .lab { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.bd-det h3 { margin: 1px 0 2px; font-size: 18px; }
+.bd-det p { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.4; }
+.bd-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; border-top: 1px solid var(--line); padding-top: 8px; }
+.bd-line > span:first-child { color: var(--muted); flex: none; }
+.bd-line .bar { flex: 1; margin: 0; max-width: 220px; }
+.bd-line b { text-align: right; }
+.bd-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.bd-list span { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: color-mix(in srgb, var(--line) 60%, transparent); color: var(--muted); }
+.bd-list span.got { background: color-mix(in srgb, var(--bird) 18%, var(--surface)); color: var(--ink); }
+.bd-pinbtn { display: flex; align-items: center; justify-content: center; gap: 7px; background: var(--accent); color: #fff; border-radius: 999px; padding: 9px 14px; font-weight: 600; font-size: 13.5px; }
+.bd-pinbtn.on { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.bd-pinbtn svg { width: 15px; height: 15px; fill: currentColor; }
+/* the new-badges card */
+.bd-note-hero { background: linear-gradient(180deg, #0f2c3b, #1d6b86); padding: 30px 16px 26px; display: flex; justify-content: center; }
+.bd-trio { display: flex; gap: 10px; justify-content: center; }
+.bd-trio .bd-m .bd-ring circle { stroke: rgba(255,255,255,.18); }
+.wel-card .mem-body.bd-note-body { padding-top: 16px; text-align: center; }
+.bd-note-body h2 { margin: 0; }
+/* on a member's card */
+.mem-bd { display: flex; gap: 10px; flex-wrap: wrap; }
+.mem-bdi { display: grid; justify-items: center; gap: 3px; width: 76px; }
+.mem-bdi small { font-size: 11px; text-align: center; line-height: 1.2; color: var(--muted); }
+.mem-bd-all { margin-top: 6px; font-size: 13px; }
+@media (max-width: 760px) {
+  .coll-tabs { display: flex; width: 100%; }
+  .coll-tabs button { flex: 1; }
+  .bd-next { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; flex-basis: 100%; margin: 0; padding: 16px 0 4px; scrollbar-width: none; }
+  .bd-next .lab { left: 2px; }
+  .bd-nx { flex: 0 0 68%; scroll-snap-align: start; }
+  .bd-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 12px 4px; }
+  .bd-m { --s: 64px; }
+}
 .night-hero { height: 110px; background: #0b1620; }
 .night-hero svg { display: block; width: 100%; height: 100%; }
 .wel-card .mem-body.night-body { padding-top: 12px; text-align: left; }
@@ -1260,6 +1347,8 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
   </nav>
   <section class="coll" id="coll" hidden aria-label="Collection: every bird on eBird's UK list, with the ones you've heard">
     <div class="coll-in">
+      <div class="seg coll-tabs" role="group" aria-label="Collection or badges"><button type="button" data-cmode="wall" aria-pressed="true">Collection</button><button type="button" data-cmode="badges" aria-pressed="false">Badges<i class="bd-dot" hidden></i></button></div>
+      <div id="coll-main">
       <div class="coll-head">
         <svg class="coll-ring" viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="30" fill="none" stroke="var(--line)" stroke-width="8"/><circle id="coll-ring" cx="36" cy="36" r="30" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round" transform="rotate(-90 36 36)" stroke-dasharray="0 999"/><text id="coll-pct" x="36" y="41" text-anchor="middle"></text></svg>
         <div class="coll-title"><h2>Collection</h2><p id="coll-sum"></p><p class="coll-sub" id="coll-sub"></p></div>
@@ -1282,8 +1371,11 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
       </div>
       <div id="coll-wall"></div>
       <p class="coll-note">The wall holds every species on eBird's United Kingdom list (native, naturalised and provisional, 634 in all). Birds with a lilac frame are rarer visitors: species nobody has logged in the UK on eBird in the past year.</p>
+      </div>
+      <div id="badges" hidden></div>
     </div>
     <div class="coll-pop" id="coll-pop" hidden></div>
+    <div class="coll-pop bd-pop" id="bd-pop" hidden></div>
   </section>
   <section class="world" id="world" hidden aria-label="Habitat world: every bird you've heard, together in their habitats">
     <div id="world-gl"></div>
@@ -3815,6 +3907,407 @@ const Coll = (() => {
   return { render };
 })();
 
+/* ---------- badges: worked out from the records themselves, so they match on every device ----------
+   Each badge knows how far along you are and the date of the record that earned it. */
+const Badges = (() => {
+  const DAY = 864e5;
+  const toN = (iso) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / DAY;
+  const thisYear = () => String(new Date().getFullYear());
+  const when = (iso) => (iso ? (iso.slice(0, 4) === thisYear() ? fmtDate(iso).replace(/ \d{4}$/, "") : fmtDate(iso)) : "");
+  const WS = new Map(WALL.map((w) => [w[1], w]));
+  const nameOf = (m) => (m && (m.name || m.u)) || "";
+  const nm = (sci) => (WS.get(sci) || [sci])[0];
+  const IC = {
+    bird: '<path d="M21 6c-1.2 0-2.2.5-3 1.3-.8-1.4-2.3-2.3-4-2.3-2.6 0-4.6 2-4.6 4.6v.8C6.6 10.2 4.3 8.8 3 7c0 3.4 1.8 6.2 4.7 7.6L5 18h6.5c3.9 0 7-3 7-6.8V9.3L21 6z"/>',
+    drop: '<path d="M12 2s-7 7.6-7 12.5a7 7 0 0 0 14 0C19 9.6 12 2 12 2z"/>',
+    tree: '<path d="M12 2 5 12h4l-4 6h6v4h2v-4h6l-4-6h4z"/>',
+    wheat: '<path d="M11 22h2V12h-2z"/><ellipse cx="9" cy="9.5" rx="2.2" ry="3.4" transform="rotate(-35 9 9.5)"/><ellipse cx="15" cy="9.5" rx="2.2" ry="3.4" transform="rotate(35 15 9.5)"/><ellipse cx="12" cy="5" rx="2.2" ry="3.4"/>',
+    moon: '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>',
+    pin: '<path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>',
+    cal: '<path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2zm-2 8h14v10H5z"/>',
+    sun: '<circle cx="12" cy="12" r="4.6"/><path d="M11 1h2v4h-2zm0 18h2v4h-2zM1 11h4v2H1zm18 0h4v2h-4zM4.2 5.6l1.4-1.4 2.8 2.8L7 8.4zm12.4 12.4 1.4-1.4 2.8 2.8-1.4 1.4zM4.2 18.4 7 15.6 8.4 17l-2.8 2.8zM15.6 7l2.8-2.8 1.4 1.4L17 8.4z"/>',
+    snow: '<path d="M11 1h2v22h-2z"/><path d="M11 1h2v22h-2z" transform="rotate(60 12 12)"/><path d="M11 1h2v22h-2z" transform="rotate(-60 12 12)"/>',
+    home: '<path d="M12 3 2 12h3v8h5v-5h4v5h5v-8h3z"/>',
+    flock: '<circle cx="8" cy="9" r="3.5"/><circle cx="16.5" cy="9" r="3.5"/><path d="M1.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6zM14 20c.2-2.2-.5-4.1-1.8-5.4 3.6-1.4 9.8.1 10.3 5.4z"/>',
+    gem: '<path d="M6 3h12l4 6-10 12L2 9z"/>',
+    bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    flag: '<path d="M5 2h2v20H5zM8 3h11l-2.5 4L19 11H8z"/>',
+    star: '<path d="m12 2 3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8l-6.3 3.6 1.5-7.1L1.8 9.4 9 8.6z"/>',
+    swap: '<path d="M4 7h12l-3-3 1.4-1.4L20 8l-5.6 5.4L13 12l3-3H4zm16 10H8l3 3-1.4 1.4L4 16l5.6-5.4L11 12l-3 3h12z"/>',
+  };
+  const svgIc = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${IC[k] || IC.bird}</svg>`;
+  const FAMS = [
+    { id: "species", name: "Species", col: "#1d6b86" },
+    { id: "uk", name: "Your UK collection", col: "#2b7f9b" },
+    { id: "habitat", name: "Habitats", col: "#4f9d69" },
+    { id: "sets", name: "Bird sets", col: "#b5683a" },
+    { id: "rare", name: "Rarer visitors", col: "#9a74df" },
+    { id: "places", name: "Places", col: "#7a5bb8" },
+    { id: "bigday", name: "Big days", col: "#2f8f9a" },
+    { id: "year", name: "Through the year", col: "#c08a1e" },
+    { id: "flock", name: "Flock", col: "#c2456a" },
+    { id: "secret", name: "Secret badges", col: "#c99a2e" },
+  ];
+  const FAM = new Map(FAMS.map((f) => [f.id, f]));
+  const RIM = { bronze: "#b0703f", silver: "#a3afb5", gold: "#d1a136" };
+  const HABC = { pond: "#3a8fd1", wood: "#4f9d69", farm: "#c9a23a", night: "#5d63b0" };
+  /* bird sets: [id, name, what it asks for, species (UK list Latin names), cover bird] */
+  const SETS = [
+    ["tits", "Tit set", "Blue, Great, Coal and Long-tailed Tit", "Cyanistes caeruleus|Parus major|Periparus ater|Aegithalos caudatus"],
+    ["small", "Small but loud", "Goldcrest, Wren, Long-tailed Tit and Treecreeper", "Regulus regulus|Troglodytes troglodytes|Aegithalos caudatus|Certhia familiaris"],
+    ["garden", "Garden ten", "The ten birds most people hear from home", "Erithacus rubecula|Turdus merula|Troglodytes troglodytes|Prunella modularis|Cyanistes caeruleus|Parus major|Passer domesticus|Sturnus vulgaris|Carduelis carduelis|Columba palumbus"],
+    ["crows", "Crow family", "Crow, Rook, Jackdaw, Magpie, Jay and Raven", "Garrulus glandarius|Corvus corone|Corvus frugilegus|Corvus monedula|Pica pica|Corvus corax"],
+    ["thrush", "Thrushes", "Blackbird, Song and Mistle Thrush, Redwing and Fieldfare", "Turdus philomelos|Turdus merula|Turdus viscivorus|Turdus iliacus|Turdus pilaris"],
+    ["reed", "Reedbed regulars", "Coot, Moorhen, Little Grebe, Water Rail and Great Crested Grebe", "Tachybaptus ruficollis|Fulica atra|Gallinula chloropus|Rallus aquaticus|Podiceps cristatus"],
+    ["geese", "Geese and swans", "Canada, Greylag, Pink-footed and Barnacle Goose, and Mute Swan", "Cygnus olor|Branta canadensis|Anser anser|Anser brachyrhynchus|Branta leucopsis"],
+    ["winter", "Winter thrushes", "Redwing and Fieldfare", "Turdus iliacus|Turdus pilaris"],
+    ["doves", "Pigeons and doves", "Woodpigeon, Feral Pigeon, and Collared, Stock and Turtle Dove", "Streptopelia turtur|Columba palumbus|Columba livia|Streptopelia decaocto|Columba oenas"],
+    ["finch", "Finches", "Chaffinch, Goldfinch, Greenfinch, Bullfinch, Siskin and Linnet", "Pyrrhula pyrrhula|Fringilla coelebs|Carduelis carduelis|Chloris chloris|Spinus spinus|Linaria cannabina"],
+    ["warb", "Warblers", "Chiffchaff, Blackcap, Willow Warbler, Whitethroat, Reed and Cetti's Warbler", "Sylvia atricapilla|Phylloscopus collybita|Phylloscopus trochilus|Curruca communis|Acrocephalus scirpaceus|Cettia cetti"],
+    ["summer", "Summer visitors", "Swift, Swallow, House Martin, Cuckoo, Chiffchaff and Blackcap", "Hirundo rustica|Apus apus|Delichon urbicum|Cuculus canorus|Phylloscopus collybita|Sylvia atricapilla"],
+    ["ducks", "Ducks", "Mallard, Gadwall, Teal, Wigeon, Tufted Duck and Shoveler", "Mareca penelope|Anas platyrhynchos|Mareca strepera|Anas crecca|Aythya fuligula|Spatula clypeata"],
+    ["arrivals", "New arrivals", "Birds that made the UK home: Ring-necked Parakeet, Egyptian Goose, Little Egret", "Psittacula krameri|Alopochen aegyptiaca|Egretta garzetta"],
+    ["wag", "Wagtails and pipits", "Pied, Grey and Yellow Wagtail, and Meadow Pipit", "Motacilla cinerea|Motacilla alba|Motacilla flava|Anthus pratensis"],
+    ["gulls", "Gulls", "Black-headed, Herring, Common, and both Black-backed Gulls", "Larus argentatus|Chroicocephalus ridibundus|Larus fuscus|Larus canus|Larus marinus"],
+    ["peck", "Woodpeckers", "Great Spotted, Green and Lesser Spotted Woodpecker", "Picus viridis|Dendrocopos major|Dryobates minor"],
+    ["owls", "Owls", "Barn, Tawny, Little, Long-eared and Short-eared Owl", "Tyto alba|Strix aluco|Athene noctua|Asio otus|Asio flammeus"],
+    ["raptor", "Birds of prey", "Buzzard, Kestrel, Sparrowhawk, Red Kite and Peregrine", "Milvus milvus|Buteo buteo|Falco tinnunculus|Accipiter nisus|Falco peregrinus"],
+    ["waders", "Waders", "Curlew, Oystercatcher, Lapwing, Redshank and Snipe", "Numenius arquata|Haematopus ostralegus|Vanellus vanellus|Tringa totanus|Gallinago gallinago"],
+  ].map(([id, name, ask, list]) => ({ id, name, ask, list: list.split("|") }));
+  const SPRING = new Set("Hirundo rustica|Apus apus|Delichon urbicum|Riparia riparia|Cuculus canorus|Phylloscopus trochilus|Curruca communis|Acrocephalus scirpaceus|Acrocephalus schoenobaenus|Muscicapa striata|Streptopelia turtur".split("|"));
+  const km = (a, b) => {
+    const R = 6371, p1 = (a.lat * Math.PI) / 180, p2 = (b.lat * Math.PI) / 180, dp = p2 - p1, dl = ((b.lng - a.lng) * Math.PI) / 180;
+    return 2 * R * Math.asin(Math.sqrt(Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2));
+  };
+  const reach = (sorted, n) => (sorted.length >= n ? sorted[n - 1] : null);
+
+  /* ---------- the rules ---------- */
+  function compute(recs, fl) {
+    const R = recs.filter((d) => d.date).slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    const sp = new Map(), byDay = new Map(), county = new Map(), spot = new Map(), patch = new Map(), nation = new Map(), months = new Map(), seasons = new Map(), years = new Map(), mmdd = new Map();
+    let abroad = null, spring = null;
+    for (const d of R) {
+      const k = wallKey(d.name, d.sci);
+      let s = sp.get(k);
+      if (!s) { const night = isNightBird(d.sci); s = { k, date: d.date, name: d.name, sci: d.sci, hab: night ? "night" : (d.hab && d.hab.id) || "wood", w: WS.get(k), days: [] }; sp.set(k, s); }
+      if (s.days[s.days.length - 1] !== d.date) s.days.push(d.date);
+      if (!byDay.has(d.date)) byDay.set(d.date, new Set());
+      byDay.get(d.date).add(k);
+      if (d.region && d.region !== "Outside the UK") {
+        if (!county.has(d.county)) county.set(d.county, d.date);
+        const n = /^(Scotland|Wales|Northern Ireland)$/.test(d.region) ? d.region : "England";
+        if (!nation.has(n)) nation.set(n, d.date);
+      } else if (!abroad) abroad = d.date;
+      if (!spot.has(d.locId)) spot.set(d.locId, { date: d.date, lat: d.lat, lng: d.lng });
+      let p = patch.get(d.locId); if (!p) patch.set(d.locId, (p = []));
+      if (p[p.length - 1] !== d.date) p.push(d.date);
+      const mo = +d.date.slice(5, 7);
+      if (!months.has(mo)) months.set(mo, d.date);
+      const se = mo >= 3 && mo <= 5 ? "spring" : mo >= 6 && mo <= 8 ? "summer" : mo >= 9 && mo <= 11 ? "autumn" : "winter";
+      if (!seasons.has(se)) seasons.set(se, d.date);
+      const y = d.date.slice(0, 4); let ym = years.get(y); if (!ym) years.set(y, (ym = new Map()));
+      if (!ym.has(k)) ym.set(k, d.date);
+      const md = d.date.slice(5); if (!mmdd.has(md)) mmdd.set(md, d.date);
+      if (!spring && (mo === 3 || mo === 4) && SPRING.has(k)) spring = d.date;
+    }
+    const S = [...sp.values()];
+    const spDates = S.map((s) => s.date).sort();
+    const wallDates = S.filter((s) => s.w).map((s) => s.date).sort();
+    const rareDates = S.filter((s) => s.w && s.w[3] === 2).map((s) => s.date).sort();
+    const hab = { pond: [], wood: [], farm: [], night: [] };
+    S.forEach((s) => (hab[s.hab] || hab.wood).push(s.date)); Object.values(hab).forEach((a) => a.sort());
+    const days = [...byDay.keys()];
+    const lifers = new Map(); S.forEach((s) => lifers.set(s.date, (lifers.get(s.date) || 0) + 1));
+    const firstDay = (test) => { for (const [d, v] of byDay) if (test(d, v)) return d; return null; };
+    const bestDay = Math.max(0, ...[...byDay.values()].map((v) => v.size));
+    const bestNew = Math.max(0, ...lifers.values());
+    const newDay = (n) => { for (const d of days) if ((lifers.get(d) || 0) >= n) return d; return null; };
+    /* weeks run Monday to Sunday */
+    let run = 0, prevW = null, bestRun = 0; const runAt = [];
+    for (const d of days) { const w = Math.floor((toN(d) + 3) / 7); if (w === prevW) continue; run = prevW !== null && w === prevW + 1 ? run + 1 : 1; prevW = w; if (!runAt[run]) runAt[run] = d; bestRun = Math.max(bestRun, run); }
+    const P = [...patch.values()], bestPatch = Math.max(0, ...P.map((p) => p.length));
+    const patchAt = (n) => P.filter((p) => p.length >= n).map((p) => p[n - 1]).sort()[0] || null;
+    const yearLists = [...years.values()].map((m) => [...m.values()].sort());
+    const bestYear = Math.max(0, ...yearLists.map((l) => l.length));
+    const yearAt = (n) => yearLists.filter((l) => l.length >= n).map((l) => l[n - 1]).sort()[0] || null;
+    const nowYear = (years.get(thisYear()) || new Map()).size;
+    let updown = null; { const L = [...spot.values()].sort((a, b) => (a.date < b.date ? -1 : 1)); outer: for (let i = 1; i < L.length && i < 1500; i++) for (let j = 0; j < i; j++) if (km(L[i], L[j]) >= 300) { updown = L[i].date; break outer; } }
+    const cnt = [...county.values()].sort(), spots = [...spot.values()].map((x) => x.date).sort();
+    /* secrets */
+    const thirteen = firstDay((d, v) => d.slice(8) === "13" && v.size >= 13);
+    let comeback = null; for (const s of S) for (let i = 1; i < s.days.length; i++) if (toN(s.days[i]) - toN(s.days[i - 1]) >= 180 && (!comeback || s.days[i] < comeback)) comeback = s.days[i];
+    const fullHouse = firstDay((d, v) => { const h = new Set([...v].map((k) => sp.get(k).hab)); return h.has("pond") && h.has("wood") && h.has("farm") && h.has("night"); });
+    const cuckoo = (sp.get("Cuculus canorus") || {}).date || null;
+    let sameAgain = null; for (const s of S) { let r = 1; for (let i = 1; i < s.days.length; i++) { r = toN(s.days[i]) - toN(s.days[i - 1]) === 1 ? r + 1 : 1; if (r >= 7) { if (!sameAgain || s.days[i] < sameAgain) sameAgain = s.days[i]; break; } } }
+
+    const out = [];
+    const add = (fam, id, name, ask, have, need, date, x = {}) => out.push({ fam, id, name, ask, have: Math.min(have, need), need, date: date || null, got: !!date, ...x });
+    /* species */
+    add("species", "sp-1", "First bird", "Hear your first bird", spDates.length, 1, reach(spDates, 1), { ic: "bird" });
+    [[10, "bronze"], [25, "bronze"], [50, "silver"], [75, "silver"], [100, "silver"], [150, "gold"], [200, "gold"], [250, "gold"]].forEach(([n, tier]) =>
+      add("species", "sp-" + n, `${n} species`, `Hear ${n} different species`, spDates.length, n, reach(spDates, n), { t: String(n), tier }));
+    /* the UK list */
+    const WL = WALL.length;
+    [[20, "1 in 20", "5%"], [10, "1 in 10", "10%"], [4, "A quarter", "25%"], [2, "Half the list", "50%"]].forEach(([f, name, t]) => {
+      const n = Math.ceil(WL / f);
+      add("uk", "uk-" + f, name, `Hear ${n} of the ${WL} birds on the UK list`, wallDates.length, n, reach(wallDates, n), { t });
+    });
+    /* habitats */
+    const H = (id, name, h, n, x) => add("habitat", id, name, `Hear ${n} ${h === "night" ? "night" : { pond: "pond and wetland", wood: "woodland", farm: "farmland" }[h]} ${n === 1 ? "bird" : "birds"}`, hab[h].length, n, reach(hab[h], n), { ic: { pond: "drop", wood: "tree", farm: "wheat", night: "moon" }[h], col: HABC[h], ...x });
+    H("hb-pond", "Pond regular", "pond", 5); H("hb-pond2", "Pond expert", "pond", 15, { t: "15" });
+    H("hb-wood", "Woodlander", "wood", 10); H("hb-wood2", "Woodland expert", "wood", 25, { t: "25" });
+    H("hb-farm", "Hedgerow", "farm", 5); H("hb-farm2", "Farmland expert", "farm", 15, { t: "15" });
+    H("hb-night", "Night owl", "night", 1); H("hb-night2", "Night watch", "night", 5, { t: "5" });
+    const four = ["pond", "wood", "farm", "night"];
+    add("habitat", "hb-all", "All four", "Hear 5 birds in each habitat", four.reduce((a, h) => a + Math.min(5, hab[h].length), 0), 20,
+      four.every((h) => hab[h].length >= 5) ? four.map((h) => hab[h][4]).sort().pop() : null, { ic: "bird", sub: four.every((h) => hab[h].length >= 5) ? null : `${four.filter((h) => hab[h].length >= 5).length} of 4 habitats` });
+    /* bird sets */
+    const setOut = SETS.map((st) => {
+      const have = st.list.filter((s) => sp.has(s));
+      const date = have.length === st.list.length ? st.list.map((s) => sp.get(s).date).sort().pop() : null;
+      const cover = st.list.find((s) => sp.has(s)) || st.list[0];
+      return { st, have: have.length, date, cover, list: st.list.map((s) => ({ name: nm(s), sci: s, got: sp.has(s) })) };
+    });
+    setOut.forEach((o) => add("sets", "set-" + o.st.id, o.st.name, o.st.ask, o.have, o.st.list.length, o.date, { photo: o.cover, list: o.list }));
+    /* rarer visitors */
+    add("rare", "rr-1", "First rarity", "Hear a lilac bird: one nobody logged in the UK on eBird last year", rareDates.length, 1, reach(rareDates, 1), { ic: "gem" });
+    add("rare", "rr-5", "Five rarities", "Hear 5 lilac birds", rareDates.length, 5, reach(rareDates, 5), { ic: "gem", t: "5" });
+    add("rare", "rr-10", "Ten rarities", "Hear 10 lilac birds", rareDates.length, 10, reach(rareDates, 10), { ic: "gem", t: "10" });
+    add("rare", "rr-away", "Far from home", "Log a bird outside the UK", abroad ? 1 : 0, 1, abroad, { ic: "pin" });
+    /* places */
+    [[3, "Three"], [5, "Five"], [10, "Ten"], [20, "Twenty"]].forEach(([n, w]) => add("places", "pl-c" + n, `${w} counties`, `Hear birds in ${n} counties`, cnt.length, n, reach(cnt, n), { ic: "pin", t: String(n) }));
+    add("places", "pl-s5", "Five spots", "Hear birds at 5 different places", spots.length, 5, reach(spots, 5), { ic: "home", t: "5" });
+    add("places", "pl-s15", "Fifteen spots", "Hear birds at 15 different places", spots.length, 15, reach(spots, 15), { ic: "home", t: "15" });
+    [[10, "Local patch", null], [25, "Patch regular", "25"], [50, "Patch devotee", "50"]].forEach(([n, name, t]) =>
+      add("places", "pl-p" + n, name, `Listen at the same spot on ${n} different days`, bestPatch, n, patchAt(n), { ic: "home", t, sub: patchAt(n) ? null : `${bestPatch} of ${n} visits` }));
+    add("places", "pl-far", "Up and down", "Hear birds at two spots 300 km apart", updown ? 1 : 0, 1, updown, { ic: "swap" });
+    add("places", "pl-n2", "Home nations", "Hear birds in two of England, Scotland, Wales and Northern Ireland", nation.size, 2, reach([...nation.values()].sort(), 2), { ic: "flag" });
+    add("places", "pl-n4", "All four nations", "Hear birds in England, Scotland, Wales and Northern Ireland", nation.size, 4, reach([...nation.values()].sort(), 4), { ic: "flag", t: "4" });
+    /* big days */
+    [[20, "Big day"], [30, "Bigger day"], [50, "Biggest day"]].forEach(([n, name]) =>
+      add("bigday", "bd-" + n, name, `Hear ${n} species in one day`, bestDay, n, firstDay((d, v) => v.size >= n), { t: String(n), sub: bestDay >= n ? null : `Best is ${bestDay} of ${n}` }));
+    add("bigday", "bd-new5", "Five new", "Hear 5 birds you've never heard before, in one day", bestNew, 5, newDay(5), { ic: "bolt", t: "+5", sub: bestNew >= 5 ? null : `Best is ${bestNew} of 5` });
+    add("bigday", "bd-new10", "Ten new", "Hear 10 birds you've never heard before, in one day", bestNew, 10, newDay(10), { ic: "bolt", t: "+10", sub: bestNew >= 10 ? null : `Best is ${bestNew} of 10` });
+    /* through the year */
+    [10, 30, 100].forEach((n) => add("year", "yr-d" + n, `${n} days out`, `Log birds on ${n} different days`, days.length, n, reach(days, n), { ic: "cal", t: String(n) }));
+    add("year", "yr-w4", "Four weeks running", "Log birds four weeks in a row", bestRun, 4, runAt[4], { t: "4w", sub: runAt[4] ? null : `Best is ${bestRun} of 4` });
+    add("year", "yr-w12", "Twelve weeks running", "Log birds twelve weeks in a row", bestRun, 12, runAt[12], { t: "12w", sub: runAt[12] ? null : `Best is ${bestRun} of 12` });
+    add("year", "yr-y50", "Year list 50", "Hear 50 species in one calendar year", bestYear, 50, yearAt(50), { t: "Y50", sub: yearAt(50) ? null : `${nowYear} in ${thisYear()}` });
+    add("year", "yr-y100", "Year list 100", "Hear 100 species in one calendar year", bestYear, 100, yearAt(100), { t: "Y100", sub: yearAt(100) ? null : `${nowYear} in ${thisYear()}` });
+    const sz = ["spring", "summer", "autumn", "winter"].filter((s) => seasons.has(s));
+    add("year", "yr-seasons", "All four seasons", "Log birds in spring, summer, autumn and winter", sz.length, 4, sz.length === 4 ? [...seasons.values()].sort().pop() : null, { ic: "sun", sub: sz.length === 4 ? null : sz.length ? `${sz.map((s) => s[0].toUpperCase() + s.slice(1)).join(", ")} so far` : null });
+    add("year", "yr-months", "Every month", "Log birds in every month of the year", months.size, 12, months.size === 12 ? [...months.values()].sort().pop() : null, { ic: "cal", t: "12" });
+    add("year", "yr-spring", "First of spring", "Hear a summer visitor such as a Swallow or Cuckoo in March or April", spring ? 1 : 0, 1, spring, { ic: "sun", sub: spring ? null : "A summer visitor by April" });
+    [["yr-hallow", "Halloween bird", "10-31", "moon"], ["yr-bonfire", "Bonfire night", "11-05", "bolt"], ["yr-xmas", "Christmas bird", "12-25", "snow"], ["yr-ny", "New Year bird", "01-01", "sun"]].forEach(([id, name, md, ic]) => {
+      const [m, d] = md.split("-"); const nice = `${+d} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][+m - 1]}`;
+      add("year", id, name, `Log any bird on ${nice}`, mmdd.has(md) ? 1 : 0, 1, mmdd.get(md), { ic, sub: mmdd.has(md) ? null : `Any bird on ${nice}` });
+    });
+    add("year", "yr-leap", "Leap day", "Log any bird on 29 February", mmdd.has("02-29") ? 1 : 0, 1, mmdd.get("02-29"), { ic: "cal", t: "29", sub: mmdd.has("02-29") ? null : "Next one is 29 Feb 2028" });
+    /* flock */
+    if (fl) {
+      add("flock", "fl-1", "Bring a friend", "Invite someone who joins BIRB", fl.invited.length, 1, reach(fl.invited, 1), { ic: "flock" });
+      add("flock", "fl-3", "Bring three", "Invite three people who join", fl.invited.length, 3, reach(fl.invited, 3), { ic: "flock", t: "3" });
+      add("flock", "fl-first", "First in the flock", "Hear a bird nobody else in your flock has heard", fl.first ? 1 : 0, 1, fl.first, { ic: "star", sub: fl.loaded ? null : "Open Badges to check" });
+      add("flock", "fl-same", "Same day, same bird", "Hear the same bird as a friend on the same day", fl.same ? 1 : 0, 1, fl.same, { ic: "cal", sub: fl.loaded ? null : "Open Badges to check" });
+      add("flock", "fl-100", "Flock 100", "Hear 100 species between you and your friends", fl.union.length, 100, reach(fl.union, 100), { ic: "flock", t: "100" });
+      add("flock", "fl-200", "Flock 200", "Hear 200 species between you and your friends", fl.union.length, 200, reach(fl.union, 200), { ic: "flock", t: "200" });
+    }
+    /* secrets: names stay hidden until earned */
+    [["sc-13", "Thirteen on the 13th", "Hear 13 species on the 13th of a month", thirteen, "star"],
+     ["sc-back", "Comeback", "Hear a bird again after six months without it", comeback, "swap"],
+     ["sc-full", "Full house", "Hear a pond, woodland, farmland and night bird on the same day", fullHouse, "home"],
+     ["sc-cuckoo", "Cuckoo!", "Hear a Cuckoo", cuckoo, "bird"],
+     ["sc-same", "Same again", "Hear the same bird seven days in a row", sameAgain, "cal"]].forEach(([id, name, ask, date, ic]) =>
+      add("secret", id, name, ask, date ? 1 : 0, 1, date, { ic, secret: true }));
+    return out;
+  }
+
+  /* ---------- whose badges are on show ---------- */
+  let mode = "wall", flockCtx = null, flockFor = "", sel = null, last = null;
+  function source() {
+    const me = Acct.me, v = Acct.viewing;
+    if (state.source === "flock") {
+      if (!me) return null;
+      const own = Acct.cached(me.u);
+      if (!own && me.birds) { Acct.recs(me.u).then(render, () => {}); return { recs: [], who: me, mine: true, wait: true }; }
+      return { recs: own || [], who: me, mine: true };
+    }
+    if (state.source === "account" && v) return { recs: state.data, who: v, mine: !!(me && v.u === me.u) };
+    return { recs: state.data, who: null, mine: false };
+  }
+  const SEEN = (u) => `birb-badges-seen:${u}`, NEWK = (u) => `birb-badges-new:${u}`;
+  const getL = (k) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return Array.isArray(v) ? v : null; } catch (e) { return null; } };
+  const putL = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+
+  /* the flock badges need your friends' birds; they're fetched when you open Badges */
+  async function loadFlock() {
+    const me = Acct.me; if (!me || !Acct.api) return null;
+    const mine = await Acct.recs(me.u).catch(() => null); if (!mine) return null;
+    const friends = Acct.members.filter((m) => m.u !== me.u);
+    const invited = friends.filter((m) => m.invitedBy === me.u && m.joined).map((m) => String(m.joined).slice(0, 10)).sort();
+    const got = await Promise.allSettled(friends.filter((m) => m.birds).map((m) => Acct.recs(m.u)));
+    const theirs = got.flatMap((g) => (g.status === "fulfilled" ? g.value : []));
+    const mineK = new Map(), theirK = new Set(), theirDay = new Set(), all = new Map();
+    for (const d of mine) { const k = wallKey(d.name, d.sci); if (!mineK.has(k) || d.date < mineK.get(k)) mineK.set(k, d.date); }
+    for (const d of theirs) { const k = wallKey(d.name, d.sci); theirK.add(k); theirDay.add(k + "|" + d.date); }
+    for (const d of [...mine, ...theirs]) { const k = wallKey(d.name, d.sci); if (!all.has(k) || d.date < all.get(k)) all.set(k, d.date); }
+    let first = null; for (const [k, d] of mineK) if (!theirK.has(k) && (!first || d < first)) first = d;
+    let same = null; for (const d of mine) { const k = wallKey(d.name, d.sci); if (theirDay.has(k + "|" + d.date) && (!same || d.date < same)) same = d.date; }
+    return { invited, first: friends.some((m) => m.birds) ? first : null, same, union: [...all.values()].sort(), loaded: true };
+  }
+  function quickFlock() {
+    const me = Acct.me; if (!me) return null;
+    if (flockCtx && flockFor === me.u) return flockCtx;
+    const invited = Acct.members.filter((m) => m.u !== me.u && m.invitedBy === me.u && m.joined).map((m) => String(m.joined).slice(0, 10)).sort();
+    return { invited, first: null, same: null, union: [], loaded: false };
+  }
+
+  /* ---------- drawing ---------- */
+  function medal(b, size = 72) {
+    const f = FAM.get(b.fam), col = b.col || f.col;
+    const hide = b.secret && !b.got;
+    const r = 36, C = 2 * Math.PI * r, p = b.got ? 1 : b.have / b.need;
+    let inner;
+    if (hide) inner = `<span class="bd-q">?</span>`;
+    else if (b.photo) inner = Photos.slot(b.photo, "ph-badge", col);
+    else inner = `${b.ic ? svgIc(b.ic) : ""}${b.t ? `<b class="${b.t.length > 3 ? "s3" : b.t.length > 2 ? "s2" : ""}">${esc(b.t)}</b>` : ""}`;
+    return `<span class="bd-m${b.got ? " got" : ""}${hide ? " hid" : ""}${b.photo ? " ph-in" : ""}${b.ic && b.t ? " both" : ""}" style="--c:${col};--rim:${b.got && b.tier ? RIM[b.tier] : "transparent"};--s:${size}px">
+      <svg class="bd-ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="${r}"/>${!b.got && p > 0 ? `<circle class="pr" cx="40" cy="40" r="${r}" stroke-dasharray="${(C * p).toFixed(1)} 999" transform="rotate(-90 40 40)"/>` : ""}</svg>
+      <span class="bd-in">${inner}</span></span>`;
+  }
+  const subOf = (b) => (b.secret && !b.got ? "Hidden until earned" : b.got ? when(b.date) : b.sub || `${b.have} of ${b.need}`);
+  function tile(b, isNew, pinned) {
+    return `<button type="button" class="bd${b.got ? " got" : ""}${sel === b.id ? " sel" : ""}" data-bd="${esc(b.id)}" aria-label="${esc(b.secret && !b.got ? "Secret badge" : b.name)}, ${b.got ? "earned " + esc(fmtDate(b.date)) : esc(subOf(b))}">
+      ${medal(b)}${isNew ? '<span class="cb-new">NEW</span>' : ""}${pinned ? `<span class="bd-pin" title="Pinned to your profile">${svgIc("pin")}</span>` : ""}
+      <span class="bd-n">${b.secret && !b.got ? "Secret" : esc(b.name)}</span><span class="bd-s">${esc(subOf(b))}</span></button>`;
+  }
+  function list(src) {
+    const fl = src.mine ? quickFlock() : null;
+    return compute(src.recs, fl);
+  }
+  function render() {
+    const box = $("badges"); if (!box || box.hidden) return;
+    const src = source();
+    if (src && src.wait) { box.innerHTML = `<p class="hint bd-wait">Loading your badges…</p>`; return; }
+    if (!src || !src.recs.length) {
+      box.innerHTML = `<div class="bd-empty">${svgIc("star")}<h3>Badges</h3><p>${Acct.me ? "Add your eBird export in Your profile and your badges will appear here." : "Sign in and add your eBird export to start earning badges."}</p></div>`;
+      return;
+    }
+    const all = list(src); last = { all, src };
+    const me = Acct.me, u = src.who ? src.who.u : "";
+    const fresh = new Set(src.mine && me ? getL(NEWK(me.u)) || [] : []);
+    const pins = new Set(src.mine && me ? me.pins || [] : (src.who && src.who.pins) || []);
+    const got = all.filter((b) => b.got), lastGot = got.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))[0];
+    const close = all.filter((b) => !b.got && !b.secret && b.have > 0).sort((a, b) => b.have / b.need - a.have / a.need || a.need - b.need).slice(0, 3);
+    const R = 30, C = 2 * Math.PI * R;
+    const whoName = src.who ? (src.mine ? "Your" : `${esc(nameOf(src.who))}'s`) : "";
+    let html = `<div class="bd-hero">
+      <svg class="coll-ring" viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="${R}" fill="none" stroke="var(--line)" stroke-width="8"/><circle cx="36" cy="36" r="${R}" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round" transform="rotate(-90 36 36)" stroke-dasharray="${((C * got.length) / all.length).toFixed(1)} 999"/><text x="36" y="42" text-anchor="middle">${got.length}</text></svg>
+      <div class="coll-title"><h2>${whoName ? whoName + " badges" : "Badges"}</h2><p><b>${got.length}</b> of ${all.length} earned</p>${lastGot ? `<p class="coll-sub">Last earned · ${esc(lastGot.name)}, ${esc(when(lastGot.date))}</p>` : ""}</div>
+      ${close.length ? `<div class="bd-next"><span class="lab">Closest</span>${close.map((b) => `<button type="button" class="bd-nx" data-bd="${esc(b.id)}"><b>${esc(b.name)}</b><small>${esc(nextLine(b))}</small><span class="bar"><i style="width:${Math.round((b.have / b.need) * 100)}%;background:${b.col || FAM.get(b.fam).col}"></i></span></button>`).join("")}</div>` : ""}
+    </div>`;
+    for (const f of FAMS) {
+      const items = all.filter((b) => b.fam === f.id); if (!items.length) continue;
+      const g = items.filter((b) => b.got).length;
+      html += `<section class="bd-fam"><div class="cfam-h"><span class="swatch" style="background:${f.col}"></span><h3>${esc(f.name)}</h3><span class="k">${g} / ${items.length}</span><span class="bar"><i style="width:${Math.max(g ? 2 : 0, Math.round((g / items.length) * 100))}%;background:${f.col}"></i></span></div>
+        <div class="bd-grid">${items.map((b) => tile(b, fresh.has(b.id), pins.has(b.id))).join("")}</div></section>`;
+    }
+    html += `<p class="coll-note">Badges come from the birds in ${src.mine ? "your" : "the"} eBird export, so they're the same on every device. Each one shows the date of the sighting that earned it.${src.mine ? " Tap one you've earned to pin it to your profile, where your friends can see it." : ""}</p>`;
+    box.innerHTML = html;
+    Photos.fill(box);
+    paintDot();
+    if (src.mine && me && fresh.size) setTimeout(() => { putL(NEWK(me.u), []); paintDot(); }, 400);
+    if (src.mine && me && Acct.api && flockFor !== me.u) {
+      flockFor = me.u;
+      loadFlock().then((c) => { if (!c) return; flockCtx = c; const before = new Set(got.map((b) => b.id)); if ($("badges").hidden) return; markNew(compute(src.recs, c).filter((b) => b.got && b.fam === "flock" && !before.has(b.id))); render(); });
+    }
+  }
+  function nextLine(b) {
+    if (b.list) { const miss = b.list.filter((x) => !x.got); return miss.length === 1 ? `${b.have} of ${b.need}, ${miss[0].name} to go` : `${b.have} of ${b.need}`; }
+    return b.sub || `${b.have} of ${b.need}`;
+  }
+  function markNew(items) {
+    const me = Acct.me; if (!me || !items.length) return;
+    const seen = new Set(getL(SEEN(me.u)) || []), nw = new Set(getL(NEWK(me.u)) || []);
+    items.forEach((b) => { seen.add(b.id); nw.add(b.id); });
+    putL(SEEN(me.u), [...seen]); putL(NEWK(me.u), [...nw]);
+  }
+  function paintDot() {
+    const me = Acct.me, n = me ? (getL(NEWK(me.u)) || []).length : 0;
+    document.querySelectorAll(".bd-dot").forEach((d) => (d.hidden = !n || (mode === "badges" && !$("coll").hidden)));
+  }
+
+  /* ---------- tap a badge ---------- */
+  function pop(id) {
+    if (!last) return;
+    const b = last.all.find((x) => x.id === id); if (!b) return;
+    sel = id;
+    document.querySelectorAll("#badges .bd.sel").forEach((x) => x.classList.remove("sel"));
+    const t = document.querySelector(`#badges .bd[data-bd="${CSS.escape(id)}"]`); if (t) t.classList.add("sel");
+    const me = Acct.me, mine = last.src.mine && me && Acct.api;
+    const pins = (me && me.pins) || [], pinned = pins.includes(id);
+    const hide = b.secret && !b.got;
+    const stem = (x) => x.id.replace(/\d+$/, "");
+    const tier = b.list ? null : last.all.find((x) => stem(x) === stem(b) && x.id !== b.id && !x.got && x.need > b.need);
+    const el = $("bd-pop");
+    el.style.setProperty("--bird", b.col || FAM.get(b.fam).col);
+    el.innerHTML = `<button type="button" class="x" data-bd-x aria-label="Close">×</button>
+      <div class="bd-det">${medal(b, 84)}<div><span class="lab">${esc(FAM.get(b.fam).name)}</span><h3>${hide ? "Secret badge" : esc(b.name)}</h3><p>${hide ? "This one stays a surprise until you earn it. Keep listening." : esc(b.ask)}.</p></div></div>
+      ${b.got ? `<div class="bd-line"><span>Earned</span><b>${esc(fmtDate(b.date))}</b></div>` : hide ? "" : `<div class="bd-line"><span>${esc(nextLine(b))}</span><span class="bar"><i style="width:${Math.round((b.have / b.need) * 100)}%"></i></span></div>`}
+      ${b.list ? `<div class="bd-list">${b.list.map((x) => `<span class="${x.got ? "got" : ""}">${x.got ? "✓ " : ""}${esc(x.name)}</span>`).join("")}</div>` : ""}
+      ${b.got && tier ? `<div class="bd-line"><span>Next</span><b>${esc(tier.name)} · ${esc(nextLine(tier))}</b></div>` : ""}
+      ${mine && b.got ? `<button type="button" class="bd-pinbtn${pinned ? " on" : ""}" data-bd-pin="${esc(id)}">${svgIc("pin")}${pinned ? "Unpin from your profile" : pins.length >= 3 ? "Pin to your profile (replaces your oldest pin)" : "Pin to your profile"}</button>` : ""}`;
+    el.hidden = false;
+    Photos.fill(el);
+  }
+  async function togglePin(id) {
+    const me = Acct.me; if (!me) return;
+    let pins = (me.pins || []).slice();
+    pins = pins.includes(id) ? pins.filter((x) => x !== id) : [...pins, id].slice(-3);
+    const ok = await Acct.savePins(pins);
+    if (ok) { render(); pop(id); }
+  }
+
+  /* ---------- the Collection / Badges switch ---------- */
+  function setMode(m) {
+    mode = m === "badges" ? "badges" : "wall";
+    $("coll-main").hidden = mode === "badges";
+    $("badges").hidden = mode !== "badges";
+    $("coll-pop").hidden = true; $("bd-pop").hidden = true; sel = null;
+    document.querySelectorAll("[data-cmode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cmode === mode)));
+    $("coll").scrollTop = 0;
+    if (mode === "badges") render(); else Coll.render();
+    paintDot();
+  }
+  document.addEventListener("click", (e) => {
+    const m = e.target.closest("[data-cmode]"); if (m) { setMode(m.dataset.cmode); return; }
+    if (e.target.closest("[data-bd-x]")) { $("bd-pop").hidden = true; sel = null; document.querySelectorAll("#badges .bd.sel").forEach((x) => x.classList.remove("sel")); return; }
+    const p = e.target.closest("[data-bd-pin]"); if (p) { p.disabled = true; togglePin(p.dataset.bdPin); return; }
+    const b = e.target.closest("#badges [data-bd]"); if (b) pop(b.dataset.bd);
+  });
+
+  /* ---------- after your own birds load or change: anything new gets one card ---------- */
+  let checkT = 0;
+  async function check(tries = 0) {
+    clearTimeout(checkT);
+    const me = Acct.me; if (!me || !me.birds || !Acct.api) return;
+    let recs; try { recs = await Acct.recs(me.u); } catch (e) { return; }
+    flockCtx = null; flockFor = "";
+    const earned = compute(recs, quickFlock()).filter((b) => b.got);
+    const seenL = getL(SEEN(me.u));
+    if (seenL && earned.every((b) => seenL.includes(b.id))) return paintDot();
+    if (Acct.busy()) { if (tries < 40) checkT = setTimeout(() => check(tries + 1), 4000); return; }
+    const seen = new Set(seenL || []);
+    const nw = earned.filter((b) => !seen.has(b.id)).sort((a, b) => (a.date < b.date ? 1 : -1));
+    markNew(nw);
+    paintDot();
+    if (mode === "badges" && !$("coll").hidden) { render(); return; }
+    if (nw.length) Acct.badgeNote(nw, !seenL, earned.length);
+  }
+  const ids = () => (last ? last.all : []);
+  return { render, setMode, check, medal, compute, ids, get mode() { return mode; }, forRecs: (recs) => compute(recs, null), when, paintDot };
+})();
+
 /* ---------- latest bird card on the map ---------- */
 let latestKey = "";
 function renderLatest() {
@@ -4786,7 +5279,8 @@ function setView(v) {
   document.body.classList.toggle("coll-on", co);
   $("world").hidden = !on;
   $("coll").hidden = !co;
-  if (co) { $("coll").scrollTop = 0; Coll.render(); if (window.innerWidth < 760) setPanel(false); }
+  if (co) { $("coll").scrollTop = 0; if (Badges.mode === "badges") Badges.render(); else Coll.render(); if (window.innerWidth < 760) setPanel(false); }
+  Badges.paintDot();
   document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
   if (on) {
     if (themeName === "night" && World.light !== "night") World.setLight("night");
@@ -5322,7 +5816,7 @@ const Acct = (() => {
     else if (invite) await showInvite(invite);
     else if (!me && !seen()) showWelcome();
     else document.body.classList.remove("welcoming");
-    if (me) setTimeout(maybeNightNote, 2500);
+    if (me) { setTimeout(maybeNightNote, 2500); setTimeout(() => Badges.check(), 3600); }
   }
 
   /* ---------- the front door: a welcome card on a first visit, an invite card from a friend's link ---------- */
@@ -5363,6 +5857,23 @@ const Acct = (() => {
         <div class="wel-acts"><button type="button" class="primary" data-wel-close>Got it</button>${first ? '<span class="hint" style="text-align:center">You can read this again in Help.</span>' : ""}</div>
       </div>`;
     $("wel-pop").hidden = false;
+    const f = c.querySelector(".primary"); if (f) setTimeout(() => f.focus({ preventScroll: true }), 60);
+  }
+  /* new badges: one card, however many arrived at once */
+  function badgeNote(list, intro, total) {
+    const c = $("wel-card"), n = list.length, top = list.slice(0, 3);
+    c.style.setProperty("--mbg", "#123447"); c.style.setProperty("--mrim", "#1d6b86");
+    const names = top.map((b) => b.name);
+    const said = n <= 3 ? (names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0]) : `${names.join(", ")} and ${n - 3} more`;
+    c.innerHTML = `<button type="button" class="acct-x mem-x" data-wel-close aria-label="Close">×</button>
+      <div class="bd-note-hero"><div class="bd-trio">${top.map((b) => Badges.medal(b, 78)).join("")}</div></div>
+      <div class="mem-body bd-note-body">
+        <h2 id="wel-h">${intro ? "Badges are here" : n === 1 ? `New badge: ${esc(list[0].name)}` : `${n} new badges`}</h2>
+        <p class="lede">${intro ? `You've already earned ${total} from the birds you've logged, including ${esc(said)}. There are plenty more to find.` : n === 1 ? esc(list[0].ask) + "." : esc(said) + "."}</p>
+        <div class="wel-acts"><button type="button" class="primary" data-wel="badges">See your badges</button></div>
+      </div>`;
+    $("wel-pop").hidden = false;
+    Photos.fill(c);
     const f = c.querySelector(".primary"); if (f) setTimeout(() => f.focus({ preventScroll: true }), 60);
   }
   /* shown once, when the first owl, nightjar or other night bird turns up in your own birds */
@@ -5900,7 +6411,13 @@ const Acct = (() => {
     }
     if (!$("mem-more") || memberU !== u) return;
     const fav = m && m.favourite && all.find((x) => x.name === m.favourite.name);
+    const bAll = Badges.forRecs(recs), bGot = bAll.filter((x) => x.got);
+    const bPin = ((mine ? me.pins : m && m.pins) || []).map((id) => bGot.find((x) => x.id === id)).filter(Boolean);
+    const bShow = bPin.length ? bPin : bGot.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 3);
     box.innerHTML = `
+      ${bGot.length ? `<div class="mem-sec"><span class="lab">${bGot.length} ${bGot.length === 1 ? "badge" : "badges"} · ${bPin.length ? "pinned" : "latest"}</span>
+        <div class="mem-bd">${bShow.map((x) => `<span class="mem-bdi">${Badges.medal(x, 54)}<small>${esc(x.name)}</small></span>`).join("")}</div>
+        <button type="button" class="linkish mem-bd-all" data-mem-badges="${esc(u)}">${mine ? "See all your badges" : `See all ${esc(nameOf(m))}'s badges`}</button></div>` : ""}
       ${fav ? `<div class="mem-sec"><span class="lab">${mine ? "Your" : "Their"} favourite</span>${row(fav, `♥ heard on ${fav.days.size} ${fav.days.size === 1 ? "day" : "days"}`)}</div>` : ""}
       ${latest ? `<div class="mem-sec"><span class="lab">Latest bird</span>${row(latest, `heard ${esc(fmtDate(latest.last))}`)}</div>` : ""}
       <div class="mem-sec"><span class="lab">Most heard</span>${top.map((x) => row(x, `${x.days.size} ${x.days.size === 1 ? "day" : "days"}`)).join("")}</div>
@@ -5979,6 +6496,7 @@ const Acct = (() => {
     if (scope === "flock") await showFlock(); else await show(me.u);
     joinStep = 1; view = "profile"; render(); paintChrome();
     setTimeout(maybeNightNote, 1500);
+    setTimeout(() => Badges.check(), 2600);
   }
   async function afterAuth(r) {
     const url = new URL(location.href); if (url.searchParams.has("invite")) { url.searchParams.delete("invite"); history.replaceState(null, "", url.pathname + url.search + location.hash); }
@@ -6002,6 +6520,7 @@ const Acct = (() => {
       const w = t.closest("[data-wel]"); if (!w) return;
       const a = w.dataset.wel;
       if (a === "look") closeWel();
+      else if (a === "badges") { closeWel({ tour: false }); setView("collection"); Badges.setMode("badges"); }
       else if (a === "join") { const inv = welInvite && welInvite.code; closeWel({ tour: false }); joinStep = 1; open("join", inv ? { invite: inv } : {}); }
       else if (a === "signin") { closeWel({ tour: false }); open("signin"); }
       else if (a === "guide") { closeWel({ tour: false }); Guide.open(); }
@@ -6059,6 +6578,7 @@ const Acct = (() => {
       closeMember(); await friendAct("remove", uf.dataset.unfriend); return;
     }
     if (t.closest("[data-new-code]")) { const r = await call("invite/new", { method: "POST" }); if (r.ok) { me = r.data.me; notice = "New invite code made. The old one no longer works."; render(); } return; }
+    const mbd = t.closest("[data-mem-badges]"); if (mbd) { const ok = await show(mbd.dataset.memBadges); if (ok) { close(); closeMember(); setView("collection"); Badges.setMode("badges"); } return; }
     const mb = t.closest("[data-mem-bird]"); if (mb) { const ok = await show(mb.dataset.memU); if (ok) { close(); openSpecies(mb.dataset.memBird); } return; }
     const su = t.closest("[data-show-u]"); if (su) { su.disabled = true; const ok = await show(su.dataset.showU); su.disabled = false; if (ok) close(); return; }
     if (t.closest("[data-show-me]")) { if (await show(me.u)) close(); return; }
@@ -6188,7 +6708,14 @@ const Acct = (() => {
     me = r.data.me; const m = members.find((x) => x.u === me.u); if (m) m.favourite = me.favourite;
     return true;
   }
-  return { boot, open, member, saveFavourite, hideBird, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
+  async function savePins(pins) {
+    const r = await call("me", { method: "PUT", body: { pins } });
+    if (!r.ok) { toast(`<span>${esc(r.error)}</span>`, $("bd-pop")); return false; }
+    me = r.data.me; const m = members.find((x) => x.u === me.u); if (m) m.pins = me.pins;
+    return true;
+  }
+  const busy = () => document.body.classList.contains("welcoming") || !$("acct").hidden || !!document.querySelector(".mem-pop:not([hidden])") || !$("help").hidden || !$("wel-pop").hidden;
+  return { boot, open, member, saveFavourite, savePins, badgeNote, busy, hideBird, recs: getRecs, cached: (u) => cache.get(u) || null, get members() { return members; }, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
 })();
 
 /* ---------- reading an eBird export: the .csv, or the .zip eBird emails (opened right here in the browser) ---------- */
