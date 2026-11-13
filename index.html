@@ -413,6 +413,7 @@ body.night .acct .primary { color: #0f191d; }
 .abld-left { display: grid; justify-items: center; gap: 8px; position: sticky; top: 0; z-index: 3; }
 .abld .grp { margin-bottom: 10px; }
 .abld .lab { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.abld .lab.sub { margin: 8px 0 5px; font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em; }
 .abld .opt { display: flex; gap: 5px; flex-wrap: wrap; }
 .abld .opt button { font-size: 12px; padding: 4px 9px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
 .abld .opt button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
@@ -4728,8 +4729,12 @@ const Avatar = (() => {
     legs: ["Perching", "Wader", "Webbed", "Talons"], tail: ["Short", "Fan", "Long"], eyes: ["Round", "Sleepy", "Wink"],
     cHead: ["#2f3a44", "#d0463a", "#3d8fd0", "#c9b83a", "#3f8a5a", "#8c6a4c", "#e8e2d6", "#7b5ea8"], cBody: ["#9a7454", "#5a5f66", "#3f6f8a", "#58b04a", "#d0703a", "#8f9aa3", "#c99aa4", "#e8e2d6"],
     cWing: ["#5a4636", "#2f3a44", "#2f5f8a", "#3f7a3a", "#8a4a2a", "#6d7680", "#7b5ea8", "#b0603e"], cBelly: ["#f2e6d0", "#d0703a", "#e8d36a", "#ffffff", "#c9d8e6", "#e8b4bc", "#c9b8a0"],
-    extra: ["None", "Bobble hat", "Scarf", "Binoculars", "Crown"], bg: ["#dcefe4", "#dbe8f6", "#f6ead6", "#efe0f2", "#f2f0ea", "#2a3540"],
+    extra: ["None", "Bobble hat", "Scarf", "Binoculars", "Crown", "Flower crown", "Headphones", "Specs", "Bow tie", "Santa hat", "Elf hat", "Reindeer", "Holly", "Fairy lights"],
+    bg: ["#dcefe4", "#dbe8f6", "#f6ead6", "#efe0f2", "#f2f0ea", "#2a3540", "#7a2430", "#2f5d43"],
   };
+  /* extras are shown in two sets in the builder; the Christmas set comes first from November to January */
+  const XMAS = ["Santa hat", "Elf hat", "Reindeer", "Holly", "Fairy lights"];
+  const EXTRA_SETS = () => { const yr = OPTS.extra.filter((x) => !XMAS.includes(x)), xm = [["Christmas", XMAS], ["All year", yr]], m = new Date().getMonth(); return m >= 10 || m === 0 ? xm : xm.reverse(); };
   const LABELS = { head: "Head", beak: "Beak", wing: "Wings", legs: "Legs", tail: "Tail", eyes: "Eyes", cHead: "Head colour", cBody: "Body colour", cWing: "Wings and tail", cBelly: "Belly and face", extra: "Extra", bg: "Background" };
   const DEF = { head: "Round", beak: "Short", wing: "Folded", legs: "Perching", tail: "Short", eyes: "Round", cHead: "#d0463a", cBody: "#9a7454", cWing: "#5a4636", cBelly: "#f2e6d0", extra: "Scarf", bg: "#dcefe4", turn: "325" };
   const AUTOBEAK = { Round: "Short", Crested: "Pointy", Duck: "Flat", Owl: "Hooked", Heron: "Long" };
@@ -4804,6 +4809,70 @@ const Avatar = (() => {
     else if (A.extra === "Scarf") { ex.add(at(new T.Mesh(new T.TorusGeometry(0.5, 0.13, 8, 22), M(0x3a8fd1)), 0, 0, 0, Math.PI / 2, 0, 0)); ex.add(at(sph(0.22, 0x3a8fd1, 0.5, 1.6, 0.6), 0.4, -0.35, 0.3, 0, 0, 0.3)); ex.position.copy(neck); }
     else if (A.extra === "Binoculars") { [0.16, -0.16].forEach((z) => ex.add(at(cyl(0.11, 0.11, 0.36, 0x33444b, 10), 0.55, -0.35, z, 0, 0, Math.PI / 2))); ex.add(at(new T.Mesh(new T.TorusGeometry(0.42, 0.025, 6, 20), M(0x33444b)), 0.2, -0.05, 0, 0, Math.PI / 2, 0.5)); ex.position.copy(neck); }
     else if (A.extra === "Crown") { const r = H.small ? 0.24 : 0.36; ex.add(cyl(r, r, 0.22, 0xe8c23a, 12)); for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; ex.add(at(cone(0.07, 0.24, 0xe8c23a, 4), Math.cos(a) * r, 0.22, Math.sin(a) * r)); } ex.position.copy(top); ex.position.y += 0.05; }
+    /* the newer extras: some sit on the head, some round the neck, the lights wind round the body */
+    const hx = new T.Group(), sm = H.small ? 0.62 : 1;
+    const hat = (cHat, cBrim, cTip, h, lean, bell) => {
+      const r = 0.5 * sm, g = new T.Group();
+      g.add(at(new T.Mesh(new T.TorusGeometry(r, 0.12 * sm, 8, 22), M(cBrim)), 0, 0, 0, Math.PI / 2, 0, 0));
+      const up = new T.Group(); up.rotation.z = lean; g.add(up);
+      up.add(at(cone(r * 0.95, h * sm, cHat, 14), 0, (h * sm) / 2, 0));
+      up.add(at(bell ? cone(0.13 * sm, 0.2 * sm, cTip, 8) : sph(0.17 * sm, cTip), 0, h * sm + (bell ? -0.02 : 0.02), 0, bell ? Math.PI : 0, 0, 0));
+      g.position.copy(top); g.position.y -= 0.08; return g;
+    };
+    if (A.extra === "Santa hat") ex.add(hat(0xc7302c, 0xf6f1e8, 0xf6f1e8, 1.05, 0.55));
+    else if (A.extra === "Elf hat") ex.add(hat(0x2f8a4a, 0xc7302c, 0xe8c23a, 1.3, 0.85, true));
+    else if (A.extra === "Reindeer") {
+      const brown = 0x8a5a33;
+      [1, -1].forEach((zs) => {
+        const a = new T.Group(); a.position.set(top.x - 0.08, top.y - 0.12, top.z + zs * 0.26 * sm); a.rotation.x = zs * 0.55; a.scale.setScalar(sm);
+        a.add(at(cyl(0.045, 0.065, 0.75, brown, 6), 0, 0.37, 0));
+        a.add(at(cyl(0.035, 0.045, 0.32, brown, 5), 0.1, 0.5, 0, 0, 0, -0.95));
+        a.add(at(cyl(0.03, 0.04, 0.3, brown, 5), -0.09, 0.66, 0, 0, 0, 0.9));
+        a.add(at(cyl(0.03, 0.04, 0.26, brown, 5), 0.07, 0.78, 0, 0, 0, -0.7));
+        ex.add(a);
+      });
+      const tip = H.down ? [0, -0.32, 0] : { Short: [0.34, 0, 0], Pointy: [0.6, 0, 0], Long: [1.13, 0, 0], Flat: [0.6, 0, 0] }[A.beak] || [0.42, 0, 0];
+      const nose = new T.Mesh(new T.SphereGeometry(0.13 * sm, 14, 10), new T.MeshLambertMaterial({ color: 0xe0242a, emissive: 0x5a0000 }));
+      nose.position.set(...tip); bk.add(nose);
+    }
+    else if (A.extra === "Holly") {
+      const g = new T.Group();
+      [[0.5, 0.35], [-0.6, -0.35]].forEach(([rz, ry]) => g.add(at(sph(0.24, 0x2f7a3a, 1.45, 0.12, 0.62), Math.sin(rz) * -0.18, 0.04, 0, 0, ry, rz)));
+      [[0.02, 0.1, 0.05], [-0.08, 0.06, -0.06], [0.08, 0.04, -0.08]].forEach(([x, y, z]) => g.add(at(sph(0.075, 0xd0262a), x, y, z)));
+      g.position.set(top.x - 0.1 * sm, top.y - 0.06, top.z + 0.26 * sm); g.rotation.x = 0.55; g.scale.setScalar(1.6 * sm); ex.add(g);
+    }
+    else if (A.extra === "Fairy lights") {
+      const pts = [], N = 70, turns = 1.75;
+      for (let i = 0; i <= N; i++) { const t = i / N, x = -1.15 + t * 2.1, th = t * turns * Math.PI * 2 + 0.6, rr = Math.sqrt(Math.max(0.04, 1 - (x / 1.45) ** 2)) * 1.0; pts.push(new T.Vector3(x, Math.cos(th) * rr * 0.97, Math.sin(th) * rr * 0.97)); }
+      const curve = new T.CatmullRomCurve3(pts);
+      ex.add(new T.Mesh(new T.TubeGeometry(curve, 120, 0.022, 5, false), M(0x2f5a3a)));
+      const BUL = [0xff5a4f, 0xffd84d, 0x58aaff, 0x67d86f, 0xff9ad5];
+      for (let i = 0; i < 16; i++) { const b = new T.Mesh(new T.SphereGeometry(0.095, 8, 6), new T.MeshBasicMaterial({ color: BUL[i % BUL.length] })); b.position.copy(curve.getPoint((i + 0.5) / 16)); b.scale.set(1, 1.3, 1); ex.add(b); }
+    }
+    else if (A.extra === "Flower crown") {
+      const r = 0.42 * sm, g = new T.Group(), FL = [0xf28ab0, 0xf6d04d, 0xffffff, 0xb08ae0, 0xf28ab0, 0xf6d04d, 0xffffff];
+      g.add(at(new T.Mesh(new T.TorusGeometry(r, 0.035 * sm, 6, 22), M(0x4f8a3f)), 0, 0, 0, Math.PI / 2, 0, 0));
+      FL.forEach((c, i) => { const a = (i / FL.length) * Math.PI * 2; g.add(at(sph(0.15 * sm, c, 1, 0.75, 1), Math.cos(a) * r, 0.06, Math.sin(a) * r)); g.add(at(sph(0.06 * sm, 0xe8a33a), Math.cos(a) * r * 1.04, 0.15 * sm, Math.sin(a) * r * 1.04)); if (i % 2) g.add(at(sph(0.08 * sm, 0x5f9d4a, 1.4, 0.3, 0.7), Math.cos(a + 0.45) * r, 0.02, Math.sin(a + 0.45) * r, 0, -a, 0)); });
+      g.position.copy(top); g.position.y -= 0.06; ex.add(g);
+    }
+    else if (A.extra === "Headphones") {
+      const r = (A.head === "Owl" ? 0.86 : A.head === "Duck" ? 0.62 : A.head === "Heron" ? 0.4 : 0.63), dark = 0x2f3a44;
+      hx.add(at(new T.Mesh(new T.TorusGeometry(r, 0.05 * sm, 6, 20, Math.PI), M(dark)), 0, 0.02, 0, 0, Math.PI / 2, 0));
+      [1, -1].forEach((zs) => { hx.add(at(cyl(0.2 * sm, 0.2 * sm, 0.14 * sm, dark, 14), 0, 0, zs * r, Math.PI / 2, 0, 0)); hx.add(at(cyl(0.14 * sm, 0.14 * sm, 0.05 * sm, 0xe8603a, 14), 0, 0, zs * (r + 0.08 * sm), Math.PI / 2, 0, 0)); });
+    }
+    else if (A.extra === "Specs") {
+      const sc = H.small ? 0.6 : 1, rim = M(0x1f2328);
+      H.eyes.forEach(([x, y, z]) => { const ring = new T.Mesh(new T.TorusGeometry(0.19 * sc, 0.03 * sc, 6, 20), rim); if (H.side) ring.position.set(x, y, z + Math.sign(z) * 0.08 * sc); else { ring.position.set(x + 0.1, y, z); ring.rotation.y = Math.PI / 2; } hx.add(ring); });
+      if (!H.side) hx.add(at(cyl(0.02, 0.02, 0.2, 0x1f2328, 5), H.eyes[0][0] + 0.12, H.eyes[0][1] + 0.04, 0, Math.PI / 2, 0, 0));
+      else [1, -1].forEach((zs) => { const e = H.eyes.find(([, , z]) => Math.sign(z) === zs); hx.add(at(cyl(0.018 * sc, 0.018 * sc, 0.32 * sc, 0x1f2328, 5), e[0] - 0.3 * sc, e[1] + 0.03, e[2] + zs * 0.06 * sc, 0, 0, Math.PI / 2)); });
+    }
+    else if (A.extra === "Bow tie") {
+      const navy = 0x24467e, g = new T.Group();
+      [1, -1].forEach((zs) => g.add(at(cone(0.19, 0.34, navy, 4), 0, 0, zs * 0.17, -zs * Math.PI / 2, 0, 0)));
+      g.add(sph(0.08, 0x1a3360));
+      g.position.set(neck.x + 0.5, neck.y - 0.08, neck.z); g.rotation.z = -0.25; g.scale.setScalar(sm); ex.add(g);
+    }
+    head.add(hx);
     bird.add(ex);
     const box = new T.Box3().setFromObject(bird), size = new T.Vector3(), ctr = new T.Vector3(); box.getSize(size); box.getCenter(ctr);
     const rig = new T.Group(); bird.position.set(-ctr.x, -ctr.y, -ctr.z); rig.add(bird); rig.scale.setScalar(3.3 / Math.max(size.y, size.x * 0.82, size.z * 0.9));
@@ -4874,7 +4943,7 @@ const Avatar = (() => {
     const deg = () => String(Math.round((((base * 180) / Math.PI) % 360 + 360) % 360));
     return { set, get turn() { return deg(); }, destroy() { alive = false; cancelAnimationFrame(raf); if (rig) dispose(rig); R.domElement.dataset.bye = "1"; R.dispose(); try { R.forceContextLoss(); } catch (e) {} host.innerHTML = ""; } };
   }
-  return { OPTS, LABELS, DEF, AUTOBEAK, norm, random, snapshot, html, stage };
+  return { OPTS, LABELS, DEF, AUTOBEAK, EXTRA_SETS, norm, random, snapshot, html, stage };
 })();
 
 /* ---------- accounts: join, sign in, profile, flock and admin, stored on the site ---------- */
@@ -5190,6 +5259,11 @@ const Acct = (() => {
 
   function builderHTML() {
     const grp = (k) => {
+      if (k === "extra") {
+        const b = (v) => `<button type="button" data-v="${v}" aria-pressed="${draft.avatar.extra === v}">${v}</button>`;
+        return `<div class="grp"><div class="lab">${Avatar.LABELS.extra}</div><div class="opt" data-avk="extra">${b("None")}</div>
+          ${Avatar.EXTRA_SETS().map(([name, list]) => `<div class="lab sub">${name}</div><div class="opt" data-avk="extra">${list.filter((v) => v !== "None").map(b).join("")}</div>`).join("")}</div>`;
+      }
       const col = k[0] === "c" || k === "bg";
       return `<div class="grp"><div class="lab">${Avatar.LABELS[k]}</div><div class="${col ? "sw" : "opt"}" data-avk="${k}">${Avatar.OPTS[k].map((v) => col
         ? `<button type="button" data-v="${v}" aria-label="${Avatar.LABELS[k]} ${v}" aria-pressed="${draft.avatar[k] === v}" style="background:${v}"></button>`
@@ -5784,7 +5858,7 @@ const Acct = (() => {
     const cp = t.closest("[data-copy]"); if (cp) { try { await navigator.clipboard.writeText(cp.dataset.copy); cp.textContent = "Copied"; } catch (x) { cp.textContent = "Select and copy"; } return; }
     if (t.closest("[data-signout]")) { setToken(""); me = null; scope = ""; cache.clear(); inbox = { items: [], read: "", unread: 0 }; clearInterval(pollT); await refresh(); if (owner && members.some((m) => m.u === owner && m.birds)) await show(owner, { quiet: true }); paintChrome(); view = "signin"; render(); return; }
     const avb = t.closest("[data-avk] button");
-    if (avb) { const k = avb.closest("[data-avk]").dataset.avk; draft.avatar[k] = avb.dataset.v; if (k === "head") draft.avatar.beak = Avatar.AUTOBEAK[draft.avatar.head]; avb.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === avb))); if (k === "head") { const bb = card().querySelector('[data-avk="beak"]'); bb && bb.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === draft.avatar.beak))); } live && live.set(draft.avatar); return; }
+    if (avb) { const k = avb.closest("[data-avk]").dataset.avk; draft.avatar[k] = avb.dataset.v; if (k === "head") draft.avatar.beak = Avatar.AUTOBEAK[draft.avatar.head]; document.querySelectorAll(`[data-avk="${k}"] button`).forEach((x) => x.setAttribute("aria-pressed", String(x === avb))); if (k === "head") { const bb = card().querySelector('[data-avk="beak"]'); bb && bb.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === draft.avatar.beak))); } live && live.set(draft.avatar); return; }
     if (t.closest("[data-av-random]")) { const turn = live ? live.turn : draft.avatar.turn; draft.avatar = { ...Avatar.random(), turn }; render(); return; }
     if (t.closest("[data-av-reset]")) { draft.avatar = { ...Avatar.DEF }; render(); return; }
     const sv = t.closest("[data-av-save]");
