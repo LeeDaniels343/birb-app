@@ -5262,9 +5262,14 @@ const Acct = (() => {
           <div class="err" id="acct-err" role="alert"></div>
           <div class="acts"><button type="button" class="ghost" data-acct="profile">Cancel</button><button type="submit" class="danger">Delete my account</button></div></form>`;
     } else if (view === "share" && me) {
-      const story = shareKind === "story";
-      h = `${X}${tabs()}<h2 id="acct-h">Share your birds</h2><p class="sub">${story ? "A tall card for your Instagram story that invites people to join BIRB as your friend. It shows your birb, your counts and a few birds, but not where you heard them." : "A picture of your birds to send in a chat or post anywhere. It shows your birb, your counts and a few birds, but not where you heard them."}</p>
-        <div class="seg share-kind" role="group" aria-label="Card size"><button type="button" data-share-kind="post" aria-pressed="${!story}">Post or chat</button><button type="button" data-share-kind="story" aria-pressed="${story}">Instagram story</button></div>
+      const story = shareKind !== "post";
+      const SUB = {
+        post: "A picture of your birds to send in a chat or post anywhere. It shows your birb, your counts and a few birds, but not where you heard them.",
+        story: "Your birds as a tall card for your Instagram story, inviting people to join BIRB as your friend. It doesn't show where you heard them.",
+        invite: "A tall invite card for your Instagram story: just BIRB and a nudge to come and join your flock, with no counts or birds of yours on it.",
+      };
+      h = `${X}${tabs()}<h2 id="acct-h">Share</h2><p class="sub">${SUB[shareKind]}</p>
+        ${me.birds ? `<div class="seg share-kind" role="group" aria-label="Which card"><button type="button" data-share-kind="post" aria-pressed="${shareKind === "post"}">My birds</button><button type="button" data-share-kind="story" aria-pressed="${shareKind === "story"}">Birds story</button><button type="button" data-share-kind="invite" aria-pressed="${shareKind === "invite"}">Invite story</button></div>` : ""}
         <div class="share-prev${story ? " tall" : ""}" id="share-prev">${shareUrl ? `<img src="${shareUrl}" alt="Your BIRB share card">` : `<p class="hint">Drawing your card…</p>`}</div>
         ${story ? `<ol class="story-steps">
           <li>Tap <b>Share</b> and pick Instagram, then Story. On a computer, save the image and send it to your phone.</li>
@@ -5430,17 +5435,86 @@ const Acct = (() => {
       return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
     }
   }
+  /* an invite card for an Instagram story: a few garden birds on a wire, "Come join the flock", and space for a link sticker */
+  async function makeInviteCard() {
+    const W = 1080, H = 1920, c = document.createElement("canvas"); c.width = W; c.height = H;
+    const g = c.getContext("2d");
+    await (document.fonts ? document.fonts.ready : Promise.resolve());
+    const DISP = "'Bricolage Grotesque', 'IBM Plex Sans', sans-serif", BODY = "'IBM Plex Sans', Helvetica, Arial, sans-serif", MONO = "'IBM Plex Mono', Menlo, monospace";
+    const text = (t, x, y, font, col, align = "center") => { g.font = font; g.fillStyle = col; g.textAlign = align; g.fillText(t, x, y); };
+    const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#1b4655"); bg.addColorStop(0.55, "#12303a"); bg.addColorStop(1, "#0a1a20"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.globalAlpha = 0.06; g.strokeStyle = "#ffffff"; g.lineWidth = 2;
+    for (let i = 0; i < 13; i++) { g.beginPath(); for (let x = -20; x <= W + 20; x += 20) { const y = 140 + i * 140 + Math.sin(x / 90 + i) * 18; x === -20 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); }
+    g.globalAlpha = 1;
+    // a few birds flying past
+    g.strokeStyle = "rgba(233,242,245,.55)"; g.lineWidth = 5; g.lineCap = "round"; g.lineJoin = "round";
+    [[180, 380, 1], [262, 334, 0.75], [880, 420, 0.9], [820, 370, 0.6]].forEach(([x, y, k]) => { g.beginPath(); g.moveTo(x - 28 * k, y - 8 * k); g.quadraticCurveTo(x - 12 * k, y - 22 * k, x, y); g.quadraticCurveTo(x + 12 * k, y - 22 * k, x + 28 * k, y - 8 * k); g.stroke(); });
+    text("BIRB", W / 2, 255, `700 60px ${DISP}`, "#ffffff");
+    text("the birds you hear, on a map", W / 2, 300, `500 28px ${BODY}`, "#8fc3d3");
+
+    /* the wire, with five garden birds sitting on it */
+    const wy = (x) => 690 + 34 * Math.sin((Math.PI * x) / W);
+    g.strokeStyle = "#0b161a"; g.lineWidth = 5; g.beginPath(); for (let x = 0; x <= W; x += 12) { x ? g.lineTo(x, wy(x)) : g.moveTo(x, wy(x)); } g.stroke();
+    const bird = (x, s, C, tailUp) => {
+      const y = wy(x) - 0.95 * s;
+      g.strokeStyle = "#2a2522"; g.lineWidth = Math.max(3, s * 0.07);
+      [-0.22, 0.2].forEach((d) => { g.beginPath(); g.moveTo(x + d * s, y + 0.62 * s); g.lineTo(x + d * s - 0.04 * s, wy(x) + 2); g.stroke(); });
+      g.fillStyle = C.tail || C.wing; g.beginPath();
+      if (tailUp) { g.moveTo(x - 0.7 * s, y - 0.05 * s); g.lineTo(x - 1.25 * s, y - 0.85 * s); g.lineTo(x - 1.0 * s, y - 0.95 * s); g.lineTo(x - 0.45 * s, y - 0.3 * s); }
+      else { g.moveTo(x - 0.7 * s, y + 0.1 * s); g.lineTo(x - 1.45 * s, y + 0.55 * s); g.lineTo(x - 1.35 * s, y + 0.75 * s); g.lineTo(x - 0.6 * s, y + 0.45 * s); }
+      g.fill();
+      g.fillStyle = C.body; g.beginPath(); g.ellipse(x, y, 0.92 * s, 0.74 * s, -0.12, 0, Math.PI * 2); g.fill();
+      if (C.belly) { g.fillStyle = C.belly; g.beginPath(); g.ellipse(x + 0.28 * s, y + 0.2 * s, 0.6 * s, 0.5 * s, -0.5, 0, Math.PI * 2); g.fill(); }
+      g.fillStyle = C.wing; g.beginPath(); g.ellipse(x - 0.2 * s, y - 0.02 * s, 0.6 * s, 0.38 * s, -0.25, 0, Math.PI * 2); g.fill();
+      if (C.bar) { g.fillStyle = C.bar; g.beginPath(); g.ellipse(x - 0.18 * s, y + 0.06 * s, 0.42 * s, 0.1 * s, -0.25, 0, Math.PI * 2); g.fill(); }
+      const hx = x + 0.6 * s, hy = y - 0.62 * s, hr = 0.5 * s;
+      g.fillStyle = C.head || C.body; g.beginPath(); g.arc(hx, hy, hr, 0, Math.PI * 2); g.fill();
+      if (C.face) { g.fillStyle = C.face; g.beginPath(); g.arc(hx + 0.2 * s, hy + 0.08 * s, 0.32 * s, 0, Math.PI * 2); g.fill(); }
+      if (C.cap) { g.fillStyle = C.cap; g.beginPath(); g.arc(hx, hy, hr, Math.PI * 1.05, Math.PI * 1.95); g.closePath(); g.fill(); }
+      if (C.stripe) { g.strokeStyle = C.stripe; g.lineWidth = 0.09 * s; g.beginPath(); g.moveTo(hx - 0.42 * s, hy + 0.02 * s); g.lineTo(hx + 0.4 * s, hy - 0.06 * s); g.stroke(); }
+      g.fillStyle = C.beak; g.beginPath(); g.moveTo(hx + 0.42 * s, hy - 0.1 * s); g.lineTo(hx + (C.longBeak ? 0.95 : 0.78) * s, hy + 0.02 * s); g.lineTo(hx + 0.42 * s, hy + 0.12 * s); g.fill();
+      if (C.ring) { g.fillStyle = C.ring; g.beginPath(); g.arc(hx + 0.16 * s, hy - 0.08 * s, 0.13 * s, 0, Math.PI * 2); g.fill(); }
+      g.fillStyle = "#ffffff"; g.beginPath(); g.arc(hx + 0.16 * s, hy - 0.08 * s, 0.1 * s, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#111111"; g.beginPath(); g.arc(hx + 0.18 * s, hy - 0.08 * s, 0.065 * s, 0, Math.PI * 2); g.fill();
+    };
+    bird(150, 38, { body: "#8d633e", belly: "#c9a17a", wing: "#6f4b2c", beak: "#3a2d22", stripe: "#e2cfb3" }, true);                        // wren
+    bird(345, 44, { body: "#8aa35a", belly: "#f2d14b", wing: "#4f87c4", head: "#f7f7f2", cap: "#3d7cc9", stripe: "#1d2f4a", beak: "#2b2b2b" }); // blue tit
+    bird(545, 54, { body: "#8a6a4f", belly: "#e2733a", face: "#e2733a", wing: "#72563f", beak: "#2b2b2b" });                                 // robin
+    bird(745, 46, { body: "#b8946e", belly: "#efe6d6", wing: "#1d1d1d", bar: "#f2c230", head: "#f4f1ea", face: "#d63a2c", cap: "#1d1d1d", beak: "#e8d9c0" }); // goldfinch
+    bird(940, 54, { body: "#1c1c1c", wing: "#121212", beak: "#f0a020", ring: "#f0a020", longBeak: true });                                    // blackbird
+
+    /* the invitation */
+    text("Come join", W / 2, 900, `700 120px ${DISP}`, "#ffffff");
+    text("the flock", W / 2, 1020, `700 120px ${DISP}`, "#5ab8d8");
+    const lines = [["#5ab8d8", "Map every bird you hear with Merlin"], ["#7cc47a", "Grow a little 3D world of your birds"], ["#e2a04a", "See what your friends are hearing"]];
+    g.font = `500 34px ${BODY}`;
+    const lw = Math.max(...lines.map(([, t]) => g.measureText(t).width)), lx = (W - lw) / 2 + 18;
+    lines.forEach(([col, t], i) => { const y = 1125 + i * 58; g.fillStyle = col; g.beginPath(); g.arc(lx - 30, y - 11, 9, 0, Math.PI * 2); g.fill(); text(t, lx, y, `500 34px ${BODY}`, "#d6e6ea", "left"); });
+
+    /* who it's from, then the space for the link sticker */
+    const A = Avatar.norm(me.avatar), av = await loadImg(Avatar.snapshot(A));
+    g.font = `600 30px ${BODY}`; const from = `${nameOf(me)} invited you`, fw = g.measureText(from).width, fx = (W - (56 + 16 + fw)) / 2;
+    g.save(); g.beginPath(); g.arc(fx + 28, 1340, 28, 0, Math.PI * 2); g.fillStyle = A.bg || "#24424d"; g.fill(); g.clip(); if (av) g.drawImage(av, fx, 1312, 56, 56); g.restore();
+    g.strokeStyle = A.cBody || "#5ab8d8"; g.lineWidth = 3; g.beginPath(); g.arc(fx + 28, 1340, 28, 0, Math.PI * 2); g.stroke();
+    text(from, fx + 72, 1351, `600 30px ${BODY}`, "#ffffff", "left");
+    g.strokeStyle = "#5ab8d8"; g.lineWidth = 4; g.lineCap = "round"; g.lineJoin = "round";
+    g.beginPath(); g.moveTo(W / 2, 1408); g.lineTo(W / 2, 1440); g.moveTo(W / 2 - 13, 1428); g.lineTo(W / 2, 1442); g.lineTo(W / 2 + 13, 1428); g.stroke();
+    text("Tap the link", W / 2, 1478, `600 26px ${BODY}`, "#5ab8d8");
+    if (me.invite) text(`or use code ${me.invite} at ${location.host}`, W / 2, 1640, `500 24px ${MONO}`, "#7fa6b2");
+    text("Free · works with Merlin Sound ID and eBird", W / 2, 1685, `400 22px ${BODY}`, "#5f8794");
+    return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
+  }
   async function openShare() {
     shareBlob = null; if (shareUrl) { URL.revokeObjectURL(shareUrl); shareUrl = ""; }
     view = "share"; render();
-    try { shareBlob = await makeShareCard(shareKind === "story"); shareUrl = URL.createObjectURL(shareBlob); } catch (e) { console.warn(e); }
+    try { shareBlob = await (shareKind === "invite" ? makeInviteCard() : makeShareCard(shareKind === "story")); shareUrl = URL.createObjectURL(shareBlob); } catch (e) { console.warn(e); }
     if (view === "share") { render(); if (!shareBlob) err("Couldn't draw your card. Try again in a moment."); }
   }
   async function sendShare(saveOnly) {
     if (!shareBlob) return;
     // for a story, the invite link goes on the clipboard so it's ready to paste into Instagram's link sticker
-    if (shareKind === "story") { try { navigator.clipboard.writeText(inviteLink()).catch(() => {}); } catch (e) {} }
-    const file = new File([shareBlob], `birb-${me.u}${shareKind === "story" ? "-story" : ""}.png`, { type: "image/png" });
+    if (shareKind !== "post") { try { navigator.clipboard.writeText(inviteLink()).catch(() => {}); } catch (e) {} }
+    const file = new File([shareBlob], `birb-${me.u}${shareKind === "post" ? "" : "-" + shareKind}.png`, { type: "image/png" });
     if (!saveOnly && navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file], title: "My BIRB birds", text: `I've heard ${me.birds ? me.birds.species : ""} species on BIRB` }); return; } catch (e) { if (e && e.name === "AbortError") return; }
     }
@@ -5467,6 +5541,7 @@ const Acct = (() => {
     if (!me || !me.invite) return "";
     const link = `${location.origin}/?invite=${encodeURIComponent(me.invite)}`;
     return `<div class="fld"><label>Your invite link</label><div class="copybox"><code>${esc(link)}</code><button type="button" data-copy="${esc(link)}">Copy</button></div>
+      <button type="button" data-invite-card style="justify-self:start;margin-top:2px">Make an invite card for Instagram</button>
       <span class="hint">Anyone who joins with it becomes your friend. Code <b>${esc(me.invite)}</b>. <button type="button" class="linkish" data-new-code>Make a new code</button> if it's been passed around: the old one stops working.</span></div>`;
   }
   const frRow = (x, sub, btns, cls = "") => `<div class="fr-row ${cls}">${Avatar.html(x.avatar)}<span class="t"><b>${esc(nameOf(x))}${x.owner ? '<span class="tag-owner">founder</span>' : ""}</b><small>@${esc(x.u)}${sub ? ` · ${sub}` : ""}</small></span><span class="btns">${btns}</span></div>`;
@@ -5689,7 +5764,8 @@ const Acct = (() => {
     const sk = t.closest("[data-share-kind]"); if (sk) { if (sk.dataset.shareKind !== shareKind) { shareKind = sk.dataset.shareKind; await openShare(); } return; }
     if (t.closest("[data-share-send]")) { await sendShare(false); return; }
     if (t.closest("[data-share-save]")) { await sendShare(true); return; }
-    const sh = t.closest('[data-acct="share"]'); if (sh) { await openShare(); return; }
+    if (t.closest("[data-invite-card]")) { shareKind = "invite"; await openShare(); return; }
+    const sh = t.closest('[data-acct="share"]'); if (sh) { if (!me.birds) shareKind = "invite"; await openShare(); return; }
     const go = t.closest("[data-acct]"); if (go) { if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }
     const vu = t.closest("[data-view-u]"); if (vu) { openMember(vu.dataset.viewU); return; }
     const fr = t.closest("[data-fr]"); if (fr) { fr.disabled = true; await friendAct(fr.dataset.fr, fr.dataset.u); return; }
