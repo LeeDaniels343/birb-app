@@ -993,6 +993,32 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
   .world-tools { right: 10px; }
 }
 
+
+/* ---------- choosing whose birds the flock view shows ---------- */
+.flock-pick { position: absolute; top: calc(100% + 8px); left: 0; z-index: 4; width: 280px; max-height: min(420px, calc(100dvh - 200px)); overflow-y: auto; padding: 12px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,.2); display: grid; gap: 8px; animation: latestIn .2s ease; }
+.flock-pick[hidden] { display: none; }
+.fp-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.fp-h b { font-size: 15px; }
+.fp-h > span { display: flex; align-items: center; gap: 6px; }
+.fp-h .linkish[disabled] { opacity: .45; cursor: default; text-decoration: none; }
+.fp-x { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 17px; line-height: 1; }
+.fp-list { display: grid; gap: 4px; }
+.fp-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border-radius: 10px; background: transparent; border: 1px solid transparent; box-shadow: none; color: var(--ink); text-align: left; }
+.fp-row:hover { background: var(--bg); border-color: var(--line); }
+.fp-row .av { width: 32px; height: 32px; flex: none; }
+.fp-row .t { flex: 1; min-width: 0; display: grid; }
+.fp-row .t b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fp-row .t small { font-size: 12px; color: var(--muted); }
+.fp-row .tick { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 6px; border: 1.5px solid var(--line); color: transparent; }
+.fp-row[aria-pressed="true"] .tick { background: var(--accent); border-color: var(--accent); color: #fff; }
+body.night .fp-row[aria-pressed="true"] .tick { color: #0f191d; }
+.fp-row[aria-pressed="false"] .av { opacity: .55; filter: grayscale(.6); }
+.fp-note { margin: 0; font-size: 12px; color: var(--muted); }
+.scope .fp-n { font-size: 11px; font-weight: 500; opacity: .85; margin-left: 2px; }
+.scope .fp-chev { margin-left: 2px; opacity: .8; }
+@media (max-width: 760px) { .flock-pick { width: min(300px, calc(100vw - 24px)); } }
+
 /* ---------- a calmer screen: fewer, smaller pieces around the map ---------- */
 .view-top { display: none; }
 .replay-key { flex: none; width: 84px; display: grid; gap: 3px; padding-left: 12px; border-left: 1px solid var(--line); font-size: 10px; color: var(--muted); }
@@ -1137,6 +1163,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
       <span><b>BIRB app</b><small id="open-summary">Show birds and places</small></span>
     </button>
     <div class="who" id="who" hidden></div>
+    <div class="flock-pick" id="flock-pick" hidden role="dialog" aria-labelledby="fp-h"></div>
     <div class="chips" id="map-chips" aria-label="Active filters"></div>
     <div class="latest" id="latest" hidden>
       <button type="button" class="latest-pill" id="latest-pill" aria-expanded="false" aria-controls="latest-card">
@@ -4689,7 +4716,7 @@ const Quiet = (() => {
   try { on = localStorage.getItem("birb-quiet") !== "off"; } catch (e) {}
   const CHROME = ".map-card, #crumbs, .layers-btn, .me-btn, .bell-btn, .legend, .replay, .view-top, .map-tools, .maplibregl-ctrl";
   const busy = () => viewMode === "collection" || $("map-tools").classList.contains("open") || !$("bell-card").hidden || !$("latest-card").hidden || !$("fav-card").hidden || !$("help").hidden || !$("lite-bar").hidden
-    || !!document.querySelector(".acct:not([hidden]), .mem-pop:not([hidden]), .guide:not([hidden])") || [...document.querySelectorAll(CHROME)].some((el) => el.matches(":hover"));
+    || !!document.querySelector(".acct:not([hidden]), .mem-pop:not([hidden]), .guide:not([hidden]), #flock-pick:not([hidden])") || [...document.querySelectorAll(CHROME)].some((el) => el.matches(":hover"));
   const arm = () => { clearTimeout(timer); if (on) timer = setTimeout(() => { if (busy()) arm(); else document.body.classList.add("quiet"); }, 6000); };
   const wake = () => { const now = Date.now(); if (now - lastWake < 300 && !document.body.classList.contains("quiet")) return; lastWake = now; document.body.classList.remove("quiet"); arm(); };
   ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"].forEach((t) => addEventListener(t, wake, { passive: true, capture: true }));
@@ -5004,12 +5031,13 @@ const Acct = (() => {
     if (me) {
       h = `<div class="scope" role="group" aria-label="Whose birds to show">
         <button type="button" data-scope="me" aria-pressed="${scope === "me"}">${Avatar.html(me.avatar, "")}Mine</button>
-        <button type="button" data-scope="flock" aria-pressed="${scope === "flock"}">${byStack(flockers.map((m) => ({ u: m.u })), 3)}Flock</button></div>`;
+        <button type="button" data-scope="flock" aria-pressed="${scope === "flock"}" ${scope === "flock" ? `aria-haspopup="dialog" aria-expanded="${pickOpen()}" title="Choose whose birds to show"` : ""}>${byStack((scope === "flock" ? flockShown() : flockers).map((m) => ({ u: m.u })), 3)}Flock${scope === "flock" && flockShown().length < flockers.length ? ` <span class="fp-n">${flockShown().length} of ${flockers.length}</span>` : ""}${scope === "flock" && flockers.length > 1 ? '<svg class="fp-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>' : ""}</button></div>`;
       if (scope === "user" && viewing) h += `<span class="who-chip">${Avatar.html(viewing.avatar, "")}<span><b>${esc(nameOf(viewing))}</b>'s birds</span><button type="button" data-scope-back aria-label="Back to ${backTo === "flock" ? "the flock" : "your birds"}">×</button></span>`;
     } else if (viewing) {
       h = `<span class="who-chip link" data-open-flock role="button" tabindex="0">${Avatar.html(viewing.avatar, "")}<span><b>${esc(nameOf(viewing))}</b>'s birds</span></span>`;
     }
     w.hidden = !h; w.innerHTML = h;
+    if (scope !== "flock" && pickOpen()) openPick(false);
     paintBell();
     try { renderFav(true); } catch (e) {}
     document.body.classList.toggle("has-who", !!h);
@@ -5112,9 +5140,42 @@ const Acct = (() => {
     const recs = toRecords(r.data); recs.forEach((d) => (d.by = u));
     cache.set(u, recs); return recs;
   }
-  async function showFlock({ quiet = false } = {}) {
+  /* the flock view can show everyone, or just the friends you pick; the choice is kept on this device */
+  const PICK_KEY = () => `birb-flock-pick:${me ? me.u : ""}`;
+  const getPick = () => { try { const v = JSON.parse(localStorage.getItem(PICK_KEY()) || "null"); return Array.isArray(v) ? v : null; } catch (e) { return null; } };
+  const setPick = (v) => { try { v ? localStorage.setItem(PICK_KEY(), JSON.stringify(v)) : localStorage.removeItem(PICK_KEY()); } catch (e) {} };
+  const flockAll = () => members.filter((m) => m.birds);
+  const flockShown = () => { const all = flockAll(), p = getPick(); if (!p) return all; const some = all.filter((m) => p.includes(m.u)); return some.length ? some : all; };
+  const whoLabel = (list) => { const names = list.map((m) => (me && m.u === me.u ? "you" : nameOf(m))); return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0]; };
+  function pickHTML() {
+    const all = flockAll(), shown = new Set(flockShown().map((m) => m.u)), every = shown.size === all.length;
+    const row = (m) => `<button type="button" class="fp-row" data-fp="${esc(m.u)}" aria-pressed="${shown.has(m.u)}">${Avatar.html(m.avatar, "")}<span class="t"><b>${me && m.u === me.u ? "You" : esc(nameOf(m))}</b><small>${m.birds.species} species</small></span><span class="tick" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>`;
+    const mine = all.filter((m) => me && m.u === me.u), rest = all.filter((m) => !me || m.u !== me.u).sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+    return `<div class="fp-h"><b id="fp-h">Whose birds?</b><span><button type="button" class="linkish" data-fp-all ${every ? "disabled" : ""}>Everyone</button><button type="button" class="fp-x" data-fp-close aria-label="Close">×</button></span></div>
+      <div class="fp-list">${[...mine, ...rest].map(row).join("")}</div>
+      <p class="fp-note">Pick a few friends to see just their birds together. Only you see this choice.</p>`;
+  }
+  const pickOpen = () => !$("flock-pick").hidden;
+  function openPick(open) {
+    const el = $("flock-pick"); el.hidden = !open;
+    if (open) el.innerHTML = pickHTML();
+    const fb = document.querySelector('#who [data-scope="flock"]'); if (fb) fb.setAttribute("aria-expanded", String(open));
+  }
+  let pickT = 0;
+  function togglePick(u) {
+    const all = flockAll().map((m) => m.u), cur = new Set(flockShown().map((m) => m.u));
+    if (cur.has(u)) { if (cur.size === 1) return; cur.delete(u); } else cur.add(u);
+    setPick(cur.size === all.length ? null : [...cur]);
+    $("flock-pick").innerHTML = pickHTML();
+    clearTimeout(pickT); pickT = setTimeout(() => showFlock({ quiet: true, keepPick: true }), 250);
+  }
+
+  document.addEventListener("pointerdown", (e) => { if (pickOpen() && !e.target.closest('#flock-pick, #who [data-scope="flock"]')) openPick(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && pickOpen()) openPick(false); });
+
+  async function showFlock({ quiet = false, keepPick = false } = {}) {
     if (!API) return false;
-    const list = members.filter((m) => m.birds);
+    const list = flockShown();
     if (!list.length) {
       if (!quiet) toast(`<span>${members.length > 1 ? "None of your friends have added their birds yet, so there's nothing to combine." : "You haven't any friends on BIRB yet. Add some from Flock."}${me && !me.birds ? " Add your eBird export first." : ""}</span>${me && !me.birds ? '<span class="acts"><button type="button" data-acct-open="profile">Add my birds</button></span>' : ""}`, $("who"));
       return false;
@@ -5123,10 +5184,11 @@ const Acct = (() => {
     const got = await Promise.allSettled(list.map((m) => getRecs(m.u)));
     const recs = got.flatMap((g) => (g.status === "fulfilled" ? g.value : []));
     if (!recs.length) { if (!quiet) setStatus("Couldn't load the flock's birds. Try again.", true); return false; }
-    useRecords(recs, "flock", `the flock's birds (${list.length} ${list.length === 1 ? "birder" : "birders"})`);
+    const some = list.length < flockAll().length;
+    useRecords(recs, "flock", some ? `birds from ${whoLabel(list)}` : `the flock's birds (${list.length} ${list.length === 1 ? "birder" : "birders"})`);
     scope = "flock"; viewing = null; try { localStorage.setItem(SCOPE_KEY, "flock"); } catch (e) {}
     const url = new URL(location.href); url.searchParams.delete("who"); history.replaceState(null, "", url.pathname + url.search + location.hash);
-    paintChrome(); try { fit(); } catch (e) {}
+    paintChrome(); if (keepPick && pickOpen()) openPick(true); else try { fit(); } catch (e) {}
     return true;
   }
   async function show(u, { quiet = false } = {}) {
@@ -5818,9 +5880,13 @@ const Acct = (() => {
     }
     if (t.closest("#me-btn")) { open(me ? (requests.in.length ? "flock" : "profile") : "signin"); return; }
     if (t.closest("[data-tab-flock]")) { open(me ? "flock" : "signin"); return; }
+    const fp = t.closest("[data-fp]"); if (fp) { togglePick(fp.dataset.fp); return; }
+    if (t.closest("[data-fp-all]")) { setPick(null); $("flock-pick").innerHTML = pickHTML(); await showFlock({ quiet: true, keepPick: true }); return; }
+    if (t.closest("[data-fp-close]")) { openPick(false); return; }
     const sc = t.closest("[data-scope]");
     if (sc) {
-      if (sc.dataset.scope === "flock") { if (scope !== "flock") { sc.classList.add("busy"); await showFlock(); sc.classList.remove("busy"); } }
+      if (sc.dataset.scope !== "flock") openPick(false);
+      if (sc.dataset.scope === "flock") { if (scope !== "flock") { sc.classList.add("busy"); await showFlock(); sc.classList.remove("busy"); } else if (flockAll().length > 1) openPick(!pickOpen()); }
       else if (me && me.birds) { if (scope !== "me") await show(me.u); }
       else toast(`<span>You haven't added your birds yet. What's on the map now is the app's built-in birds.</span><span class="acts"><button type="button" data-acct-open="profile">Add my birds</button></span>`, $("who"));
       return;
