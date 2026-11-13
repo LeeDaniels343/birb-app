@@ -1384,6 +1384,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
       <button type="button" data-wfocus="pond" aria-current="false">Pond<span class="n"></span></button>
       <button type="button" data-wfocus="wood" aria-current="false">Woodland<span class="n"></span></button>
       <button type="button" data-wfocus="farm" aria-current="false"><span>Farm<span class="lg">land</span></span><span class="n"></span></button>
+      <button type="button" data-wfocus="coast" aria-current="false">Coast<span class="n"></span></button>
       <button type="button" data-wfocus="night" aria-current="false">Night<span class="n"></span></button>
     </nav>
     <div class="map-tools world-tools">
@@ -1878,9 +1879,11 @@ const HABITATS = [
   { id: "pond", name: "Pond and wetland", short: "Pond", colour: "#3a8fd1", pad: [204, 224, 205] },
   { id: "wood", name: "Woodland", short: "Woodland", colour: "#4f9d69", pad: [190, 214, 178] },
   { id: "farm", name: "Farmland and hedgerow", short: "Hedgerow", colour: "#c9a23a", pad: [236, 226, 188] },
+  { id: "coast", name: "Coast and sea", short: "Coast", colour: "#2a9d9a", pad: [226, 220, 190] },
 ];
 const HAB_BY_ID = new Map(HABITATS.map((h) => [h.id, h]));
 const HAB_SOURCES = [
+  ["coast", "Placed for this map (birds of the coast and sea)", "Calidris maritima|Calidris alpina|Aythya marila|Branta bernicla|Tadorna tadorna|Mergus serrator|Anthus petrosus|Pyrrhocorax pyrrhocorax|Eremophila alpestris|Plectrophenax nivalis|Gulosus aristotelis|Somateria mollissima|Melanitta nigra|Melanitta fusca|Clangula hyemalis"],
   ["wood", "Defra woodland bird indicator", "Garrulus glandarius|Periparus ater|Phylloscopus collybita|Sylvia atricapilla|Regulus regulus|Sitta europaea|Certhia familiaris|Cyanistes caeruleus|Parus major|Aegithalos caudatus|Nannus troglodytes|Troglodytes troglodytes|Turdus philomelos|Turdus merula|Erithacus rubecula|Prunella modularis|Fringilla coelebs|Pyrrhula pyrrhula|Strix aluco|Dendrocopos major|Picus viridis|Accipiter nisus|Muscicapa striata|Dryobates minor|Acanthis cabaret|Poecile montanus|Poecile palustris|Tetrao urogallus|Phylloscopus sibilatrix|Spinus spinus|Phylloscopus trochilus|Luscinia megarhynchos|Loxia curvirostra|Phoenicurus phoenicurus|Ficedula hypoleuca|Anthus trivialis|Scolopax rusticola|Sylvia borin|Curruca curruca"],
   ["farm", "Defra farmland bird indicator", "Carduelis carduelis|Passer montanus|Corvus frugilegus|Coloeus monedula|Streptopelia turtur|Perdix perdix|Emberiza calandra|Sturnus vulgaris|Vanellus vanellus|Emberiza citrinella|Linaria cannabina|Alauda arvensis|Columba oenas|Motacilla flava|Chloris chloris|Falco tinnunculus|Columba palumbus|Curruca communis"],
   ["pond", "Defra water and wetland bird indicator", "Anas platyrhynchos|Cygnus olor|Gallinula chloropus|Motacilla cinerea|Tringa totanus|Gallinago gallinago|Acrocephalus schoenobaenus|Podiceps cristatus|Numenius arquata|Actitis hypoleucos|Cinclus cinclus|Cettia cetti|Mergus merganser|Egretta garzetta|Acrocephalus scirpaceus|Anas crecca|Aythya fuligula|Riparia riparia|Emberiza schoeniclus"],
@@ -1891,10 +1894,14 @@ const HAB_SOURCES = [
 ];
 const HAB_OF = new Map();
 HAB_SOURCES.forEach(([id, src, list]) => list.split("|").forEach((sci) => { if (!HAB_OF.has(sci)) HAB_OF.set(sci, { id, src }); }));
-const FAMILY_HAB = { water: "pond", coastal: "pond", game: "farm", finches: "farm", pipits: "farm", raptors: "farm", aerial: "farm" };
+const FAMILY_HAB = { water: "pond", coastal: "coast", game: "farm", finches: "farm", pipits: "farm", raptors: "farm", aerial: "farm" };
+/* sea ducks, divers and the like belong on the coast, though their family lives at the pond */
+const COAST_GENERA = new Set(["Gavia", "Somateria", "Melanitta", "Clangula", "Polysticta", "Histrionicus", "Gulosus"]);
 function habitatOf(sci, fam) {
   const k = String(sci || "").split(" ").slice(0, 2).join(" ");
-  return HAB_OF.get(k) || { id: FAMILY_HAB[fam] || "wood", src: "Placed by bird family" };
+  if (HAB_OF.has(k)) return HAB_OF.get(k);
+  if (COAST_GENERA.has(k.split(" ")[0])) return { id: "coast", src: "Placed for this map (birds of the coast and sea)" };
+  return { id: FAMILY_HAB[fam] || "wood", src: "Placed by bird family" };
 }
 const habName = (id) => (HAB_BY_ID.get(id) || HABITATS[1]).name;
 const habColour = (id) => (HAB_BY_ID.get(id) || HABITATS[1]).colour;
@@ -2771,8 +2778,8 @@ function buildViz(groups, zoom) {
     const near = Math.min(Infinity, ...clusters.filter((o) => o !== c).map((o) => Math.hypot(o.x - c.x, o.y - c.y)));
     const U = mpp * Math.max(17, Math.min(40, near / 9.5)) * 0.62;
     const by = { pond: [], wood: [], farm: [] };
-    c.birds.forEach((b) => (by[b.hab] || by.wood).push(b));
-    const zones = HABITATS.filter((h) => by[h.id].length);
+    c.birds.forEach((b) => (by[b.hab === "coast" ? "pond" : b.hab] || by.wood).push(b));
+    const zones = HABITATS.filter((h) => by[h.id] && by[h.id].length);
     const sx = zones.reduce((s, z) => s + SLOT[z.id][0], 0) / zones.length, sy = zones.reduce((s, z) => s + SLOT[z.id][1], 0) / zones.length;
     const at = (x, y) => offsetLL(c.lng, c.lat, (x - sx) * U, (y - sy) * U);
     const P = (x, y, z) => [...at(x, y), z * U];
@@ -3164,7 +3171,7 @@ const wikiLink = (sci) => `https://en.wikipedia.org/wiki/${encodeURIComponent(St
 function openDetail({ fam, hab, cluster, focus }) {
   const locIds = new Set(cluster.places.map((p) => p.items[0] && p.items[0].locId));
   const pool = filtered({ ignoreSpecies: true, ignoreArea: true });
-  const here = pool.filter((d) => (hab ? d.hab.id === hab : d.family === fam) && locIds.has(d.locId));
+  const here = pool.filter((d) => (hab ? d.hab.id === hab || (hab === "pond" && d.hab.id === "coast") : d.family === fam) && locIds.has(d.locId));
   const bySp = new Map();
   for (const d of here) {
     if (!bySp.has(d.name)) bySp.set(d.name, { name: d.name, sci: d.sci, tax: d.tax, fam: d.family, hab: d.hab, dates: new Map(), saves: 0 });
@@ -3932,6 +3939,7 @@ const Badges = (() => {
     gem: '<path d="M6 3h12l4 6-10 12L2 9z"/>',
     bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
     flag: '<path d="M5 2h2v20H5zM8 3h11l-2.5 4L19 11H8z"/>',
+    wave: '<path d="M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2v3c-2.5 0-2.5-2-5-2s-2.5 2-5 2-2.5-2-5-2-2.5 2-5 2zm0-6c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2v3c-2.5 0-2.5-2-5-2s-2.5 2-5 2-2.5-2-5-2-2.5 2-5 2z"/>',
     star: '<path d="m12 2 3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8l-6.3 3.6 1.5-7.1L1.8 9.4 9 8.6z"/>',
     swap: '<path d="M4 7h12l-3-3 1.4-1.4L20 8l-5.6 5.4L13 12l3-3H4zm16 10H8l3 3-1.4 1.4L4 16l5.6-5.4L11 12l-3 3h12z"/>',
   };
@@ -3950,7 +3958,7 @@ const Badges = (() => {
   ];
   const FAM = new Map(FAMS.map((f) => [f.id, f]));
   const RIM = { bronze: "#b0703f", silver: "#a3afb5", gold: "#d1a136" };
-  const HABC = { pond: "#3a8fd1", wood: "#4f9d69", farm: "#c9a23a", night: "#5d63b0" };
+  const HABC = { pond: "#3a8fd1", wood: "#4f9d69", farm: "#c9a23a", coast: "#2a9d9a", night: "#5d63b0" };
   /* bird sets: [id, name, what it asks for, species (UK list Latin names), cover bird] */
   const SETS = [
     ["tits", "Tit set", "Blue, Great, Coal and Long-tailed Tit", "Cyanistes caeruleus|Parus major|Periparus ater|Aegithalos caudatus"],
@@ -4014,7 +4022,7 @@ const Badges = (() => {
     const spDates = S.map((s) => s.date).sort();
     const wallDates = S.filter((s) => s.w).map((s) => s.date).sort();
     const rareDates = S.filter((s) => s.w && s.w[3] === 2).map((s) => s.date).sort();
-    const hab = { pond: [], wood: [], farm: [], night: [] };
+    const hab = { pond: [], wood: [], farm: [], coast: [], night: [] };
     S.forEach((s) => (hab[s.hab] || hab.wood).push(s.date)); Object.values(hab).forEach((a) => a.sort());
     const days = [...byDay.keys()];
     const lifers = new Map(); S.forEach((s) => lifers.set(s.date, (lifers.get(s.date) || 0) + 1));
@@ -4053,14 +4061,15 @@ const Badges = (() => {
       add("uk", "uk-" + f, name, `Hear ${n} of the ${WL} birds on the UK list`, wallDates.length, n, reach(wallDates, n), { t });
     });
     /* habitats */
-    const H = (id, name, h, n, x) => add("habitat", id, name, `Hear ${n} ${h === "night" ? "night" : { pond: "pond and wetland", wood: "woodland", farm: "farmland" }[h]} ${n === 1 ? "bird" : "birds"}`, hab[h].length, n, reach(hab[h], n), { ic: { pond: "drop", wood: "tree", farm: "wheat", night: "moon" }[h], col: HABC[h], ...x });
+    const H = (id, name, h, n, x) => add("habitat", id, name, `Hear ${n} ${h === "night" ? "night" : { pond: "pond and wetland", wood: "woodland", farm: "farmland", coast: "coast and sea" }[h]} ${n === 1 ? "bird" : "birds"}`, hab[h].length, n, reach(hab[h], n), { ic: { pond: "drop", wood: "tree", farm: "wheat", coast: "wave", night: "moon" }[h], col: HABC[h], ...x });
     H("hb-pond", "Pond regular", "pond", 5); H("hb-pond2", "Pond expert", "pond", 15, { t: "15" });
     H("hb-wood", "Woodlander", "wood", 10); H("hb-wood2", "Woodland expert", "wood", 25, { t: "25" });
     H("hb-farm", "Hedgerow", "farm", 5); H("hb-farm2", "Farmland expert", "farm", 15, { t: "15" });
+    H("hb-coast", "Beachcomber", "coast", 5); H("hb-coast2", "Coast expert", "coast", 15, { t: "15" });
     H("hb-night", "Night owl", "night", 1); H("hb-night2", "Night watch", "night", 5, { t: "5" });
-    const four = ["pond", "wood", "farm", "night"];
-    add("habitat", "hb-all", "All four", "Hear 5 birds in each habitat", four.reduce((a, h) => a + Math.min(5, hab[h].length), 0), 20,
-      four.every((h) => hab[h].length >= 5) ? four.map((h) => hab[h][4]).sort().pop() : null, { ic: "bird", sub: four.every((h) => hab[h].length >= 5) ? null : `${four.filter((h) => hab[h].length >= 5).length} of 4 habitats` });
+    const five = ["pond", "wood", "farm", "coast", "night"];
+    add("habitat", "hb-all", "All five", "Hear 5 birds in each of the five habitats", five.reduce((a, h) => a + Math.min(5, hab[h].length), 0), 25,
+      five.every((h) => hab[h].length >= 5) ? five.map((h) => hab[h][4]).sort().pop() : null, { ic: "bird", sub: five.every((h) => hab[h].length >= 5) ? null : `${five.filter((h) => hab[h].length >= 5).length} of 5 habitats` });
     /* bird sets */
     const setOut = SETS.map((st) => {
       const have = st.list.filter((s) => sp.has(s));
@@ -4122,6 +4131,19 @@ const Badges = (() => {
     return out;
   }
 
+  /* earned badges are saved to the account, so a later change to the rules never takes one away */
+  function keep(list, kept) {
+    if (!kept) return list;
+    list.forEach((b) => { const d = kept[b.id]; if (d && !b.got) Object.assign(b, { got: true, date: d, have: b.need, kept: true, sub: null }); });
+    return list;
+  }
+  const keptOf = (who) => (who && who.badges) || null;
+  async function save(earned) {
+    const me = Acct.me; if (!me || !Acct.api) return;
+    const kept = me.badges || {}, add = {};
+    earned.forEach((b) => { if (!kept[b.id]) add[b.id] = b.date; });
+    if (Object.keys(add).length) await Acct.saveBadges(add);
+  }
   /* ---------- whose badges are on show ---------- */
   let mode = "wall", flockCtx = null, flockFor = "", sel = null, last = null;
   function source() {
@@ -4183,7 +4205,7 @@ const Badges = (() => {
   }
   function list(src) {
     const fl = src.mine ? quickFlock() : null;
-    return compute(src.recs, fl);
+    return keep(compute(src.recs, fl), keptOf(src.mine ? Acct.me : src.who));
   }
   function render() {
     const box = $("badges"); if (!box || box.hidden) return;
@@ -4219,7 +4241,7 @@ const Badges = (() => {
     if (src.mine && me && fresh.size) setTimeout(() => { putL(NEWK(me.u), []); paintDot(); }, 400);
     if (src.mine && me && Acct.api && flockFor !== me.u) {
       flockFor = me.u;
-      loadFlock().then((c) => { if (!c) return; flockCtx = c; const before = new Set(got.map((b) => b.id)); if ($("badges").hidden) return; markNew(compute(src.recs, c).filter((b) => b.got && b.fam === "flock" && !before.has(b.id))); render(); });
+      loadFlock().then((c) => { if (!c) return; flockCtx = c; const before = new Set(got.map((b) => b.id)); const now = compute(src.recs, c).filter((b) => b.got); save(now); if ($("badges").hidden) return; markNew(now.filter((b) => b.fam === "flock" && !before.has(b.id))); render(); });
     }
   }
   function nextLine(b) {
@@ -4293,7 +4315,8 @@ const Badges = (() => {
     const me = Acct.me; if (!me || !me.birds || !Acct.api) return;
     let recs; try { recs = await Acct.recs(me.u); } catch (e) { return; }
     flockCtx = null; flockFor = "";
-    const earned = compute(recs, quickFlock()).filter((b) => b.got);
+    const earned = keep(compute(recs, quickFlock()), keptOf(me)).filter((b) => b.got);
+    save(earned);
     const seenL = getL(SEEN(me.u));
     if (seenL && earned.every((b) => seenL.includes(b.id))) return paintDot();
     if (Acct.busy()) { if (tries < 40) checkT = setTimeout(() => check(tries + 1), 4000); return; }
@@ -4305,7 +4328,7 @@ const Badges = (() => {
     if (nw.length) Acct.badgeNote(nw, !seenL, earned.length);
   }
   const ids = () => (last ? last.all : []);
-  return { render, setMode, check, medal, compute, ids, get mode() { return mode; }, forRecs: (recs) => compute(recs, null), when, paintDot };
+  return { render, setMode, check, medal, compute, ids, get mode() { return mode; }, forRecs: (recs, who) => keep(compute(recs, null), keptOf(who)), when, paintDot };
 })();
 
 /* ---------- latest bird card on the map ---------- */
@@ -4691,8 +4714,8 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && document
 
 /* ---------- habitat world: every bird you've heard, together in one scene ---------- */
 const World = (() => {
-  const HAB_SHORT = { pond: "Pond and wetland", wood: "Woodland", farm: "Farmland and hedgerow", night: "Night birds" };
-  const HABS = ["pond", "wood", "farm", "night"], hCol = (h) => (h === "night" ? "#5d63b0" : habColour(h));
+  const HAB_SHORT = { pond: "Pond and wetland", wood: "Woodland", farm: "Farmland and hedgerow", coast: "Coast and sea", night: "Night birds" };
+  const HABS = ["pond", "wood", "farm", "coast", "night"], hCol = (h) => (h === "night" ? "#5d63b0" : habColour(h));
   /* each light has a sky (zenith, eye level, haze band, below, far below), fog, lamp colours and a sun or moon */
   const LIGHTS = {
     day: { sky: 0xc4e2ef, grad: ["#5ea9de", "#a6d3ee", "#eef8fa", "#bfe0ee", "#86bfe2"], fog: 0xd3ebf3, hemi: [0xffffff, 0xb9cfa6, 0.58], sun: [0xfff3e2, 0.68], pos: [12, 20, 9], flies: false,
@@ -4704,7 +4727,7 @@ const World = (() => {
   };
   const ISL = [1, -0.3];   // the middle of the island
   const BS = 1.4;          // birds are drawn a little larger than life so they read from afar
-  const FOCUS = { all: [[1, 0, 1.6], 48], pond: [[-8.2, 0, 1.2], 16], wood: [[3.2, 2.4, -6.4], 22], farm: [[10.4, 0, 4.6], 16], night: [[-9.4, 1.4, -7.2], 14] };
+  const FOCUS = { all: [[1, 0, 1.6], 48], pond: [[-8.2, 0, 1.2], 16], wood: [[3.2, 2.4, -6.4], 22], farm: [[10.4, 0, 4.6], 16], coast: [[13.8, 0.8, -7.2], 15], night: [[-9.4, 1.4, -7.2], 14] };
   let R = null, S = null, C = null, sun = null, hemi = null, host = null;
   let visible = false, dirty = true, raf = 0, last = 0, T = 0, idle = 0, rebuildTimer = 0;
   let light = "day", spin = !REDUCE_MOTION;
@@ -4873,6 +4896,7 @@ const World = (() => {
     }
     const HX = 10.4, HZ = 3.6, hc = Math.cos(-0.5), hs = Math.sin(-0.5);
     const NX = -9.6, NZ = -7.6;   // the night corner
+    const CX = 13.8, CZ = -7.5;   // the coast: a sandy cove with a cliff and a lighthouse
     const blob = (cx, cz, rx, rz, y, col, wob, seg = 48) => {
       const sh = new THREE.Shape();
       for (let i = 0; i <= seg; i++) { const a = (i / seg) * Math.PI * 2, r = wob ? wob(a) : 1; const x = Math.cos(a) * rx * r, y2 = Math.sin(a) * rz * r; i ? sh.lineTo(x, y2) : sh.moveTo(x, y2); }
@@ -4913,11 +4937,11 @@ const World = (() => {
       birds.push(g); (par || S).add(g); song.push({ g, next: 2 + (rnd() * 12) / sp.d, rate: sp.d }); return g;
     };
     /* night birds live in the night corner; everyone else goes to their daytime habitat */
-    const by = { pond: [], wood: [], farm: [], night: [] };
+    const by = { pond: [], wood: [], farm: [], coast: [], night: [] };
     SP.forEach((b) => (isNightBird(b.s) ? by.night : by[b.hab] || by.wood).push(b));
 
     // meadow, path, flowers
-    [[12.6, -6.4, 3.4, 2.4, 0xa5d181], [-2.5, 8.8, 6, 2, 0x94c471], [11.6, -8.2, 2, 1.3, 0x94c471], [-12.4, -1.8, 2, 2.4, 0xa5d181], [5, 9.6, 3, 1.5, 0xa5d181]].forEach(([x, z, rx, rz, c]) => blob(x, z, rx, rz, 0.006, c, (a) => 1 + 0.1 * Math.sin(a * 3 + x)));
+    [[-2.5, 8.8, 6, 2, 0x94c471], [-12.4, -1.8, 2, 2.4, 0xa5d181], [5, 9.6, 3, 1.5, 0xa5d181]].forEach(([x, z, rx, rz, c]) => blob(x, z, rx, rz, 0.006, c, (a) => 1 + 0.1 * Math.sin(a * 3 + x)));
     blob(3.2, -6.6, 7.6, 5.2, 0.01, 0x86b964, (a) => 1 + 0.07 * Math.sin(a * 3 + 1) + 0.04 * Math.cos(a * 5));
     const path = new THREE.CatmullRomCurve3([new THREE.Vector3(-14.2, 0, 7.6), new THREE.Vector3(-4, 0, 7.6), new THREE.Vector3(2, 0, 2.4), new THREE.Vector3(9.5, 0, -2.6), new THREE.Vector3(17.6, 0, -4)]);
     const pathPts = [];
@@ -4931,6 +4955,7 @@ const World = (() => {
       if (!inIsland(x, z, 0.9 + m)) return false;
       if (Math.hypot((x - PX) / (5.5 + m), (z - PZ) / (4.3 + m)) < 1) return false;
       if (Math.hypot((x - NX) / (4.5 + m), (z - NZ) / (3.5 + m)) < 1) return false;
+      if (Math.hypot((x - CX) / (4.1 + m), (z - CZ) / (3.3 + m)) < 1) return false;
       if (pathPts.some((p) => Math.hypot(p.x - x, p.z - z) < 0.8 + m)) return false;
       const dx = x - HX, dz = z - HZ, lx = dx * hc - dz * hs, lz = dx * hs + dz * hc;
       return !(lx > -5 && lx < 6.3 && lz > -0.9 && lz < 4.7);
@@ -5083,6 +5108,78 @@ const World = (() => {
     fAir.forEach((b, i) => flyers.push({ g: addBird(b, 1, null, true), cx: HX, cz: HZ + 1.8, r: 3 + i * 0.8, h: 2.6 + (i % 2) * 0.6, a: i * 2, sp: 0.6 + (i % 2) * 0.15 }));
     signpost("farm", "Farmland", by.farm.length, 4.4, 6.9);
 
+
+    // the coast: sand, a rock pool of sea, a cliff with ledges, a sea stack and a lighthouse
+    {
+      const CB = by.coast, lit = light !== "day";
+      const cw = (a) => 1 + 0.07 * Math.sin(a * 3 + 1.3) + 0.04 * Math.cos(a * 5);
+      blob(CX, CZ, 3.7, 2.75, 0.009, 0xd9c48f, cw);
+      blob(CX, CZ, 3.45, 2.55, 0.013, 0xecdcae, cw);
+      const SX = CX + 0.7, SZ = CZ - 0.55, sw2 = (a) => 1 + 0.1 * Math.sin(a * 2 + 0.4) + 0.05 * Math.cos(a * 5 + 1);
+      blob(SX, SZ, 2.35, 1.6, 0.017, 0xd2bb85, sw2);
+      blob(SX, SZ, 2.15, 1.45, 0.022, 0x5fc0c9, sw2);
+      blob(SX + 0.15, SZ - 0.1, 1.65, 1.05, 0.027, 0x3a9fb6, sw2);
+      blob(SX + 0.3, SZ - 0.2, 1.0, 0.62, 0.031, 0x2d86a3, sw2);
+      [[-0.2, 0.55, 1.5, 0.3], [0.6, -0.4, 1.1, 2.6], [-1.1, -0.3, 0.9, 3.9]].forEach(([x, z, r, a0]) => { const gl = new THREE.Mesh(new THREE.RingGeometry(r, r + 0.04, 26, 1, a0, 1.3), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: light === "night" ? 0.2 : 0.65 })); gl.rotation.x = -Math.PI / 2; add(gl, SX + x, 0.034, SZ + z); });
+      const shore = (a, k = 1) => [SX + Math.cos(a) * 2.3 * sw2(a) * k, SZ - Math.sin(a) * 1.58 * sw2(a) * k];
+      const rockM = [M(0x8f8a80), M(0x7c776e), M(0xa39d91)];
+      /* the cliff: stacked stone along the back, grass on top, three ledges facing the cove */
+      const cliff = new THREE.Group(); cliff.position.set(CX + 0.4, 0, CZ - 2.35); cliff.rotation.y = -0.18; S.add(cliff);
+      [[-1.7, 0.7, 0, 0.95], [-0.6, 0.9, -0.1, 1.15], [0.6, 1.0, -0.15, 1.2], [1.7, 0.75, 0, 1.0], [-1.1, 1.9, -0.2, 0.85], [0.1, 2.1, -0.25, 0.95], [1.2, 1.85, -0.2, 0.85], [-0.4, 2.85, -0.3, 0.7], [0.7, 2.8, -0.3, 0.65]].forEach(([x, y, z, r], i) => {
+        const m = new THREE.Mesh(puff(r, 0), rockM[i % 3]); m.position.set(x, y, z); m.scale.set(1.15, 1, 0.75); m.rotation.y = i; m.castShadow = true; m.receiveShadow = true; cliff.add(m);
+      });
+      [[-0.75, 3.25, -0.3, 0.75], [0.6, 3.2, -0.3, 0.7], [-0.05, 3.4, -0.35, 0.55]].forEach(([x, y, z, r]) => { const m = new THREE.Mesh(puff(r, 1), M(0x86b862)); m.position.set(x, y, z); m.scale.set(1.25, 0.45, 0.9); m.castShadow = true; cliff.add(m); });
+      const ledgeAt = [];
+      [[0.95, -1.6, 1.6, 0.62], [1.75, -1.2, 1.25, 0.55], [2.55, -0.85, 0.85, 0.45]].forEach(([y, x0, x1, z]) => {
+        const l = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0 + 0.3, 0.09, 0.42), M(0xb2ab9d)); l.position.set((x0 + x1) / 2, y, z); l.castShadow = true; l.receiveShadow = true; cliff.add(l);
+        const n = Math.max(2, Math.round((x1 - x0) / 0.55));
+        for (let i = 0; i <= n; i++) ledgeAt.push([x0 + ((x1 - x0) * i) / n, y + 0.05, z + 0.02]);
+      });
+      /* a sea stack out in the water, with a flat top for a cormorant or shag */
+      const stack = new THREE.Group(); stack.position.set(SX + 1.25, 0, SZ - 0.25); S.add(stack);
+      [[0, 0.35, 0.42], [0.05, 0.85, 0.34], [-0.02, 1.25, 0.28]].forEach(([x, y, r], i) => { const m = new THREE.Mesh(puff(r, 0), rockM[i % 3]); m.position.set(x, y, 0); m.scale.y = 1.25; m.castShadow = true; stack.add(m); });
+      /* the lighthouse: white with red bands, a lamp room that lights up after dark */
+      const lh = new THREE.Group(); lh.position.set(CX + 2.55, 0, CZ + 1.1); S.add(lh);
+      const rb = new THREE.Mesh(puff(0.7, 0), rockM[1]); rb.scale.set(1.1, 0.45, 1); rb.position.y = 0.12; rb.castShadow = true; lh.add(rb);
+      const H = 2.6, seg = 5;
+      for (let i = 0; i < seg; i++) { const r0 = 0.42 - (i / seg) * 0.14, r1 = 0.42 - ((i + 1) / seg) * 0.14; const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, H / seg, 14), M(i % 2 ? 0xc8433c : 0xf5f1e8)); m.position.y = 0.3 + (H / seg) * (i + 0.5); m.castShadow = true; lh.add(m); }
+      const gal = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.06, 14), M(0x2c3a40)); gal.position.y = 0.3 + H + 0.03; lh.add(gal);
+      const lampM = lit ? new THREE.MeshBasicMaterial({ color: light === "night" ? 0xfff0b0 : 0xfff4d6 }) : M(0xd8eef2, { transparent: true, opacity: 0.85 });
+      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.36, 10), lampM); lamp.position.y = 0.3 + H + 0.24; lh.add(lamp);
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.34, 12), M(0xc8433c)); cap.position.y = 0.3 + H + 0.59; cap.castShadow = true; lh.add(cap);
+      const ball2 = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), M(0x2c3a40)); ball2.position.y = 0.3 + H + 0.8; lh.add(ball2);
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.34, 0.05), M(0x2c3a40)); door.position.set(0, 0.47, 0.41); lh.add(door);
+      if (lit && !LITE) { const pl = new THREE.PointLight(0xffe2a0, light === "night" ? 1.6 : 0.7, 9, 2); pl.position.y = 0.3 + H + 0.24; lh.add(pl); }
+      /* pebbles and rocks round the pool, posts of an old groyne, a little rowing boat on the sand */
+      for (let i = 0; i < 26; i++) { const big = i % 6 === 2, [x, z] = shore((i / 26) * Math.PI * 2 + rnd() * 0.05, 1.02 + rnd() * 0.06); const p = new THREE.Mesh(puff((big ? 0.2 : 0.09) + rnd() * 0.06, 0), rockM[i % 3]); p.scale.y = 0.5; p.rotation.y = rnd() * 6; p.castShadow = big; add(p, x, 0.04, z); }
+      [[-2.6, 0.9], [-2.25, 1.3], [-1.9, 1.7], [-1.55, 2.1]].forEach(([dx, dz], i) => add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.5 - i * 0.07, 7), M(0x7d6650)), CX + dx, 0.22, CZ + dz, true));
+      const boat = new THREE.Group();
+      const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 1.3, 14, 1, false, 0, Math.PI), M(0x3e7fb0, { side: THREE.DoubleSide })); hull.rotation.z = Math.PI / 2; hull.rotation.x = Math.PI; hull.position.y = 0.34; hull.scale.z = 0.7; hull.castShadow = true; boat.add(hull);
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 0.44), M(0xb59a7a)); seat.position.y = 0.24; boat.add(seat);
+      boat.position.set(CX - 1.4, 0, CZ + 1.85); boat.rotation.y = 0.5; boat.rotation.z = 0.12; S.add(boat);
+      [[-2.9, -0.6], [-2.6, -1.4], [2.9, -1.5], [3.2, 0.2]].forEach(([dx, dz]) => tuft(CX + dx, CZ + dz, 0xa9b880, 7, 0.5));
+      /* who goes where: cliff birds on the ledges, sea ducks and divers in the water, waders on the wet sand, gulls and terns overhead */
+      const cliffy = (b) => /^(Uria|Alca|Fratercula|Cepphus|Rissa|Fulmarus|Morus|Gulosus|Phalacrocorax|Pyrrhocorax)\b/.test(b.s);
+      const flier = (b) => /^(Larus|Chroicocephalus|Ichthyaetus|Hydrocoloeus|Sterna|Sternula|Thalasseus|Chlidonias|Gelochelidon|Stercorarius|Puffinus|Ardenna|Calonectris|Hydrobates|Oceanodroma)\b/.test(b.s);
+      const cl = CB.filter(cliffy), fl = CB.filter((b) => !cliffy(b) && flier(b));
+      const sea = CB.filter((b) => !cl.includes(b) && !fl.includes(b) && habitOf(b) === "swim");
+      const sand = CB.filter((b) => !cl.includes(b) && !fl.includes(b) && !sea.includes(b));
+      const top = cl.length ? cl[0] : null;
+      if (top && /^(Gulosus|Phalacrocorax)\b/.test(top.s)) { const g = addBird(top, 1.05, stack); g.position.set(0, 1.55 + 0.12 * BS, 0); g.rotation.y = 0.6; g.userData.home = g.position.clone(); }
+      cl.filter((b) => !(b === top && /^(Gulosus|Phalacrocorax)\b/.test(b.s))).forEach((b, i) => {
+        if (i < ledgeAt.length) { const [x, y, z] = ledgeAt[i]; const g = addBird(b, 0.95, cliff); g.position.set(x, y + 0.13 * BS, z); g.rotation.y = -Math.PI / 2 + (i % 3 - 1) * 0.3; g.userData.home = g.position.clone(); }
+        else sand.push(b);
+      });
+      sea.forEach((b, i) => swim.push({ g: addBird(b), r: 0.3 + ((i * 0.618) % 1) * 0.55, a: i * 2.4 + 1, sp: (i % 2 ? 1 : -1) * (0.08 + (i % 3) * 0.03), cx: SX, cz: SZ, kx: 2.0, kz: 1.35 }));
+      sand.forEach((b, i) => {
+        const st = habitOf(b) === "stand", [x, z] = st ? shore(2.3 + i * 0.42, 1.12) : [CX - 2.2 + ((i * 0.618) % 1) * 3.2, CZ + 1.1 + (i % 3) * 0.45];
+        const g = addBird(b); g.position.set(x, 0.12 * BS, z); g.rotation.y = 1.2 + i * 1.3; g.userData.home = g.position.clone();
+        if (!st) peckers.push({ g, ph: i * 1.1 });
+      });
+      fl.forEach((b, i) => flyers.push({ g: addBird(b, 1.05, null, true), cx: SX, cz: SZ, r: 2.8 + (i % 4) * 0.9, h: 3.6 + (i % 3) * 0.7, a: i * 2.3, sp: 0.36 + (i % 3) * 0.07 }));
+      signpost("coast", "Coast", CB.length, CX - 3.4, CZ + 3.1);
+    }
+
     // the night corner: an old barn, a bare tree and dark firs, for owls and the other birds of the dark
     {
       const NB = by.night, lit = light !== "day";
@@ -5226,8 +5323,8 @@ const World = (() => {
     if (move) {
       sway.forEach((o) => { o.g.rotation.z = Math.sin(T * 1.4 + o.ph) * o.a; o.g.rotation.x = Math.cos(T * 1.1 + o.ph) * o.a * 0.6; });
       swim.forEach((o) => {
-        const a = o.a + T * o.sp, pr = PR;
-        o.g.position.set(PX + Math.cos(a) * o.r * 3 * pr, 0.1 * BS + Math.sin(T * 2 + o.a) * 0.012, PZ - Math.sin(a) * o.r * 2.2 * pr); o.g.rotation.y = a + (o.sp > 0 ? 0 : Math.PI);
+        const a = o.a + T * o.sp, pr = PR, kx = o.kx || 3 * pr, kz = o.kz || 2.2 * pr;
+        o.g.position.set((o.cx ?? PX) + Math.cos(a) * o.r * kx, 0.1 * BS + Math.sin(T * 2 + o.a) * 0.012, (o.cz ?? PZ) - Math.sin(a) * o.r * kz); o.g.rotation.y = a + (o.sp > 0 ? 0 : Math.PI);
         if (Math.random() < dt * 0.6) { const rp = new THREE.Mesh(new THREE.RingGeometry(0.15, 0.19, 24), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })); rp.rotation.x = -Math.PI / 2; rp.position.set(o.g.position.x, 0.03, o.g.position.z); rp.userData.t = 0; S.add(rp); ripples.push(rp); }
       });
       flyers.forEach((o) => { const a = o.a + T * o.sp; o.g.position.set(o.cx + Math.cos(a) * o.r, o.h + Math.sin(T * 1.3 + o.a) * 0.2, o.cz - Math.sin(a) * o.r * 0.8); o.g.rotation.y = a + Math.PI; const f = Math.sin(T * 8 + o.a) * 0.7; o.g.userData.wings.forEach((w, k) => { w.rotation.x = (k ? -1 : 1) * f; w.scale.set(1.3, 0.3, 1.6); }); });
@@ -6411,7 +6508,7 @@ const Acct = (() => {
     }
     if (!$("mem-more") || memberU !== u) return;
     const fav = m && m.favourite && all.find((x) => x.name === m.favourite.name);
-    const bAll = Badges.forRecs(recs), bGot = bAll.filter((x) => x.got);
+    const bAll = Badges.forRecs(recs, mine ? me : m), bGot = bAll.filter((x) => x.got);
     const bPin = ((mine ? me.pins : m && m.pins) || []).map((id) => bGot.find((x) => x.id === id)).filter(Boolean);
     const bShow = bPin.length ? bPin : bGot.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 3);
     box.innerHTML = `
@@ -6714,8 +6811,14 @@ const Acct = (() => {
     me = r.data.me; const m = members.find((x) => x.u === me.u); if (m) m.pins = me.pins;
     return true;
   }
+  async function saveBadges(add) {
+    const r = await call("me", { method: "PUT", body: { badges: add } });
+    if (!r.ok) return false;
+    me = r.data.me; const m = members.find((x) => x.u === me.u); if (m) m.badges = me.badges;
+    return true;
+  }
   const busy = () => document.body.classList.contains("welcoming") || !$("acct").hidden || !!document.querySelector(".mem-pop:not([hidden])") || !$("help").hidden || !$("wel-pop").hidden;
-  return { boot, open, member, saveFavourite, savePins, badgeNote, busy, hideBird, recs: getRecs, cached: (u) => cache.get(u) || null, get members() { return members; }, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
+  return { boot, open, member, saveFavourite, savePins, saveBadges, badgeNote, busy, hideBird, recs: getRecs, cached: (u) => cache.get(u) || null, get members() { return members; }, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
 })();
 
 /* ---------- reading an eBird export: the .csv, or the .zip eBird emails (opened right here in the browser) ---------- */

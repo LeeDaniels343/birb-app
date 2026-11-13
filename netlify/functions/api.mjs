@@ -137,6 +137,8 @@ function cleanAvatar(a) {
   return out;
 }
 const cleanPins = (p) => (Array.isArray(p) ? [...new Set(p.filter((x) => typeof x === "string" && /^[a-z0-9-]{1,24}$/.test(x)))].slice(0, 3) : []);
+/* earned badges: id -> the date of the sighting that earned it; only ever added to */
+const cleanBadges = (o) => { const out = {}; if (o && typeof o === "object" && !Array.isArray(o)) for (const [k, v] of Object.entries(o).slice(0, 200)) if (/^[a-z0-9-]{1,24}$/.test(k) && typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) out[k] = v; return out; };
 const VIS = new Set(["public", "friends", "private"]);
 const visOf = (x) => (!x.visibility || x.visibility === "group" ? "friends" : x.visibility);
 const cleanFav = (f) => (f && typeof f === "object" && typeof f.name === "string" && f.name.length <= 80 ? { name: f.name.slice(0, 80), sci: String(f.sci || "").slice(0, 80) } : null);
@@ -144,7 +146,7 @@ const publicMe = (user) => ({
   u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: visOf(user),
   admin: isAdmin(user.u), birds: user.birds || null, joined: user.joined, mustChange: !!user.mustChange, favourite: user.favourite || null,
   invite: user.invite || null, requests: (user.reqIn || []).length, friends: (user.friends || []).length,
-  hasRecovery: !!user.rec, hidden: user.hidden || [], pins: user.pins || [],
+  hasRecovery: !!user.rec, hidden: user.hidden || [], pins: user.pins || [], badges: user.badges || {},
 });
 const canSee = (owner, viewer) => {
   const vis = visOf(owner);
@@ -156,7 +158,7 @@ const canSee = (owner, viewer) => {
 /* what other people see of an account; their birds only if they're allowed to */
 const card = (user, viewer) => {
   const ok = canSee(user, viewer);
-  return { u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: visOf(user), birds: ok ? user.birds || null : null, hidden: !ok && !!user.birds, owner: isAdmin(user.u), favourite: ok ? user.favourite || null : null, joined: user.joined || null, pins: ok ? user.pins || [] : [], invitedBy: user.invitedBy || null };
+  return { u: user.u, name: user.name || user.u, avatar: user.avatar || null, visibility: visOf(user), birds: ok ? user.birds || null : null, hidden: !ok && !!user.birds, owner: isAdmin(user.u), favourite: ok ? user.favourite || null : null, joined: user.joined || null, pins: ok ? user.pins || [] : [], badges: ok ? user.badges || {} : {}, invitedBy: user.invitedBy || null };
 };
 const mini = (user) => ({ u: user.u, name: user.name || user.u, avatar: user.avatar || null, owner: isAdmin(user.u) });
 
@@ -389,6 +391,7 @@ export default async (req) => {
         if (b.visibility != null) { const v = b.visibility === "group" ? "friends" : b.visibility; if (VIS.has(v)) me.visibility = v; }
         if (b.favourite !== undefined) me.favourite = cleanFav(b.favourite);
         if (b.pins !== undefined) me.pins = cleanPins(b.pins);
+        if (b.badges !== undefined) { const add = cleanBadges(b.badges); me.badges = { ...add, ...(me.badges || {}) }; if (Object.keys(me.badges).length > 200) me.badges = Object.fromEntries(Object.entries(me.badges).slice(0, 200)); }
         await putUser(me);
         return json({ me: publicMe(me) });
       }
