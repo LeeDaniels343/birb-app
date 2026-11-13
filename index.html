@@ -1122,6 +1122,8 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
 .nt.fb .eyebrow { display: block; font-size: 10.5px; font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
 .empty-card { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; width: min(360px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px 20px 16px; box-shadow: 0 14px 40px rgba(0,0,0,.16); text-align: center; }
 .empty-card[hidden] { display: none; }
+.empty-card:not([hidden]) { animation: emptyIn .35s ease .15s both; }
+@keyframes emptyIn { from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); } to { opacity: 1; transform: translate(-50%, -50%); } }
 .empty-card b { font-family: var(--font-display); font-size: 19px; display: block; }
 .empty-card p { margin: 6px 0 14px; color: var(--muted); font-size: 14.5px; line-height: 1.45; }
 .empty-card .acts { display: grid; gap: 6px; }
@@ -4494,9 +4496,11 @@ function useRecords(recs, source, fileName, { save = false, text = "" } = {}) {
     : `Showing <code>${esc(fileName)}</code>, ${recs.length} sightings. It stays on this browser only.`);
 }
 /* an empty map gets a friendly card saying what to do next */
+/* nothing shows until the account has finished loading, so a refresh never flashes the card before your birds arrive */
+let emptyReady = false;
 function paintEmpty() {
   const el = $("empty-card"); if (!el) return;
-  const me = Acct.me, empty = !state.data.length && state.source !== "flock" && viewMode === "map";
+  const me = Acct.me, empty = emptyReady && !state.data.length && state.source !== "flock" && viewMode === "map";
   el.hidden = !empty; if (!empty) return;
   const friends = me ? Acct.members.filter((m) => m.u !== me.u && m.birds).length : 0;
   el.innerHTML = me
@@ -6045,9 +6049,9 @@ const Acct = (() => {
   }
 
   async function boot() {
-    if (!API) return;
+    if (!API) { emptyReady = true; paintEmpty(); return; }
     paintChrome();
-    if (!(await refresh())) { document.body.classList.remove("welcoming"); return; }
+    if (!(await refresh())) { document.body.classList.remove("welcoming"); emptyReady = true; paintEmpty(); return; }
     paintChrome();
     const q = new URLSearchParams(location.search), want = (q.get("who") || "").toLowerCase(), invite = q.get("invite");
     let done = false, pref = ""; try { pref = localStorage.getItem(SCOPE_KEY) || ""; } catch (e) {}
@@ -6055,7 +6059,7 @@ const Acct = (() => {
     if (!done && me && pref === "flock") done = await showFlock({ quiet: true });
     if (!done && me && me.birds) done = await show(me.u, { quiet: true });
     /* new people start with their own map, empty until they add their file; nobody else's birds are shown by default */
-    paintEmpty();
+    emptyReady = true; paintEmpty();
     if (me) { loadInbox(); clearInterval(pollT); pollT = setInterval(() => { if (me && !document.hidden) loadInbox(); }, 120000); }
     if (me && me.mustChange) { document.body.classList.remove("welcoming"); open("passcode"); }
     else if (invite) await showInvite(invite);
