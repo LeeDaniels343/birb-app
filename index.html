@@ -1196,6 +1196,10 @@ body.welcoming .empty-card { display: none; }
 .fl-empty p { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
 .fl-empty > button { display: block; width: 100%; margin-bottom: 6px; }
 .fl-empty .fr-add { margin-top: 12px; }
+/* the Latest, Favourite and Add birds tiles share one quiet outline, like the Options button */
+.latest-pill, .map-card .latest-pill { border: 1px solid var(--line) !important; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.map-card .latest-pill { box-shadow: none; }
+.latest-pill:hover, .latest-pill[aria-expanded="true"] { border-color: var(--accent) !important; }
 .add-pill .add-ic { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
 .add-pill[hidden] { display: none !important; }
 .nt-react { display: flex; align-items: center; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
