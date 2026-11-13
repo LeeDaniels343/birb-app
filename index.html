@@ -1102,6 +1102,24 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
 .tip-dots i.on { background: var(--bg); }
 .tip .tip-x { background: none; border: 0; color: inherit; opacity: .7; font-size: 12.5px; padding: 6px 4px; box-shadow: none; min-height: 0; }
 .tip .primary { background: var(--bg); color: var(--ink); border: 0; border-radius: 999px; padding: 7px 16px; font-weight: 600; font-size: 13.5px; min-height: 0; }
+.fb-open { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; margin: 18px 0 4px; padding: 12px 14px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); border-radius: 14px; color: var(--ink); box-shadow: none; white-space: normal; }
+.fb-open:hover { border-color: var(--accent); }
+.fb-open .fb-ic { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; flex: none; }
+.fb-open .fb-ic svg { width: 20px; height: 20px; }
+.fb-open > span:nth-child(2) { display: grid; flex: 1; }
+.fb-open b { font-size: 14.5px; }
+.fb-open small { font-size: 12.5px; color: var(--muted); }
+.fb-open .chev { color: var(--muted); flex: none; }
+.fb-from { display: flex; gap: 10px; align-items: center; margin: 2px 0 6px; }
+.fb-from .av { width: 38px; height: 38px; flex: none; }
+.fb-from p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.45; }
+.fb-kind { width: 100%; }
+.fb-kind button { flex: 1; font-size: 13.5px; padding: 8px 6px; }
+#fb-text { width: 100%; resize: vertical; min-height: 110px; font: inherit; font-size: 15px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+#fb-n { text-align: right; display: block; margin-top: 2px; }
+.fb-text { margin: 6px 0 2px; font-size: 13.5px; white-space: pre-wrap; }
+.rep-k.k-fb { background: var(--accent-soft); color: var(--accent); }
+.nt.fb .eyebrow { display: block; font-size: 10.5px; font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
 .nt-react { display: flex; align-items: center; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
 .nt-react button { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 16px; line-height: 1.2; min-height: 0; box-shadow: none; cursor: pointer; transition: transform .12s; }
 .nt-react button:hover:not([disabled]) { transform: scale(1.15); }
@@ -1466,6 +1484,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
     <p style="margin:0;font-size:13px"><button type="button" class="linkish" data-guide>New to Merlin or eBird? How to get your birds into BIRB</button></p>
     <p style="margin:0;font-size:13px"><button type="button" class="linkish" data-night-help>Staying safe when you listen at night</button></p>
     <p style="margin:0;font-size:13px"><button type="button" class="linkish" data-tips-again>Show the first-time tips again</button></p>
+    <p style="margin:0;font-size:13px"><button type="button" class="linkish" data-feedback>Send an idea or report a problem</button></p>
     <p class="keys k-touch"><span>Pinch to zoom</span><span>Drag two fingers up or down to tilt</span><span>Twist two fingers to turn</span><span>Tap anything for its details</span></p>
     <p class="keys k-desk"><span><kbd>/</kbd> search</span><span><kbd>N</kbd> night</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> totem, flock, habitat</span><span><kbd>W</kbd> habitat world</span><span><kbd>Space</kbd> play</span><span><kbd>U</kbd> UK view</span><span><kbd>F</kbd> fit</span><span><kbd>Esc</kbd> close</span><span>Right-drag or Ctrl-drag to tilt and turn</span></p>
     <div class="help-acts">
@@ -5813,7 +5832,7 @@ const Acct = (() => {
   let inbox = { items: [], read: "", unread: 0 }, inboxShownRead = "", pollT = 0;
   let phrase = "", phraseNext = "profile", shareUrl = "", shareBlob = null, shareKind = "post";
   const inviteLink = () => me && me.invite ? `${location.origin}/?invite=${encodeURIComponent(me.invite)}` : location.origin + "/";
-  let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "", firstUp = false;
+  let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "", firstUp = false, fbKind = "idea";
   /* one pop-up note per visit is plenty: later ones become a small toast, and notes never start the Help guide */
   let notesShown = 0, welNote = false;
   let scope = "", backTo = "me", memberU = "";
@@ -5928,6 +5947,9 @@ const Acct = (() => {
       if (!bs.length) return "";
       cls = " badge"; lead = Badges.medal(bs[0], 40);
       tx = `<span class="eyebrow">${bs.length === 1 ? "New badge" : "New badges"}</span>${nm} earned ${bs.length === 1 ? `the <b>${esc(bs[0].name)}</b> badge` : `${bs.length} badges: ${andList(bs.map((b) => b.name))}`}.${when}${acts(btn("badges", `See ${esc(nameOf(by))}'s badges`))}`;
+    } else if (x.kind === "feedback") {
+      cls = " fb";
+      tx = `<span class="eyebrow">Feedback · ${esc({ idea: "an idea", problem: "a problem", other: "something else" }[x.fk] || "note")}</span>${nm}: “${esc(x.text || "")}${(x.text || "").length >= 180 ? "…" : ""}”${when}${acts(btn("feedback", "See all feedback"))}`;
     } else if (x.kind === "react") {
       const a = x.about || {}, bs = (a.ids || []).map((id) => Badges.def(id)).filter(Boolean);
       const what = a.kind === "badges" ? (bs.length ? (a.n > 1 ? `your ${a.n} new badges` : `your <b>${esc(bs[0].name)}</b> badge`) : "your new badges")
@@ -5975,6 +5997,7 @@ const Acct = (() => {
   async function ntAct(k, u, bird) {
     closeBell(); $("rare-pop").hidden = true;
     if (k === "birds") { await show(u); return; }
+    if (k === "feedback") { open("admin"); setTimeout(() => { const f = $("adm-fb"); if (f) f.scrollIntoView({ block: "start" }); }, 600); return; }
     if (k === "badges") { if (await show(u)) { setView("collection"); Badges.setMode("badges"); } return; }
     if (k === "rare") { if (await show(u)) { try { openSpecies(bird); } catch (e) {} } return; }
     if (k === "profile") { if (!member(u)) await refresh(); open("flock"); if (member(u)) openMember(u); return; }
@@ -6320,6 +6343,16 @@ const Acct = (() => {
     } else if (view === "privacy") {
       h = `${X}${tabs()}<h2 id="acct-h">Your data and privacy</h2><p class="sub">BIRB is a small app Lee runs for friends. Here's what it keeps and who can see it, in plain English.</p>${privacyHTML()}
         <div class="acts"><span></span><button type="button" class="primary" data-acct="${me ? "profile" : "signin"}">${me ? "Back to your profile" : "OK"}</button></div>`;
+    } else if (view === "feedback" && me) {
+      const o = founder(), FK = [["idea", "An idea"], ["problem", "A problem"], ["other", "Something else"]];
+      h = `${X}${tabs()}<h2 id="acct-h">Send feedback</h2>
+        <div class="fb-from">${Avatar.html(o.avatar, "")}<p>Ideas, problems, or anything that felt confusing. It goes straight to ${esc(nameOf(o))}, who reads every one.</p></div>
+        <form id="f-feedback" class="stack" novalidate>
+          <div class="fld"><label>What is it?</label><div class="seg fb-kind" role="radiogroup" aria-label="What is it?">${FK.map(([k, l], i) => `<button type="button" role="radio" data-fbk="${k}" aria-checked="${fbKind === k}" aria-pressed="${fbKind === k}">${l}</button>`).join("")}</div></div>
+          <div class="fld"><label for="fb-text">Tell us more</label><textarea id="fb-text" rows="5" maxlength="1500" placeholder="${fbKind === "problem" ? "What happened, and what were you trying to do?" : fbKind === "idea" ? "What would make BIRB better for you?" : "What's on your mind?"}"></textarea><span class="hint" id="fb-n">0 / 1500</span></div>
+          <label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="fb-dev" checked> Include my phone or computer type, to help with problems</label>
+          <div class="err" id="acct-err" role="alert"></div>
+          <div class="acts"><button type="button" class="ghost" data-acct="profile">Cancel</button><button type="submit" class="primary">Send</button></div></form>`;
     } else if (view === "delete" && me) {
       h = `${X}${tabs()}<h2 id="acct-h">Delete your account</h2><p class="sub">This removes your birds, your profile, your birb, your notifications and your friendships straight away. It can't be undone. You can download a copy of your data first.</p>
         <form id="f-delete" class="stack" novalidate>
@@ -6374,6 +6407,7 @@ const Acct = (() => {
           <div class="err" id="acct-err" role="alert"></div>
           <div class="acts"><span style="display:flex;gap:4px"><button type="button" class="ghost" data-acct="passcode">Change passcode</button><button type="button" class="ghost" data-signout>Sign out</button></span><button type="submit" class="primary">Save</button></div></form>
         ${(me.hidden || []).length ? `<div class="fr-sec">Hidden birds</div><p class="hint" style="margin:0 0 6px">Birds you've hidden don't show on your map or to your friends.</p>${me.hidden.map((n) => `<div class="fr-row"><span class="t"><b>${esc(n)}</b></span><span class="btns"><button type="button" class="ghost" data-unhide="${esc(n)}">Unhide</button></span></div>`).join("")}` : ""}
+        <button type="button" class="fb-open" data-acct="feedback"><span class="fb-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></svg></span><span><b>Ideas or problems?</b><small>Send feedback straight to ${esc(nameOf(founder()))}</small></span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
         <div class="fr-sec">Your data</div>
         <div class="data-links"><button type="button" class="linkish" data-acct="privacy">Your data and privacy</button><button type="button" class="linkish" data-export>Download my data</button><button type="button" class="linkish" data-acct="phrase-new">${me.hasRecovery ? "New recovery phrase" : "Set up recovery phrase"}</button>${me.admin ? "" : `<button type="button" class="linkish danger-link" data-acct="delete">Delete my account</button>`}</div>`;
     } else if (view === "flock") {
@@ -6382,11 +6416,12 @@ const Acct = (() => {
         ${me ? "" : `<div class="acts"><span></span><span style="display:flex;gap:6px"><button type="button" data-acct="signin">Sign in</button><button type="button" class="primary" data-acct="join">Join</button></span></div>`}`;
     } else if (view === "admin" && me && me.admin) {
       h = `${X}${tabs()}<h2 id="acct-h">Admin</h2><p class="sub">Only you can see this.</p><div id="adm" class="stack"><p class="hint">Loading members…</p></div>
+        <div class="fr-sec">Feedback from members</div><div id="adm-fb"><p class="hint">Loading…</p></div>
         <div class="fr-sec">Problem reports, last 14 days</div><p class="hint" style="margin:0 0 6px">Anonymous notes the app sends when something goes wrong, with the phone type.</p><div id="adm-rep"><p class="hint">Loading…</p></div>`;
     } else { view = me ? "profile" : "signin"; return render(); }
     el.innerHTML = h;
     if ($("abld-stage")) mountBuilder();
-    if (view === "admin") { loadAdmin(); loadReports(); }
+    if (view === "admin") { loadAdmin(); loadReports(); loadFeedback(); }
     const first = el.querySelector("input:not([type=file]), select"); if (first && !("ontouchstart" in window)) first.focus();
   }
   function privacyHTML() {
@@ -6710,6 +6745,13 @@ const Acct = (() => {
     const br = /SamsungBrowser/.test(ua) ? "Samsung Internet" : /EdgA?\//.test(ua) ? "Edge" : /CriOS|Chrome\//.test(ua) ? "Chrome" : /Firefox|FxiOS/.test(ua) ? "Firefox" : /Safari/.test(ua) ? "Safari" : "browser";
     return `${os} · ${br}`;
   };
+  async function loadFeedback() {
+    const box = $("adm-fb"); if (!box) return;
+    const r = await call("admin/feedback"); if (!r.ok) { box.innerHTML = `<p class="err">${esc(r.error)}</p>`; return; }
+    const L = { idea: "Idea", problem: "Problem", other: "Other" };
+    box.innerHTML = r.data.feedback.length ? r.data.feedback.slice(0, 60).map((x) => `<div class="rep fb-item"><div class="rep-h"><span class="rep-k k-${x.kind === "problem" ? "error" : "fb"}">${L[x.kind] || "Other"}</span><b>${esc(x.name)} <span class="hint">@${esc(x.u)}</span></b><small>${esc(ago(x.t))}</small></div><p class="fb-text">${esc(x.text)}</p>${x.ua ? `<div class="rep-d"><span>${esc(shortUA(x.ua))}${x.view ? ` · on ${esc(x.view)}` : ""}</span></div>` : ""}</div>`).join("")
+      : `<p class="hint">No feedback yet.</p>`;
+  }
   async function loadReports() {
     const box = $("adm-rep"); if (!box) return;
     const r = await call("admin/reports"); if (!r.ok) { box.innerHTML = `<p class="err">${esc(r.error)}</p>`; return; }
@@ -6786,6 +6828,7 @@ const Acct = (() => {
   }
 
   /* ---------- events ---------- */
+  document.addEventListener("input", (e) => { if (e.target.id === "fb-text") $("fb-n").textContent = `${e.target.value.length} / 1500`; });
   document.addEventListener("click", async (e) => {
     const t = e.target;
     if (!$("rare-pop").hidden) {
@@ -6795,6 +6838,7 @@ const Acct = (() => {
     const rx = t.closest("[data-react]"); if (rx) { await react(rx.dataset.react, rx.dataset.e, rx); return; }
     const nt = t.closest("[data-nt]"); if (nt) { nt.disabled = true; await ntAct(nt.dataset.nt, nt.dataset.u, nt.dataset.bird); return; }
     if (!$("bell-card").hidden && !t.closest("#bell-card")) closeBell();
+    if (t.closest("[data-feedback]")) { try { setHelp(false); } catch (x) {} if (me) open("feedback"); else open("signin"); return; }
     if (t.closest("[data-night-help]")) { try { setHelp(false); } catch (x) {} $("bell-card").hidden = true; $("bell-btn").setAttribute("aria-expanded", "false"); nightNote(""); return; }
     if (!$("wel-pop").hidden) {
       if (t === $("wel-pop") || t.closest("[data-wel-close]")) { closeWel(); return; }
@@ -6850,6 +6894,7 @@ const Acct = (() => {
     if (t.closest("[data-share-save]")) { await sendShare(true); return; }
     if (t.closest("[data-invite-card]")) { shareKind = "invite"; await openShare(); return; }
     const sh = t.closest('[data-acct="share"]'); if (sh) { if (!me.birds) shareKind = "invite"; await openShare(); return; }
+    const fk = t.closest("[data-fbk]"); if (fk) { const txt = $("fb-text").value; fbKind = fk.dataset.fbk; render(); $("fb-text").value = txt; $("fb-n").textContent = `${txt.length} / 1500`; return; }
     const go = t.closest("[data-acct]"); if (go) { if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }
     const vu = t.closest("[data-view-u]"); if (vu) { openMember(vu.dataset.viewU); return; }
     const fr = t.closest("[data-fr]"); if (fr) { fr.disabled = true; await friendAct(fr.dataset.fr, fr.dataset.u); return; }
@@ -6949,6 +6994,14 @@ const Acct = (() => {
       btn.disabled = true; const r = await call("recovery", { method: "POST", body: { passcode: $("pn-pass").value } }); btn.disabled = false;
       if (!r.ok) return err(r.error);
       me = r.data.me; phrase = r.data.recovery; phraseNext = "profile"; view = "phrase"; render();
+    } else if (f.id === "f-feedback") {
+      const text = $("fb-text").value.trim();
+      if (text.length < 3) return err("Write a few words first.");
+      btn.disabled = true;
+      const r = await call("feedback", { method: "POST", body: { kind: fbKind, text, device: $("fb-dev").checked, ua: navigator.userAgent, view: viewMode } });
+      btn.disabled = false;
+      if (!r.ok) return err(r.error);
+      fbKind = "idea"; view = "profile"; notice = `Thank you. ${esc(nameOf(founder()))} will read it soon.`; render();
     } else if (f.id === "f-delete") {
       if (!$("d-sure").checked) return err("Tick the box to confirm.");
       btn.disabled = true; const r = await call("me", { method: "DELETE", body: { passcode: $("d-pass").value } }); btn.disabled = false;

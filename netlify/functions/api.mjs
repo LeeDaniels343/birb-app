@@ -529,6 +529,24 @@ export default async (req) => {
       }
     }
 
+    /* feedback from members: ideas, problems, anything else; it goes to Lee */
+    if (path === "feedback" && m === "POST") {
+      if (!me) return fail(401, "Please sign in.");
+      const b = await jsonBody(req), kind = ["idea", "problem", "other"].includes(b.kind) ? b.kind : "other";
+      const text = String(b.text || "").trim().slice(0, 1500);
+      if (text.length < 3) return fail(400, "Write a few words first.");
+      const day = new Date().toISOString().slice(0, 10);
+      if (!me.fb || me.fb.d !== day) me.fb = { d: day, n: 0 };
+      if (me.fb.n >= 10) return fail(429, "That's a lot of feedback for one day. Thank you! Try again tomorrow.");
+      me.fb.n++; await putUser(me);
+      const item = { id: crypto.randomBytes(6).toString("base64url"), t: new Date().toISOString(), u: me.u, name: me.name || me.u, kind, text, ua: b.device ? String(b.ua || "").slice(0, 220) : "", view: String(b.view || "").slice(0, 30) };
+      const all = (await store().get("feedback/all", { type: "json" })) || [];
+      all.unshift(item); await store().setJSON("feedback/all", all.slice(0, 300));
+      const admin = env("ADMIN_USER").toLowerCase();
+      if (admin && admin !== me.u) await notify(admin, { kind: "feedback", by: mini(me), fk: kind, text: text.slice(0, 180) });
+      return json({ ok: true });
+    }
+
     /* a quick reaction to a friend's news: it lands in their bell */
     if (path === "react" && m === "POST") {
       if (!me) return fail(401, "Please sign in.");
@@ -612,6 +630,7 @@ export default async (req) => {
         const users = await allUsers();
         return json({ users: users.map((x) => ({ ...card(x, me), birds: x.birds || null, joined: x.joined, locked: x.lockUntil > Date.now(), friend: isFriend(me, x), invitedBy: x.invitedBy || null })), invite: envRaw("INVITE_CODE") || cfg.INVITE_CODE || "" });
       }
+      if (path === "admin/feedback" && m === "GET") return json({ feedback: (await store().get("feedback/all", { type: "json" })) || [] });
       if (path === "admin/reports" && m === "GET") {
         const out = [];
         for (let i = 0; i < 14; i++) { const d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10); const day = await store().get(`reports/${d}`, { type: "json" }); if (day) out.push(...day); }
