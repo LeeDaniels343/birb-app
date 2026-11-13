@@ -2284,8 +2284,9 @@ function aggregate(rows, key = areaKey()) {
   const m = new Map();
   for (const d of rows) {
     const k = d[key];
-    if (!m.has(k)) m.set(k, { sp: new Map(), dates: new Set() });
-    const a = m.get(k); a.dates.add(d.date);
+    if (!m.has(k)) m.set(k, { sp: new Map(), dates: new Set(), first: new Map(), last: "" });
+    const a = m.get(k); a.dates.add(d.date); if (d.date > a.last) a.last = d.date;
+    const f0 = a.first.get(d.name); if (!f0 || d.date < f0.date) a.first.set(d.name, { date: d.date, sci: d.sci, fam: d.family });
     if (!a.sp.has(d.name)) a.sp.set(d.name, new Set());
     a.sp.get(d.name).add(d.date + "|" + d.locId);
   }
@@ -2303,11 +2304,65 @@ function groupPlaces(rows) {
 function speciesLines(map, limit = 8) {
   const list = [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const dot = (n) => `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;background:${speciesColour.get(n) || "#7d8b8f"}"></span>`;
-  const head = `<div style="display:flex;justify-content:space-between;gap:14px;color:#8a989c;font-size:11px;margin-bottom:2px"><span>Bird</span><span>days heard</span></div>`;
-  const rows = list.slice(0, limit).map(([n, c]) => `<div style="display:flex;justify-content:space-between;gap:14px"><span>${dot(n)}${esc(n)}</span><span style="font-family:var(--font-mono);color:#5c6d72">${c}</span></div>`).join("");
-  return head + rows + (list.length > limit ? `<div style="color:#5c6d72">and ${list.length - limit} more</div>` : "");
+  const T = tipTheme();
+  const head = `<div style="display:flex;justify-content:space-between;gap:14px;color:${T.muted};font-size:11px;margin-bottom:2px"><span>Bird</span><span>days heard</span></div>`;
+  const rows = list.slice(0, limit).map(([n, c]) => `<div style="display:flex;justify-content:space-between;gap:14px"><span>${dot(n)}${esc(shortName(n))}</span><span style="font-family:var(--font-mono);color:${T.muted}">${c}</span></div>`).join("");
+  return head + rows + (list.length > limit ? `<div style="color:${T.muted}">and ${list.length - limit} more</div>` : "");
 }
+/* hover cards follow the day or night theme */
 const TIP_STYLE = { background: "#fff", color: "#1b2a2f", border: "1px solid #dde3e2", borderRadius: "8px", padding: "10px 12px", boxShadow: "0 4px 14px rgba(0,0,0,.14)", fontFamily: "'IBM Plex Sans', system-ui, sans-serif", fontSize: "13px", lineHeight: "1.45", maxWidth: "260px" };
+let tipT = null, tipKey = "";
+function tipTheme() {
+  const k = document.body.className; if (tipT && tipKey === k) return tipT;
+  const cs = getComputedStyle(document.body), v = (n, f) => (cs.getPropertyValue(n) || "").trim() || f;
+  tipKey = k;
+  return (tipT = { bg: v("--surface", "#fff"), ink: v("--ink", "#1b2a2f"), muted: v("--muted", "#5c6d72"), line: v("--line", "#dde3e2"), accent: v("--accent", "#1d6b86"), soft: v("--accent-soft", "#e3f0f4") });
+}
+const tipStyle = (w = 292) => { const T = tipTheme(); return { background: T.bg, color: T.ink, border: `1px solid ${T.line}`, borderRadius: "14px", padding: "0", overflow: "hidden", boxShadow: "0 12px 32px rgba(0,0,0,.24)", fontFamily: "'IBM Plex Sans', system-ui, sans-serif", fontSize: "13px", lineHeight: "1.4", width: w + "px", maxWidth: w + "px" }; };
+const HAB_SHORT2 = (b) => { if (isNightBird(b.sci)) return "Night"; const h = habitatOf(b.sci, b.fam); return (HABITATS.find((x) => x.id === h.id) || { short: "Woodland" }).short; };
+const shortName = (n) => n.replace(/^(Eurasian|European|Common|Northern) /, "");
+const shortFam = (f) => famName(f).split(/,| &| and /)[0];
+const agoShort = (iso) => { if (!iso) return "–"; const d = Math.round((Date.now() - Date.parse(iso)) / 864e5); return d <= 0 ? "today" : d === 1 ? "1d" : d < 14 ? d + "d" : d < 60 ? Math.round(d / 7) + "w" : fmtDate(iso).replace(/ \d{4}$/, ""); };
+function tipPhoto(sci, col, size) {
+  const ph = sci ? Photos.peek(sci) : null;
+  if (!ph && sci) { try { Photos.get(sci); } catch (e) {} }
+  return ph ? `<img src="${ph.sq}" alt="" referrerpolicy="no-referrer" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;flex:none;box-shadow:0 0 0 2px ${col}">`
+    : `<span style="width:${size}px;height:${size}px;border-radius:50%;background:${col};display:block;flex:none;opacity:.85"></span>`;
+}
+const tipTiles = (T, tiles) => `<div style="display:grid;grid-template-columns:repeat(${tiles.length},minmax(0,1fr));gap:6px;padding:0 14px 10px">${tiles.map(([v, l]) => `<div style="background:${T.line}55;border-radius:9px;padding:6px 4px;text-align:center"><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px;line-height:1.2">${v}</div><div style="font-size:11px;color:${T.muted}">${l}</div></div>`).join("")}</div>`;
+const tipFoot = (T, left, right) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid ${T.line};font-size:12px;color:${T.muted}"><span>${left}</span><span style="color:${T.accent};font-weight:600;white-space:nowrap">${right} →</span></div>`;
+function areaCard(title, where, a, focused) {
+  const T = tipTheme();
+  const list = [...a.species.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]));
+  const top = list.slice(0, 5), max = top.length ? top[0][1] : 1;
+  const colOf = (n) => speciesColour.get(n) || "#7d8b8f";
+  const fams = new Map(); for (const [n] of list) { const f = (a.first.get(n) || {}).fam; if (f) fams.set(f, (fams.get(f) || 0) + 1); }
+  const famList = [...fams.entries()].sort((x, y) => y[1] - x[1]);
+  const mix = famList.length > 1 ? `<div style="display:flex;height:6px;border-radius:99px;overflow:hidden;margin:0 14px 5px">${famList.map(([f, c]) => `<span style="flex:${c};background:${famColour(f)}"></span>`).join("")}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;padding:0 14px 8px;font-size:11px;color:${T.muted}">${famList.slice(0, 4).map(([f]) => `<span><i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${famColour(f)};margin-right:4px"></i>${esc(shortFam(f))}</span>`).join("")}</div>` : "";
+  const rows = top.map(([n, c]) => { const f = a.first.get(n) || {}; return `<div style="display:grid;grid-template-columns:26px minmax(0,1fr) 22px;gap:8px;align-items:center;padding:3px 0">${tipPhoto(f.sci, colOf(n), 26)}<div style="min-width:0"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(shortName(n))}</div><div style="height:4px;border-radius:99px;background:${T.line};margin-top:3px;overflow:hidden"><i style="display:block;height:100%;width:${Math.max(8, Math.round((c / max) * 100))}%;background:${colOf(n)};border-radius:99px"></i></div></div><span style="text-align:right;font-family:var(--font-mono);font-size:12px;color:${T.muted}">${c}</span></div>`; }).join("");
+  let newest = null; if (a.visits > 1) for (const [n, f] of a.first) if (!newest || f.date > newest.date) newest = { n, date: f.date };
+  const isNew = newest && newest.date !== [...a.first.values()].reduce((m, f) => (f.date < m ? f.date : m), "9999");
+  return { html: `<div style="height:4px;background:${top.length ? colOf(top[0][0]) : T.accent}"></div>
+    <div style="padding:11px 14px 9px"><div style="font-size:11px;color:${T.muted};letter-spacing:.03em">${where}</div><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:19px;line-height:1.2">${esc(title)}</div></div>
+    ${tipTiles(T, [[a.n, a.n === 1 ? "species" : "species"], [a.visits, a.visits === 1 ? "day out" : "days out"], [agoShort(a.last), "last visit"]])}
+    ${mix}<div style="padding:2px 14px 8px">${rows}</div>
+    ${isNew ? `<div style="padding:0 14px 10px;font-size:12px;color:${T.muted};display:flex;gap:6px;align-items:center"><span style="background:${T.soft};color:${T.accent};border-radius:99px;padding:1px 8px;font-size:11px;font-weight:600">New here</span>${esc(shortName(newest.n))}, ${esc(fmtDate(newest.date).replace(/ \d{4}$/, ""))}</div>` : ""}
+    ${tipFoot(T, list.length > 5 ? `+ ${list.length - 5} more ${list.length - 5 === 1 ? "bird" : "birds"}` : `${list.length} ${list.length === 1 ? "bird" : "birds"} here`, focused ? "Click to show everywhere" : "Click to focus")}`, style: tipStyle() };
+}
+function birdCard({ eyebrow, name, sci, col, sub, tiles, place, foot }) {
+  const T = tipTheme();
+  return { html: `<div style="display:flex;gap:12px;align-items:center;padding:13px 14px 10px">${tipPhoto(sci, col, 52)}<div style="min-width:0">${eyebrow ? `<div style="font-size:11px;color:${T.muted};letter-spacing:.03em">${eyebrow}</div>` : ""}<div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;line-height:1.2">${esc(name)}</div><div style="font-size:12px;color:${T.muted}">${sub}</div></div></div>
+    ${tiles && tiles.length ? tipTiles(T, tiles) : ""}
+    ${place ? `<div style="padding:0 14px 10px;font-size:12px;color:${T.muted}">${place}</div>` : ""}
+    ${tipFoot(T, "", foot || "Open its story")}`, style: tipStyle(260) };
+}
+function plainCard(title, col, sub, body, foot) {
+  const T = tipTheme();
+  return { html: `<div style="height:4px;background:${col}"></div><div style="padding:11px 14px 6px"><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;line-height:1.2">${title}</div><div style="font-size:12px;color:${T.muted};margin-top:1px">${sub}</div></div>
+    <div style="padding:2px 14px 10px">${body}</div>${foot ? tipFoot(T, "", foot) : ""}`, style: tipStyle(270) };
+}
+const tipPlaces = (places) => { const T = tipTheme(); const p = places.slice(0, 3); return `<div style="font-size:12px;color:${T.muted}">📍 ${p.map(esc).join(", ")}${places.length > 3 ? ` and ${places.length - 3} more` : ""}</div>`; };
 function tooltip({ object, layer }) {
   if (!object || !layer) return null;
   if (layer.id.startsWith("areas") || layer.id === "bars") {
@@ -2322,33 +2377,32 @@ function tooltip({ object, layer }) {
     const where = lvl === "ward" && district ? (isIE ? `Electoral division in ${esc(district)}, Ireland` : `Ward in ${esc(district)}, UK`)
       : lvl === "county" ? (isIE ? `County in ${esc(props.region2 || "")}, Ireland` : `${props.region2 ? `In ${esc(props.region2)}, ` : ""}UK`)
       : lvl === "region" ? (isIE ? "Province of Ireland" : "Part of the UK") : "";
-    const sub = where ? `<div style="color:#5c6d72;font-size:12px">${where}</div>` : "";
-    const head = `<div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:15px">${esc(title)}</div>${sub}`;
     if (!a) return null;
-    return { html: head + `<div style="color:#5c6d72;margin-bottom:6px">${a.n} species · out on ${a.visits} ${a.visits === 1 ? "day" : "days"}</div>` + speciesLines(a.species) + `<div style="color:#1d6b86;margin-top:6px;font-size:12px">${state.area === name && state.areaLevel === lvl ? "Click to show everywhere" : "Click to show only this area"}</div>`, style: TIP_STYLE };
+    return areaCard(title, where.replace(/^In /, "").replace(/, UK$/, " · UK").replace(/^UK$/, "UK"), a, state.area === name && state.areaLevel === lvl);
   }
   if (layer.id === "viz-totem") {
     const sw = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${famColour(object.fam)};margin-right:6px"></span>`;
-    return { html: `<div style="font-weight:600">${sw}${esc(famName(object.fam))}</div><div style="color:#5c6d72;margin:2px 0 6px">${object.species.size} species · heard ${object.times} ${object.times === 1 ? "time" : "times"} here</div>` + speciesLines(object.species, 8) + `<div style="font-size:12px;margin-top:6px">${object.places.map(esc).join("<br>")}</div><div style="color:#1d6b86;margin-top:6px;font-size:12px">Click for details</div>`, style: TIP_STYLE };
+    return plainCard(esc(famName(object.fam)), famColour(object.fam), `${object.species.size} species · heard ${object.times} ${object.times === 1 ? "time" : "times"} here`, speciesLines(object.species, 6) + `<div style="margin-top:6px">${tipPlaces(object.places)}</div>`, "Click for details");
   }
   if (layer.id === "viz-totem-cap") {
     const cap = true, b = object.latest;
     if (!b) return null;
     const places = object.placeNames, col = PLUMAGE[sci2(b.sci)] || famColour(b.fam);
     const sw = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${col};margin-right:6px"></span>`;
+    if (cap) return birdCard({ eyebrow: "Latest bird here", name: shortName(b.name), sci: b.sci, col, sub: `${esc(shortFam(b.fam))} · heard ${b.days} ${b.days === 1 ? "day" : "days"}`, tiles: [[b.last ? esc(fmtDate(b.last.slice(0, 10)).replace(/ \d{4}$/, "")) : "–", "last heard"], [esc(HAB_SHORT2(b)), "habitat"]], place: tipPlaces(places), foot: "Click for details" });
     const ph = Photos.peek(b.sci);
     return { html: `${ph ? `<img src="${ph.sq}" alt="" referrerpolicy="no-referrer" style="float:right;width:52px;height:52px;border-radius:50%;object-fit:cover;margin:0 0 4px 10px">` : ""}${cap ? `<div style="color:#5c6d72;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Latest bird here</div>` : ""}<div style="font-weight:600">${sw}${esc(b.name)}</div><div style="color:#5c6d72;margin:2px 0 4px">${esc(famName(b.fam))} · heard here on ${b.days} ${b.days === 1 ? "day" : "days"}${cap && b.last ? ` · last ${esc(fmtDate(b.last.slice(0, 10)))}` : ""}</div><div style="font-size:12px">${places.map(esc).join("<br>")}</div><div style="color:#1d6b86;margin-top:6px;font-size:12px">Click for details</div>`, style: TIP_STYLE };
   }
   if (layer.id === "viz-hab-pads") {
     const sw = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${habColour(object.hab)};margin-right:6px"></span>`;
     const shown = object.names.slice(0, 8).map(esc).join("<br>") + (object.names.length > 8 ? `<br>and ${object.names.length - 8} more` : "");
-    return { html: `<div style="font-weight:600">${sw}${esc(habName(object.hab))}</div><div style="color:#5c6d72;margin:2px 0 6px">${object.names.length} species here</div><div style="font-size:12px">${shown}</div><div style="color:#1d6b86;margin-top:6px;font-size:12px">Click for details</div>`, style: TIP_STYLE };
+    return plainCard(esc(habName(object.hab)), habColour(object.hab), `${object.names.length} species here`, `<div style="font-size:12.5px">${shown}</div>`, "Click for details");
   }
   if (layer.id.startsWith("viz-flock-") && !layer.id.startsWith("viz-flock-wing") || layer.id.startsWith("viz-hab-birds")) {
     const b = object.b || object;
     const sw = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${layer.id.startsWith("viz-hab-birds") ? `rgb(${b.colour.join(",")})` : famColour(b.fam)};margin-right:6px"></span>`;
-    const ph = Photos.peek(sciOf(b.name));
-    return { html: `${ph ? `<img src="${ph.sq}" alt="" referrerpolicy="no-referrer" style="float:right;width:52px;height:52px;border-radius:50%;object-fit:cover;margin:0 0 4px 10px">` : ""}<div style="font-weight:600">${sw}${esc(b.name)}</div><div style="color:#5c6d72;margin:2px 0 4px">${esc(vizMode === "habitat" ? habName(b.hab) : famName(b.fam))} · heard on ${b.days} ${b.days === 1 ? "day" : "days"}</div><div style="font-size:12px">${b.places.map(esc).join("<br>")}</div><div style="color:#1d6b86;margin-top:6px;font-size:12px">Click for details</div>`, style: TIP_STYLE };
+    const col2 = layer.id.startsWith("viz-hab-birds") ? `rgb(${b.colour.join(",")})` : famColour(b.fam);
+    return birdCard({ eyebrow: esc(vizMode === "habitat" ? habName(b.hab) : shortFam(b.fam)), name: shortName(b.name), sci: sciOf(b.name), col: col2, sub: `Heard on ${b.days} ${b.days === 1 ? "day" : "days"}`, place: tipPlaces(b.places), foot: "Click for details" });
   }
   if (layer.id === "place-bars") {
     const sw = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgb(${object.colour.join(",")});margin-right:6px"></span>`;
@@ -2357,7 +2411,7 @@ function tooltip({ object, layer }) {
     const sub = isFam
       ? `${object.species.size} ${object.species.size === 1 ? "species" : "species"} · heard ${object.n} ${object.n === 1 ? "time" : "times"}`
       : `Heard on ${object.n} ${object.n === 1 ? "day" : "days"} · first ${esc(fmtDate(object.first))}`;
-    return { html: `<div style="font-weight:600">${sw}${esc(object.label)}</div><div style="color:#5c6d72;margin:2px 0 6px">${sub}</div>` + (isFam ? speciesLines(object.species, 8) : "") + `<div style="font-size:12px;margin-top:6px">${where}</div>` + (object.clusterPlaces > 1 ? `<div style="color:#1d6b86;margin-top:6px;font-size:12px">Zoom in to split these spots apart</div>` : ""), style: TIP_STYLE };
+    return plainCard(esc(object.label), `rgb(${object.colour.join(",")})`, sub, (isFam ? speciesLines(object.species, 6) : "") + `<div style="font-size:12px;margin-top:6px">${where}</div>`, object.clusterPlaces > 1 ? "Zoom in to split these spots apart" : "");
   }
   if (layer.id === "spots") {
     const sets = new Map(); object.items.forEach((d) => { if (!sets.has(d.name)) sets.set(d.name, new Set()); sets.get(d.name).add(d.date); });
