@@ -1120,6 +1120,14 @@ body.world-on #crumbs, body.world-on #map-tools, body.world-on #legend, body.wor
 .fb-text { margin: 6px 0 2px; font-size: 13.5px; white-space: pre-wrap; }
 .rep-k.k-fb { background: var(--accent-soft); color: var(--accent); }
 .nt.fb .eyebrow { display: block; font-size: 10.5px; font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.empty-card { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; width: min(360px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px 20px 16px; box-shadow: 0 14px 40px rgba(0,0,0,.16); text-align: center; }
+.empty-card[hidden] { display: none; }
+.empty-card b { font-family: var(--font-display); font-size: 19px; display: block; }
+.empty-card p { margin: 6px 0 14px; color: var(--muted); font-size: 14.5px; line-height: 1.45; }
+.empty-card .acts { display: grid; gap: 6px; }
+.empty-card .primary { background: var(--accent); color: #fff; border-radius: 999px; padding: 11px 16px; font-weight: 600; font-size: 15px; border: 0; }
+.empty-card .ghost { background: none; border: 0; color: var(--accent); font-weight: 600; font-size: 14px; padding: 8px; box-shadow: none; }
+body.welcoming .empty-card { display: none; }
 .nt-react { display: flex; align-items: center; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
 .nt-react button { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 16px; line-height: 1.2; min-height: 0; box-shadow: none; cursor: pointer; transition: transform .12s; }
 .nt-react button:hover:not([disabled]) { transform: scale(1.15); }
@@ -1337,6 +1345,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
     <button type="button" data-view="collection" aria-pressed="false" title="Your collection of UK birds (C)">Birds</button>
   </div>
   <div id="map" aria-label="3D map of sightings by county"><div class="loading">Drawing the map…</div></div>
+  <div class="empty-card" id="empty-card" hidden></div>
   <div class="basemap-note" id="basemap-note" hidden>
     <span>The detailed map couldn't load, so this is the simple map.</span>
     <span id="basemap-reason"></span>
@@ -1520,141 +1529,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
 
 <div class="dropzone-overlay" id="overlay"><div>Drop your eBird CSV to update the map</div></div>
 
-<script type="text/plain" id="embedded-csv">Submission ID,Common Name,Scientific Name,Taxonomic Order,Count,State/Province,County,Location ID,Location,Latitude,Longitude,Date,Time,Protocol,Duration (Min),All Obs Reported,Distance Traveled (km),Area Covered (ha),Number of Observers,Breeding Code,Observation Details,Checklist Comments,ML Catalog Numbers
-S408998356,Graylag Goose,Anser anser,276,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-,Canada Goose,Branta canadensis,347,X,GB-ENG,Gloucestershire,L79439353,Near Bourton on the Water,51.89,-1.75,2026-09-13,,eBird - Casual Observation,,0,,,1
-S408997160,Canada Goose,Branta canadensis,347,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997700,Canada Goose,Branta canadensis,347,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997539,Mute Swan,Cygnus olor,382,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997956,Gadwall,Mareca strepera,513,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999592,Gadwall,Mareca strepera,513,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408753355,Mallard,Anas platyrhynchos,554,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S409005891,Mallard,Anas platyrhynchos,554,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997238,Mallard,Anas platyrhynchos,554,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997891,Mallard,Anas platyrhynchos,554,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999294,Mallard,Anas platyrhynchos,554,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999639,Mallard,Anas platyrhynchos,554,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408752163,Rock Pigeon,Columba livia,1875,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S408753052,Rock Pigeon,Columba livia,1875,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S409005926,Rock Pigeon,Columba livia,1875,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-,Eurasian Collared-Dove,Streptopelia decaocto,2055,X,GB-ENG,Gloucestershire,L79439353,Near Bourton on the Water,51.89,-1.75,2026-09-13,,eBird - Casual Observation,,0,,,1
-S408998079,Eurasian Moorhen,Gallinula chloropus,5500,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999385,Eurasian Moorhen,Gallinula chloropus,5500,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408753334,Eurasian Coot,Fulica atra,5525,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S408997197,Eurasian Coot,Fulica atra,5525,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997662,Eurasian Coot,Fulica atra,5525,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997922,Eurasian Coot,Fulica atra,5525,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999264,Eurasian Coot,Fulica atra,5525,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997130,Black-headed Gull,Chroicocephalus ridibundus,6516,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997461,Black-headed Gull,Chroicocephalus ridibundus,6516,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-,Yellow-legged Gull,Larus michahellis,6596,X,GB-ENG,Gloucestershire,L79439353,Near Bourton on the Water,51.89,-1.75,2026-09-11,,eBird - Casual Observation,,0,,,1
-S408999318,Little Grebe,Tachybaptus ruficollis,6879,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999504,Little Grebe,Tachybaptus ruficollis,6879,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408751772,Rose-ringed Parakeet,Psittacula krameri,12431,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S408752647,Rose-ringed Parakeet,Psittacula krameri,12431,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-23,,eBird - Casual Observation,,0,,,1
-S408752935,Rose-ringed Parakeet,Psittacula krameri,12431,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-04,,eBird - Casual Observation,,0,,,1
-S408753124,Rose-ringed Parakeet,Psittacula krameri,12431,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S408753293,Eurasian Jay,Garrulus glandarius,21440,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S408746972,Eurasian Magpie,Pica pica,21565,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-09-19,,eBird - Casual Observation,,0,,,1
-S408751647,Eurasian Magpie,Pica pica,21565,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S408752685,Eurasian Magpie,Pica pica,21565,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-23,,eBird - Casual Observation,,0,,,1
-S408753151,Eurasian Magpie,Pica pica,21565,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S408753501,Eurasian Magpie,Pica pica,21565,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S409005821,Eurasian Magpie,Pica pica,21565,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997417,Eurasian Magpie,Pica pica,21565,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999670,Eurasian Magpie,Pica pica,21565,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S409005364,Eurasian Magpie,Pica pica,21565,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408747451,Eurasian Jackdaw,Coloeus monedula,21612,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-04,,eBird - Casual Observation,,0,,,1
-S408748398,Eurasian Jackdaw,Coloeus monedula,21612,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-04,,eBird - Casual Observation,,0,,,1
-S408752500,Eurasian Jackdaw,Coloeus monedula,21612,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-23,,eBird - Casual Observation,,0,,,1
-S408753037,Eurasian Jackdaw,Coloeus monedula,21612,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-,Eurasian Jackdaw,Coloeus monedula,21612,X,GB-ENG,Northumberland,L79440118,Near Meldon,55.09,-1.86,2026-10-11,,eBird - Casual Observation,,0,,,1
-,Rook,Corvus frugilegus,21653,X,GB-ENG,Northumberland,L79440118,Near Meldon,55.09,-1.86,2026-10-11,,eBird - Casual Observation,,0,,,1
-S408748381,Carrion Crow,Corvus corone,21674,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-04,,eBird - Casual Observation,,0,,,1
-S408751740,Carrion Crow,Corvus corone,21674,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S408752557,Carrion Crow,Corvus corone,21674,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-23,,eBird - Casual Observation,,0,,,1
-,Carrion Crow,Corvus corone,21674,X,GB-ENG,Northumberland,L79440118,Near Meldon,55.09,-1.86,2026-10-11,,eBird - Casual Observation,,0,,,1
-S408748308,Coal Tit,Periparus ater,22047,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-04,,eBird - Casual Observation,,0,,,1
-S408743006,Eurasian Blue Tit,Cyanistes caeruleus,22213,X,GB-ENG,Gloucestershire,L79439141,"Chedworth, England",51.8018036,-1.9230604,2026-09-11,,eBird - Casual Observation,,0,,,1
-S408753092,Eurasian Blue Tit,Cyanistes caeruleus,22213,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S409005501,Eurasian Blue Tit,Cyanistes caeruleus,22213,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997385,Eurasian Blue Tit,Cyanistes caeruleus,22213,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408998618,Eurasian Blue Tit,Cyanistes caeruleus,22213,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408748344,Great Tit,Parus major,22276,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-04,,eBird - Casual Observation,,0,,,1
-S408752059,Great Tit,Parus major,22276,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S409005259,Great Tit,Parus major,22276,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-S409005755,Great Tit,Parus major,22276,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-,Great Tit,Parus major,22276,X,GB-ENG,Northumberland,L79440118,Near Meldon,55.09,-1.86,2026-10-11,,eBird - Casual Observation,,0,,,1
-,Common Chiffchaff,Phylloscopus collybita,24959,X,GB-ENG,Northumberland,L79440118,Near Meldon,55.09,-1.86,2026-10-11,,eBird - Casual Observation,,0,,,1
-S408747895,Long-tailed Tit,Aegithalos caudatus,25319,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-04,,eBird - Casual Observation,,0,,,1
-S408752125,Long-tailed Tit,Aegithalos caudatus,25319,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S408752365,Long-tailed Tit,Aegithalos caudatus,25319,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S409005779,Long-tailed Tit,Aegithalos caudatus,25319,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997268,Long-tailed Tit,Aegithalos caudatus,25319,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997352,Long-tailed Tit,Aegithalos caudatus,25319,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997825,Long-tailed Tit,Aegithalos caudatus,25319,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408998451,Long-tailed Tit,Aegithalos caudatus,25319,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999112,Long-tailed Tit,Aegithalos caudatus,25319,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999344,Long-tailed Tit,Aegithalos caudatus,25319,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S409005411,Long-tailed Tit,Aegithalos caudatus,25319,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-,Eurasian Blackcap,Sylvia atricapilla,25378,X,GB-ENG,Northumberland,L79440118,Near Meldon,55.09,-1.86,2026-10-11,,eBird - Casual Observation,,0,,,1
-S408747479,Goldcrest,Regulus regulus,27000,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-04,,eBird - Casual Observation,,0,,,1
-S408753196,Goldcrest,Regulus regulus,27000,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S408999709,Goldcrest,Regulus regulus,27000,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408747416,Eurasian Nuthatch,Sitta europaea,27114,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-04,,eBird - Casual Observation,,0,,,1
-S408753070,Eurasian Nuthatch,Sitta europaea,27114,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S409005295,Eurasian Nuthatch,Sitta europaea,27114,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408753408,Eurasian Treecreeper,Certhia familiaris,27158,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-,Eurasian Treecreeper,Certhia familiaris,27158,X,GB-ENG,Northumberland,L79440118,Near Meldon,55.09,-1.86,2026-10-11,,eBird - Casual Observation,,0,,,1
-S408752215,Eurasian Wren,Nannus troglodytes,27418,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S408752876,Eurasian Wren,Nannus troglodytes,27418,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-24,,eBird - Casual Observation,,0,,,1
-S408753168,Eurasian Wren,Nannus troglodytes,27418,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S408753383,Eurasian Wren,Nannus troglodytes,27418,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S408997746,Eurasian Wren,Nannus troglodytes,27418,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997854,Eurasian Wren,Nannus troglodytes,27418,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S409005469,Eurasian Wren,Nannus troglodytes,27418,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S409458230,European Starling,Sturnus vulgaris,27986,X,GB-ENG,Manchester,L79534683,Trafford Council,53.4588243,-2.2878492,2026-11-10,,eBird - Casual Observation,,0,,,1
-S408999226,Song Thrush,Turdus philomelos,28611,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S409005536,Redwing,Turdus iliacus,28675,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408742966,Eurasian Blackbird,Turdus merula,28678,X,GB-ENG,Gloucestershire,L79439141,"Chedworth, England",51.8018036,-1.9230604,2026-09-11,,eBird - Casual Observation,,0,,,1
-S408753434,Eurasian Blackbird,Turdus merula,28678,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S409005948,Eurasian Blackbird,Turdus merula,28678,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997512,Eurasian Blackbird,Turdus merula,28678,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408998692,Eurasian Blackbird,Turdus merula,28678,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S409005320,Eurasian Blackbird,Turdus merula,28678,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-,European Robin,Erithacus rubecula,29444,X,GB-ENG,Gloucestershire,L79439353,Near Bourton on the Water,51.89,-1.75,2026-09-11,,eBird - Casual Observation,,0,,,1
-,European Robin,Erithacus rubecula,29444,X,GB-ENG,Gloucestershire,L79439353,Near Bourton on the Water,51.89,-1.75,2026-09-13,,eBird - Casual Observation,,0,,,1
-S408742927,European Robin,Erithacus rubecula,29444,X,GB-ENG,Gloucestershire,L79439141,"Chedworth, England",51.8018036,-1.9230604,2026-09-11,,eBird - Casual Observation,,0,,,1
-S408747504,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-04,,eBird - Casual Observation,,0,,,1
-S408748421,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-04,,eBird - Casual Observation,,0,,,1
-S408751690,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S408752251,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S408752327,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S408752589,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-23,,eBird - Casual Observation,,0,,,1
-S408753259,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S408753482,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S409005717,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997585,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408998169,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999148,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999416,European Robin,Erithacus rubecula,29444,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408748803,Dunnock,Prunella modularis,31754,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-07,,eBird - Casual Observation,,0,,,1
-S408999050,Dunnock,Prunella modularis,31754,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999184,Dunnock,Prunella modularis,31754,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408999575,Dunnock,Prunella modularis,31754,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408752462,House Sparrow,Passer domesticus,31772,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-23,,eBird - Casual Observation,,0,,,1
-S409005611,House Sparrow,Passer domesticus,31772,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-S409005843,House Sparrow,Passer domesticus,31772,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408997624,House Sparrow,Passer domesticus,31772,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-,House Sparrow,Passer domesticus,31772,X,GB-ENG,Northumberland,L79440118,Near Meldon,55.09,-1.86,2026-10-11,,eBird - Casual Observation,,0,,,1
-,Eurasian Tree Sparrow,Passer montanus,31841,X,GB-ENG,Northumberland,L79440118,Near Meldon,55.09,-1.86,2026-10-11,,eBird - Casual Observation,,0,,,1
-S408752023,Gray Wagtail,Motacilla cinerea,31916,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-10-18,,eBird - Casual Observation,,0,,,1
-S408753311,Common Chaffinch,Fringilla coelebs,32187,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S409005443,Common Chaffinch,Fringilla coelebs,32187,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-,Common Chaffinch,Fringilla coelebs,32187,X,GB-ENG,Northumberland,L79440118,Near Meldon,55.09,-1.86,2026-10-11,,eBird - Casual Observation,,0,,,1
-S408753465,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L79440645,Lightoaks Park,53.4969178,-2.3125148,2026-11-07,,eBird - Casual Observation,,0,,,1
-S408998227,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1
-S408998307,European Goldfinch,Carduelis carduelis,32803,X,GB-ENG,Manchester,L1235382,Pennington Flash LNR,53.48777,-2.54518,2026-11-08,,eBird - Casual Observation,,0,,,1</script>
+<script type="text/plain" id="embedded-csv">Submission ID,Common Name,Scientific Name,Taxonomic Order,Count,State/Province,County,Location ID,Location,Latitude,Longitude,Date,Time,Protocol,Duration (Min),All Obs Reported,Distance Traveled (km),Area Covered (ha),Number of Observers,Breeding Code,Observation Details,Checklist Comments,ML Catalog Numbers</script>
 <script type="text/plain" id="embedded-meta">MyEBirdData.csv (13 Nov 2026)</script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
@@ -1680,7 +1555,7 @@ const COUNTIES = prep(GEO.counties);
 const IE_BOX = () => COUNTIES.filter((c) => c.f.properties.country === "IE").reduce((b, c) => [Math.min(b[0], c.bbox[0]), Math.min(b[1], c.bbox[1]), Math.max(b[2], c.bbox[2]), Math.max(b[3], c.bbox[3])], [180, 90, -180, -90]);
 const REGIONS = prep(GEO.regions);
 /* Ward shapes are big, so the hosted site loads them just after the map appears. Ward names for your own spots ride along in WARD_HINTS. */
-const WARD_HINTS = {"-1.75000,51.89000": "Bourton-on-the-Water, Cotswold", "-1.86000,55.09000": "Ponteland North, Northumberland", "-1.92306,51.80180": "Chedworth, Cotswold", "-2.28785,53.45882": "Gorse Hill, Trafford", "-2.31251,53.49692": "Claremont, Salford", "-2.54518,53.48777": "Lowton East, Wigan"};
+const WARD_HINTS = {};
 let WARDS_FC = { type: "FeatureCollection", features: [] };
 function buildWards(topo) {
   const fc = topojson.feature(topo, Object.values(topo.objects)[0]);
@@ -1788,7 +1663,7 @@ function toRecords(text) {
     });
     out[out.length - 1].hab = habitatOf(out[out.length - 1].sci, out[out.length - 1].family);
   }
-  if (!out.length) throw new Error("No sightings with coordinates were found in this file.");
+  if (!out.length && rows.length > 1) throw new Error("No sightings with coordinates were found in this file.");
   return out;
 }
 
@@ -4608,12 +4483,23 @@ function useRecords(recs, source, fileName, { save = false, text = "" } = {}) {
   setTimeout(setupReplay, 0);
   state.selected.clear();
   if (save) { try { localStorage.setItem(STORE_KEY, JSON.stringify({ text, fileName, at: new Date().toISOString() })); } catch (e) {} }
-  render();
+  render(); paintEmpty();
   setStatus(source === "built-in"
     ? `Showing the built-in export: <code>${esc(fileName)}</code>, ${recs.length} sightings.`
     : source === "account" || source === "flock" ? `Showing ${esc(fileName)}: ${recs.length} sightings.`
     : `Showing <code>${esc(fileName)}</code>, ${recs.length} sightings. It stays on this browser only.`);
 }
+/* an empty map gets a friendly card saying what to do next */
+function paintEmpty() {
+  const el = $("empty-card"); if (!el) return;
+  const me = Acct.me, empty = !state.data.length && state.source !== "flock" && viewMode === "map";
+  el.hidden = !empty; if (!empty) return;
+  const friends = me ? Acct.members.filter((m) => m.u !== me.u && m.birds).length : 0;
+  el.innerHTML = me
+    ? `<b>Your map is waiting${me.name ? `, ${esc(me.name)}` : ""}</b><p>Add your eBird file and every bird you've heard will appear here, from whole counties down to the exact spot.</p><div class="acts"><button type="button" class="primary" data-acct-open="profile">Add my eBird file</button>${friends ? `<button type="button" class="ghost" data-empty-flock>See my flock's birds</button>` : ""}</div>`
+    : `<b>Your bird map starts here</b><p>Join BIRB and add your eBird file to see every bird you've heard, from whole counties down to the exact spot.</p><div class="acts"><button type="button" class="primary" data-acct-open="signin">Join or sign in</button></div>`;
+}
+document.addEventListener("click", (e) => { if (e.target.closest("[data-empty-flock]")) Acct.flock(); });
 function loadFile(file) {
   if (!file) return;
   fileText(file).then((text) => { useText(text, "file", file.name.replace(/\.zip$/i, " (from zip)"), { save: true }); fit(); })
@@ -5542,7 +5428,7 @@ function setView(v) {
   document.body.classList.toggle("coll-on", co);
   $("world").hidden = !on;
   $("coll").hidden = !co;
-  Tips.hideCur();
+  Tips.hideCur(); paintEmpty();
   if (co) { $("coll").scrollTop = 0; if (Badges.mode === "badges") Badges.render(); else Coll.render(); if (window.innerWidth < 760) setPanel(false); }
   Tips.show(co ? (Badges.mode === "badges" ? "badges" : "coll") : v);
   Badges.paintDot();
@@ -5575,7 +5461,7 @@ const Tips = (() => {
   const busy = () => document.body.classList.contains("welcoming") || !$("wel-pop").hidden || !$("help").hidden || !$("acct").hidden || !$("rare-pop").hidden || !!document.querySelector(".mem-pop:not([hidden]), .guide:not([hidden])") || !$("bell-card").hidden || (typeof viewMode !== "undefined" && false);
   const visible = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight; };
   /* a tip belongs to the screen you're on; leave it waiting if you've moved on */
-  const fits = (k) => (k === "map" ? viewMode === "map" : k === "world" ? viewMode === "world" : k === "coll" ? viewMode === "collection" && !$("coll-main").hidden : k === "badges" ? viewMode === "collection" && !$("badges").hidden : k === "flock" ? state.source === "flock" && viewMode === "map" : false);
+  const fits = (k) => (k === "map" ? viewMode === "map" && state.data.length > 0 : k === "world" ? viewMode === "world" : k === "coll" ? viewMode === "collection" && !$("coll-main").hidden : k === "badges" ? viewMode === "collection" && !$("badges").hidden : k === "flock" ? state.source === "flock" && viewMode === "map" : false);
   function place(el) {
     const tip = $("tip"), a = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
     const below = a.top + a.height / 2 < innerHeight / 2;
@@ -5925,6 +5811,7 @@ const Acct = (() => {
 
   /* corner button and the "whose birds" chip */
   function paintChrome() {
+    setTimeout(paintEmpty, 0);
     if (!API) return;
     const b = $("me-btn"); b.hidden = false;
     document.body.classList.add("has-me");
@@ -6163,9 +6050,8 @@ const Acct = (() => {
     if (want) done = await show(want);
     if (!done && me && pref === "flock") done = await showFlock({ quiet: true });
     if (!done && me && me.birds) done = await show(me.u, { quiet: true });
-    if (!done && me) done = await showFlock({ quiet: true });
-    if (!done && me && !me.birds) setTimeout(() => toast(`<span>Welcome, ${esc(nameOf(me))}. You're seeing the app's built-in birds until you add your own eBird export.</span><span class="acts"><button type="button" data-acct-open="profile">Add my birds</button></span>`, $("who")), 800);
-    if (!done && state.source !== "file" && owner && members.some((m) => m.u === owner && m.birds)) done = await show(owner, { quiet: true });
+    /* new people start with their own map, empty until they add their file; nobody else's birds are shown by default */
+    paintEmpty();
     if (me) { loadInbox(); clearInterval(pollT); pollT = setInterval(() => { if (me && !document.hidden) loadInbox(); }, 120000); }
     if (me && me.mustChange) { document.body.classList.remove("welcoming"); open("passcode"); }
     else if (invite) await showInvite(invite);
@@ -6970,7 +6856,7 @@ const Acct = (() => {
     const su = t.closest("[data-show-u]"); if (su) { su.disabled = true; const ok = await show(su.dataset.showU); su.disabled = false; if (ok) close(); return; }
     if (t.closest("[data-show-me]")) { if (await show(me.u)) close(); return; }
     const cp = t.closest("[data-copy]"); if (cp) { try { await navigator.clipboard.writeText(cp.dataset.copy); cp.textContent = "Copied"; } catch (x) { cp.textContent = "Select and copy"; } return; }
-    if (t.closest("[data-signout]")) { setToken(""); me = null; scope = ""; cache.clear(); inbox = { items: [], read: "", unread: 0 }; clearInterval(pollT); await refresh(); if (owner && members.some((m) => m.u === owner && m.birds)) await show(owner, { quiet: true }); paintChrome(); view = "signin"; render(); return; }
+    if (t.closest("[data-signout]")) { setToken(""); me = null; scope = ""; cache.clear(); inbox = { items: [], read: "", unread: 0 }; clearInterval(pollT); await refresh(); useRecords([], "built-in", ""); paintChrome(); view = "signin"; render(); return; }
     const avb = t.closest("[data-avk] button");
     if (avb) { const k = avb.closest("[data-avk]").dataset.avk; draft.avatar[k] = avb.dataset.v; if (k === "head") draft.avatar.beak = Avatar.AUTOBEAK[draft.avatar.head]; document.querySelectorAll(`[data-avk="${k}"] button`).forEach((x) => x.setAttribute("aria-pressed", String(x === avb))); if (k === "head") { const bb = card().querySelector('[data-avk="beak"]'); bb && bb.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === draft.avatar.beak))); } live && live.set(draft.avatar); return; }
     if (t.closest("[data-av-random]")) { const turn = live ? live.turn : draft.avatar.turn; draft.avatar = { ...Avatar.random(), turn }; render(); return; }
@@ -7068,7 +6954,7 @@ const Acct = (() => {
       btn.disabled = true; const r = await call("me", { method: "DELETE", body: { passcode: $("d-pass").value } }); btn.disabled = false;
       if (!r.ok) return err(r.error);
       setToken(""); me = null; scope = ""; cache.clear(); inbox = { items: [], read: "", unread: 0 }; clearInterval(pollT);
-      await refresh(); if (owner && members.some((m) => m.u === owner && m.birds)) await show(owner, { quiet: true }); paintChrome();
+      await refresh(); useRecords([], "built-in", ""); paintChrome();
       close(); toast(`<span>Your account and everything in it has been deleted.</span>`, $("me-btn"));
     } else if (f.id === "f-find") {
       const q = $("fr-u").value.trim().toLowerCase().replace(/^@/, "");
@@ -7116,7 +7002,7 @@ const Acct = (() => {
     return true;
   }
   const busy = () => document.body.classList.contains("welcoming") || !$("acct").hidden || !!document.querySelector(".mem-pop:not([hidden])") || !$("help").hidden || !$("wel-pop").hidden;
-  return { boot, open, member, saveFavourite, savePins, saveBadges, badgeNote, busy, hideBird, recs: getRecs, cached: (u) => cache.get(u) || null, get members() { return members; }, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
+  return { boot, flock: showFlock, open, member, saveFavourite, savePins, saveBadges, badgeNote, busy, hideBird, recs: getRecs, cached: (u) => cache.get(u) || null, get members() { return members; }, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
 })();
 
 /* ---------- reading an eBird export: the .csv, or the .zip eBird emails (opened right here in the browser) ---------- */
