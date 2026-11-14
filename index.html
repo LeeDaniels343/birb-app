@@ -1205,7 +1205,7 @@ body.welcoming .empty-card { display: none; }
 .podium { position: absolute; inset: 0; z-index: 4; background: var(--bg); }
 .podium[hidden] { display: none; }
 #pod-gl { position: absolute; inset: 0; }
-#pod-gl canvas { display: block; touch-action: pan-y; }
+#pod-gl canvas { display: block; touch-action: none; }
 .pod-empty { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); max-width: 320px; text-align: center; color: var(--muted); font-size: 15px; }
 .pod-card { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); width: min(420px, calc(100vw - 24px)); background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 18px; padding: 12px 14px; box-shadow: 0 12px 34px rgba(0,0,0,.18); }
 .pod-card[hidden] { display: none; }
@@ -1214,7 +1214,7 @@ body.welcoming .empty-card { display: none; }
 .pod-t { flex: 1; min-width: 0; }
 .pod-t small { display: block; font-size: 12px; color: var(--muted); }
 .pod-t b { display: block; font-family: var(--font-display); font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pod-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
+.pod-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
 .pod-tiles span { background: color-mix(in srgb, var(--line) 45%, transparent); border-radius: 10px; padding: 6px 2px; text-align: center; font-size: 11px; color: var(--muted); }
 .pod-tiles b { display: block; font-size: 15px; color: var(--ink); font-family: var(--font-display); }
 .pod-nav { display: flex; align-items: center; gap: 8px; }
@@ -1224,6 +1224,13 @@ body.welcoming .empty-card { display: none; }
 .pod-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); display: block; transition: width .2s; }
 .pod-dots i.on { width: 16px; border-radius: 99px; background: var(--accent); }
 @media (max-width: 760px) { .pod-card { bottom: calc(var(--tabh, 64px) + 10px); } }
+.pod-zoom { position: absolute; right: 14px; top: 50%; transform: translateY(-60%); display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(10px); box-shadow: 0 6px 18px rgba(0,0,0,.14); }
+.pod-zoom[hidden] { display: none; }
+.pod-zoom button { width: 44px; height: 44px; border: 0; background: none; color: var(--ink); font-size: 22px; line-height: 1; display: grid; place-items: center; cursor: pointer; }
+.pod-zoom button + button { border-top: 1px solid var(--line); }
+.pod-zoom button:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
+.pod-zoom button:disabled { opacity: .35; cursor: default; }
+.pod-zoom svg { width: 20px; height: 20px; }
 .nt-react { display: flex; align-items: center; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
 .nt-react button { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 16px; line-height: 1.2; min-height: 0; box-shadow: none; cursor: pointer; transition: transform .12s; }
 .nt-react button:hover:not([disabled]) { transform: scale(1.15); }
@@ -1341,7 +1348,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
     <button type="button" class="close-panel" id="close-panel" aria-label="Close the bird panel" title="Close (Esc)">&times;</button>
     <h1>BIRB app</h1>
     <p class="sub">Where I've heard birds with Merlin Sound ID, from my eBird export</p>
-    <p class="updated">Last updated 13 Nov 2026</p>
+    <p class="updated">Last updated 14 Nov 2026</p>
     <div class="seg view-switch" role="group" aria-label="Choose a view">
       <button type="button" data-view="map" aria-pressed="true">Map</button>
       <button type="button" data-view="world" aria-pressed="false">Habitat world</button>
@@ -1535,10 +1542,11 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
   </section>
   <section class="podium" id="podium" hidden aria-label="Your most-heard birds, one per podium">
     <div id="pod-gl"></div>
+    <div class="pod-zoom" id="pod-zoom" hidden><button type="button" id="pod-zin" aria-label="Zoom in" title="Zoom in (+)">+</button><button type="button" id="pod-zout" aria-label="Zoom out" title="Zoom out (−)">−</button><button type="button" id="pod-zall" aria-label="See them all" title="See them all (0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div>
     <p class="pod-empty" id="pod-empty" hidden>Add your birds and your most-heard ones will line up on the podiums here.</p>
     <div class="pod-card" id="pod-card">
       <div class="pod-head"><span class="pod-medal" id="pod-medal">1</span><div class="pod-t"><small id="pod-eyb"></small><b id="pod-name"></b></div><button type="button" class="linkish" id="pod-story">Story</button></div>
-      <div class="pod-tiles"><span><b id="pod-days"></b>days heard</span><span><b id="pod-places"></b>places</span><span><b id="pod-first"></b>first</span><span><b id="pod-last"></b>last</span></div>
+      <div class="pod-tiles"><span><b id="pod-times"></b><i id="pod-times-l" style="font-style:normal">times heard</i></span><span><b id="pod-first"></b>first</span><span><b id="pod-last"></b>last</span></div>
       <div class="pod-nav"><button type="button" id="pod-prev" aria-label="Back up the podium">←</button><span class="pod-dots" id="pod-dots"></span><button type="button" class="primary" id="pod-next">Next</button></div>
     </div>
   </section>
@@ -1644,7 +1652,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
 <div class="dropzone-overlay" id="overlay"><div>Drop your eBird CSV to update the map</div></div>
 
 <script type="text/plain" id="embedded-csv">Submission ID,Common Name,Scientific Name,Taxonomic Order,Count,State/Province,County,Location ID,Location,Latitude,Longitude,Date,Time,Protocol,Duration (Min),All Obs Reported,Distance Traveled (km),Area Covered (ha),Number of Observers,Breeding Code,Observation Details,Checklist Comments,ML Catalog Numbers</script>
-<script type="text/plain" id="embedded-meta">MyEBirdData.csv (13 Nov 2026)</script>
+<script type="text/plain" id="embedded-meta">MyEBirdData.csv (14 Nov 2026)</script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -5599,21 +5607,24 @@ const Podium = (() => {
   let R = null, S = null, C = null, host = null, sun = null, spot = null, raf = 0, last = 0, T = 0;
   let visible = false, dirty = true, list = [], items = [], cur = 0, hop = 0, confetti = [];
   const cam = { x: 0, y: 3, z: 8 }, look = { x: 0, y: 1.5, z: 0 };
+  /* zoom: 0 shows the whole chart, 1 is close up on the current bird */
+  let zt = 0, zf = 0, over = null, ground = null, pinch = null;
+  const pts = new Map();
   const M = (c, o) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o || {}));
   const MEDAL = ["#f2c14e", "#c9d1d7", "#d69563"], MEDAL3 = [0xe8b84a, 0xc3ccd3, 0xc98656];
   const night = () => themeName === "night";
 
-  /* each bird's days, places and dates, from whatever is showing (yours, a friend's, or the flock) */
+  /* how many times each bird was heard, plus its days, places and dates, from whatever is showing (yours, a friend's, or the flock) */
   function rank() {
     const m = new Map();
     for (const d of filtered()) {
       let b = m.get(d.name);
-      if (!b) m.set(d.name, (b = { n: d.name, s: d.sci, fam: d.family, days: new Set(), places: new Set(), first: d.date, last: d.date }));
-      b.days.add(d.date); b.places.add(d.locId);
+      if (!b) m.set(d.name, (b = { n: d.name, s: d.sci, fam: d.family, t: 0, days: new Set(), places: new Set(), first: d.date, last: d.date }));
+      b.t++; b.days.add(d.date); b.places.add(d.locId);
       if (d.date < b.first) b.first = d.date; if (d.date > b.last) b.last = d.date;
     }
-    const L = [...m.values()].map((b) => ({ ...b, d: b.days.size, p: b.places.size })).sort((a, b) => b.d - a.d || b.p - a.p || (a.first < b.first ? -1 : 1)).slice(0, MAXN);
-    L.forEach((b, i) => (b.rank = i && b.d === L[i - 1].d ? L[i - 1].rank : i + 1));
+    const L = [...m.values()].map((b) => ({ ...b, d: b.days.size, p: b.places.size })).sort((a, b) => b.t - a.t || b.d - a.d || b.p - a.p || (a.first < b.first ? -1 : 1)).slice(0, MAXN);
+    L.forEach((b, i) => (b.rank = i && b.t === L[i - 1].t ? L[i - 1].rank : i + 1));
     return L;
   }
 
@@ -5625,12 +5636,25 @@ const Podium = (() => {
     R.setPixelRatio(LITE ? 1 : Math.min(2, window.devicePixelRatio || 1));
     R.shadowMap.enabled = !LITE; R.shadowMap.type = THREE.PCFSoftShadowMap;
     host.appendChild(R.domElement);
-    C = new THREE.PerspectiveCamera(36, 1, 0.1, 200);
+    C = new THREE.PerspectiveCamera(36, 1, 0.1, 1200);
     resize(); window.addEventListener("resize", resize);
     /* swipe or drag sideways to move along; tap a bird for its story */
     const el = R.domElement; let down = null;
-    el.addEventListener("pointerdown", (e) => { down = { x: e.clientX, y: e.clientY, t: Date.now() }; });
+    const gap = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+    el.addEventListener("pointerdown", (e) => {
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 2) { pinch = { g: gap(), z: zt }; down = null; } else if (pts.size === 1) down = { x: e.clientX, y: e.clientY, t: Date.now() };
+    });
+    el.addEventListener("pointermove", (e) => {
+      if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch && pts.size === 2) zoom(pinch.z + Math.log(gap() / pinch.g) * 0.9);
+    });
+    const lift = (e) => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; };
+    el.addEventListener("pointercancel", (e) => { lift(e); down = null; });
+    el.addEventListener("wheel", (e) => { e.preventDefault(); zoom(zt - e.deltaY * (e.ctrlKey ? 0.01 : 0.0016)); }, { passive: false });
     el.addEventListener("pointerup", (e) => {
+      const wasPinch = !!pinch || pts.size > 1; lift(e);
+      if (wasPinch) { down = null; return; }
       if (!down) return; const dx = e.clientX - down.x, dy = e.clientY - down.y; const d0 = down; down = null;
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { go(cur + (dx < 0 ? 1 : -1)); return; }
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && Date.now() - d0.t < 500) pick(e);
@@ -5641,6 +5665,7 @@ const Podium = (() => {
     if (!R) return;
     const w = host.clientWidth || innerWidth, h = host.clientHeight || innerHeight;
     R.setSize(w, h); C.aspect = w / h; C.fov = C.aspect < 1 ? 36 + (1 - C.aspect) * 26 : 36; C.updateProjectionMatrix(); dirty = true;
+    if (items.length) fitAll();
   }
   function pick(e) {
     const r = R.domElement.getBoundingClientRect(), v = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
@@ -5651,12 +5676,13 @@ const Podium = (() => {
     if (!o) return;
     if (o.userData.i !== cur) go(o.userData.i); else openSpecies(list[cur].n);
   }
-  /* a number painted on the front of each podium */
-  function face(rk, days, col) {
+  /* the rank and times heard, painted on the front of each bar */
+  function face(rk, times, col) {
     const cv = document.createElement("canvas"); cv.width = 256; cv.height = 256; const x = cv.getContext("2d");
     x.fillStyle = col; x.textAlign = "center";
-    x.font = "800 128px 'Bricolage Grotesque', system-ui, sans-serif"; x.fillText(String(rk), 128, 148);
-    x.font = "600 34px 'IBM Plex Sans', system-ui, sans-serif"; x.fillText(`${days} ${days === 1 ? "day" : "days"}`, 128, 206);
+    x.font = "700 30px 'IBM Plex Sans', system-ui, sans-serif"; x.globalAlpha = 0.8; x.fillText(`#${rk}`, 128, 52); x.globalAlpha = 1;
+    x.font = `800 ${times >= 1000 ? 84 : times >= 100 ? 104 : 124}px 'Bricolage Grotesque', system-ui, sans-serif`; x.fillText(String(times), 128, 160);
+    x.font = "600 30px 'IBM Plex Sans', system-ui, sans-serif"; x.fillText(times === 1 ? "time heard" : "times heard", 128, 210);
     const t = new THREE.CanvasTexture(cv); t.anisotropy = 4;
     return new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: t, transparent: true }));
   }
@@ -5671,23 +5697,23 @@ const Podium = (() => {
     if (!LITE) { sun.shadow.mapSize.set(1024, 1024); const sc = sun.shadow.camera; sc.left = -10; sc.right = 10; sc.top = 10; sc.bottom = -10; sc.far = 50; sun.shadow.bias = -0.0008; }
     S.add(sun); S.add(sun.target);
     if (!LITE) { spot = new THREE.SpotLight(nt ? 0xffe9b8 : 0xffffff, nt ? 1.1 : 0.55, 16, 0.42, 0.7, 1.4); S.add(spot); S.add(spot.target); } else spot = null;
-    const ground = new THREE.Mesh(new THREE.CircleGeometry(120, 64), M(nt ? 0x15262d : 0xeaf2f0));
+    ground = new THREE.Mesh(new THREE.CircleGeometry(400, 64), M(nt ? 0x15262d : 0xeaf2f0));
     ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; S.add(ground);
     const ring = new THREE.Mesh(new THREE.RingGeometry(1.5, 1.55, 64), new THREE.MeshBasicMaterial({ color: nt ? 0x2f4a55 : 0xc9dadd }));
     ring.rotation.x = -Math.PI / 2; ring.position.y = 0.005; S.add(ring);
     if (!list.length) { $("pod-empty").hidden = false; $("pod-card").hidden = true; dirty = true; return; }
     $("pod-empty").hidden = true; $("pod-card").hidden = false;
-    const max = list[0].d;
+    const max = list[0].t;
     list.forEach((b, i) => {
-      /* a round bar, as tall as the days heard, in the bird's own colour; the top three wear a gold, silver or bronze cap */
-      const h = 0.35 + 4.2 * (b.d / max), x = i * SP, z = -i * 0.45;
+      /* a round bar, as tall as the times heard, in the bird's own colour; the top three wear a gold, silver or bronze cap */
+      const h = 0.35 + 4.2 * (b.t / max), x = i * SP, z = -i * 0.45;
       const g = new THREE.Group(); g.position.set(x, 0, z); g.userData.i = i; S.add(g);
       const base = new THREE.Color(speciesColour.get(b.n) || famColour(b.fam)).lerp(new THREE.Color(nt ? 0x1b2b32 : 0xffffff), nt ? 0.12 : 0.18);
       const body = new THREE.Mesh(new THREE.CylinderGeometry(RAD, RAD, h, 48), M(base)); body.position.y = h / 2; body.castShadow = body.receiveShadow = true; g.add(body);
       const capCol = b.rank <= 3 ? MEDAL3[b.rank - 1] : base.clone().lerp(new THREE.Color(0xffffff), 0.35);
       const cap = new THREE.Mesh(new THREE.CylinderGeometry(RAD * 1.06, RAD * 1.06, 0.12, 48), M(capCol)); cap.position.y = h + 0.06; cap.castShadow = cap.receiveShadow = true; g.add(cap);
       const lum = base.r * 0.299 + base.g * 0.587 + base.b * 0.114;
-      const f = face(b.rank, b.d, lum > 0.6 ? "rgba(30,40,44,.82)" : "rgba(255,255,255,.92)"); f.scale.setScalar(0.85); f.position.set(0, Math.max(0.62, h * 0.5), RAD + 0.02); if (h > 1.0) g.add(f);
+      const f = face(b.rank, b.t, lum > 0.6 ? "rgba(30,40,44,.82)" : "rgba(255,255,255,.92)"); f.scale.setScalar(0.85); f.position.set(0, Math.max(0.62, h * 0.5), RAD + 0.02); if (h > 1.0) g.add(f);
       let bird = null;
       try { bird = BirdLook.three(b.n, b.s, b.fam, 2.6, (c) => M(c), false); } catch (e) { bird = null; }
       if (!bird) { bird = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 12), M(0x7d8b8f)); }
@@ -5697,13 +5723,52 @@ const Podium = (() => {
       items.push({ g, bird, h, x, z, b });
     });
     cur = Math.min(cur, list.length - 1);
-    const it = items[cur];
-    Object.assign(look, { x: it.x, y: lookY(it), z: it.z }); Object.assign(cam, goal(cur));
-    paint(); dirty = true;
+    paint(); fitAll();
+    ground.position.set(over ? over.look.x : 0, 0, over ? over.look.z : 0);
+    const p = pose(); Object.assign(cam, p.cam); Object.assign(look, p.look);
+    dirty = true;
   }
   const goal = (i) => { const it = items[i], narrow = C && C.aspect < 1; return { x: it.x - (narrow ? 1.8 : 3.0), y: it.h * 0.7 + (narrow ? 3.2 : 2.8), z: it.z + (narrow ? 12.5 : 10.5) + it.h * 0.9 }; };
   /* aim a little below the bird, so the podium sits in the upper part of the screen above the card */
   const lookY = (it) => it.h * 0.42 + (C && C.aspect < 1 ? -0.6 : -0.2);
+  /* the zoomed-out view: step the camera back until every bar and bird fits above the card.
+     On a narrow phone the camera looks along the row, so the line runs away into the distance instead of shrinking to nothing. */
+  function fitAll() {
+    if (!items.length || !C) { over = null; return; }
+    const narrow = C.aspect < 1;
+    const xs = items.map((o) => o.x), zs = items.map((o) => o.z), top = Math.max(...items.map((o) => o.h)) + 1.6;
+    const ctr = new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, 0, (Math.min(...zs) + Math.max(...zs)) / 2);
+    const lk = new THREE.Vector3(ctr.x, top * (narrow ? 0.18 : 0.28), ctr.z);
+    const dir = new THREE.Vector3(...(narrow ? [-1, 0.36, 0.5] : [-0.62, 0.36, 0.9])).normalize();
+    const corners = [];
+    items.forEach((o) => { for (const y of [0, o.h + 1.6]) for (const dx of [-RAD, RAD]) corners.push(new THREE.Vector3(o.x + dx, y, o.z)); });
+    const cam2 = C.clone(), card = $("pod-card"), H = host.clientHeight || innerHeight;
+    /* leave room for the card at the bottom and the top bar */
+    const yLo = card && !card.hidden ? -1 + 2 * ((card.offsetHeight + (narrow ? 90 : 34)) / H) : -0.8, yHi = narrow ? 0.62 : 0.72, xLim = 0.86;
+    const fits = (d) => {
+      cam2.position.copy(lk).addScaledVector(dir, d); cam2.lookAt(lk); cam2.updateMatrixWorld(); cam2.updateProjectionMatrix();
+      return corners.every((p) => { const v = p.clone().project(cam2); return v.z < 1 && Math.abs(v.x) <= xLim && v.y >= yLo && v.y <= yHi; });
+    };
+    let lo = 4, hi = 400;
+    for (let k = 0; k < 30; k++) { const m = (lo + hi) / 2; if (fits(m)) hi = m; else lo = m; }
+    const d = Math.max(hi, 9), p = lk.clone().addScaledVector(dir, d);
+    over = { cam: { x: p.x, y: p.y, z: p.z }, look: { x: lk.x, y: lk.y, z: lk.z }, d, dir };
+  }
+  const ease = (t) => t * t * (3 - 2 * t);
+  /* between the two views the distance changes evenly on a log scale, so every zoom step feels the same size */
+  function pose() {
+    const it = items[cur], g = goal(cur), lc = { x: it.x, y: lookY(it), z: it.z };
+    if (!over || zf >= 1) return { cam: g, look: lc };
+    /* the aim swings onto the chosen bird early, so zooming in heads towards it rather than the middle of the row */
+    const t = zf, w = 1 - Math.pow(1 - t, 3), lk = { x: over.look.x + (lc.x - over.look.x) * w, y: over.look.y + (lc.y - over.look.y) * w, z: over.look.z + (lc.z - over.look.z) * w };
+    const off = new THREE.Vector3(g.x - lc.x, g.y - lc.y, g.z - lc.z), dC = off.length();
+    const dir = over.dir.clone().lerp(off.divideScalar(dC), w).normalize(), d = Math.exp(Math.log(over.d) + (Math.log(dC) - Math.log(over.d)) * t);
+    return { cam: { x: lk.x + dir.x * d, y: lk.y + dir.y * d, z: lk.z + dir.z * d }, look: lk };
+  }
+  function zoom(to) {
+    zt = Math.max(0, Math.min(1, to)); dirty = true;
+    $("pod-zin").disabled = zt >= 1; $("pod-zout").disabled = $("pod-zall").disabled = zt <= 0;
+  }
 
   /* the card: who's on this podium */
   function paint() {
@@ -5713,7 +5778,7 @@ const Podium = (() => {
     $("pod-eyb").textContent = (b.rank === 1 ? "Most heard" : `Number ${b.rank}`) + (tied ? " · tied" : "") + ` · ${cur + 1} of ${list.length}`;
     $("pod-name").textContent = b.n;
     const md = $("pod-medal"); md.textContent = b.rank; md.style.background = b.rank <= 3 ? MEDAL[b.rank - 1] : "var(--line)"; md.style.color = b.rank <= 3 ? "#3d2a08" : "var(--ink)";
-    $("pod-days").textContent = b.d; $("pod-places").textContent = b.p; $("pod-first").textContent = short(b.first); $("pod-last").textContent = short(b.last);
+    $("pod-times").textContent = b.t; $("pod-times-l").textContent = b.t === 1 ? "time heard" : "times heard"; $("pod-first").textContent = short(b.first); $("pod-last").textContent = short(b.last);
     $("pod-prev").disabled = cur === 0;
     $("pod-next").innerHTML = cur === list.length - 1 ? "Back to the top" : "Next";
     const dots = $("pod-dots"); dots.innerHTML = list.length <= 12 ? list.map((_, i) => `<i class="${i === cur ? "on" : ""}"></i>`).join("") : `<span>${cur + 1} / ${list.length}</span>`;
@@ -5740,12 +5805,16 @@ const Podium = (() => {
     if (!R || !S) return;
     const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; T += dt;
     const it = items[cur];
+    zf += (zt - zf) * Math.min(1, dt * 7); if (Math.abs(zt - zf) < 0.001) zf = zt;
     if (it) {
-      const gg = goal(cur), k = Math.min(1, dt * 2.6);
+      const P = pose(), gg = P.cam, lk = P.look, k = Math.min(1, dt * 3.2);
       cam.x += (gg.x - cam.x) * k; cam.y += (gg.y - cam.y) * k; cam.z += (gg.z - cam.z) * k;
-      look.x += (it.x - look.x) * k; look.y += (lookY(it) - look.y) * k; look.z += (it.z - look.z) * k;
+      look.x += (lk.x - look.x) * k; look.y += (lk.y - look.y) * k; look.z += (lk.z - look.z) * k;
+      const far = Math.hypot(cam.x - look.x, cam.y - look.y, cam.z - look.z);
+      S.fog.near = far + 4; S.fog.far = far * 2.2 + 30;
       if (spot) { spot.position.set(it.x + 0.6, it.h + 7, it.z + 2.2); spot.target.position.set(it.x, it.h, it.z); }
       sun.position.set(look.x - 6, 14, look.z + 9); sun.target.position.set(look.x, 0, look.z);
+      if (!LITE) { const sc = sun.shadow.camera, e = Math.round(10 + (1 - ease(zf)) * (over ? over.d * 0.6 : 0)); if (sc.right !== e) { sc.left = sc.bottom = -e; sc.right = sc.top = e; sc.far = 50 + e * 2; sc.updateProjectionMatrix(); } sun.position.y = 14 + e * 0.4; }
     }
     C.position.set(cam.x, cam.y, cam.z); C.lookAt(look.x, look.y, look.z);
     items.forEach((o, i) => {
@@ -5766,19 +5835,24 @@ const Podium = (() => {
     visible = true;
     if (!ensure()) { $("pod-empty").hidden = false; $("pod-empty").textContent = "This view needs 3D graphics, which this browser can't show."; return; }
     resize();
-    if (dirty || !S) build();
+    if (dirty || !S) { zt = zf = 0; build(); }
+    $("pod-zoom").hidden = !list.length; zoom(zt);
     if (!raf) { last = 0; raf = requestAnimationFrame(frame); }
   }
   function close() { visible = false; if (raf) cancelAnimationFrame(raf); raf = 0; }
-  function dataChanged() { cur = 0; S = null; if (visible) build(); else dirty = true; }
+  function dataChanged() { cur = 0; zt = zf = 0; S = null; if (visible) { build(); $("pod-zoom").hidden = !list.length; zoom(0); } else dirty = true; }
   document.addEventListener("click", (e) => {
     if (e.target.closest("#pod-next")) go(cur + 1);
     else if (e.target.closest("#pod-prev")) go(cur - 1);
     else if (e.target.closest("#pod-story")) { if (list[cur]) openSpecies(list[cur].n); }
+    else if (e.target.closest("#pod-zin")) zoom(zt + 0.25);
+    else if (e.target.closest("#pod-zout")) zoom(zt - 0.25);
+    else if (e.target.closest("#pod-zall")) zoom(0);
   });
   document.addEventListener("keydown", (e) => {
     if (!visible || /input|textarea|select/i.test((e.target.tagName || ""))) return;
     if (e.key === "ArrowRight") { go(cur + 1); e.preventDefault(); } else if (e.key === "ArrowLeft") { go(cur - 1); e.preventDefault(); }
+    else if (e.key === "+" || e.key === "=") zoom(zt + 0.25); else if (e.key === "-" || e.key === "_") zoom(zt - 0.25); else if (e.key === "0") zoom(0);
   });
   return { open, close, dataChanged, rebuild: () => { S = null; if (visible) build(); else dirty = true; } };
 })();
@@ -5820,7 +5894,7 @@ const Tips = (() => {
     map: { t: "Your map", x: () => `${phone() ? "Pinch" : "Scroll"} in to go from counties down to the exact spot you heard each bird. Press play at the bottom to watch your list grow.`, at: () => (phone() ? ".replay .play, .tabbar [data-view=\"map\"]" : ".replay .play") },
     world: { t: "Habitat world", x: () => "Every bird you've heard lives here. Tap a signpost to fly to that habitat, or tap a bird to read its story.", at: () => (phone() ? '.tabbar [data-view="world"]' : ".world-focus") },
     coll: { t: "Your Collection", x: () => "A wall of every UK bird. The coloured ones you've heard, the grey ones are still to find. Tap any bird to listen to its song.", at: () => (phone() ? '.tabbar [data-view="collection"]' : "#coll-main .coll-bar .seg") },
-    podium: { t: "Your podium", x: () => `Your most-heard birds, one per podium. ${phone() ? "Swipe" : "Use the arrows or tap Next"} to step down the line, and tap a bird for its story.`, at: () => "#pod-card" },
+    podium: { t: "Your podium", x: () => `Your most-heard birds as a bar chart, tallest first. ${phone() ? "Pinch" : "Scroll or use + and −"} to zoom in, ${phone() ? "swipe" : "use the arrows or Next"} to step along, and tap a bird for its story.`, at: () => "#pod-card" },
     badges: { t: "Badges", x: () => "You earn these from the birds you log. Tap a badge to see what it needs, and pin your favourites to your profile.", at: () => '[data-cmode="badges"]' },
     flock: { t: "Your flock", x: () => "These are your friends' birds, all together. Tap Flock again to pick just a few friends to compare.", at: () => '#who [data-scope="flock"]' },
   };
