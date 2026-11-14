@@ -1202,6 +1202,28 @@ body.welcoming .empty-card { display: none; }
 .latest-pill:hover, .latest-pill[aria-expanded="true"] { border-color: var(--accent) !important; }
 .add-pill .add-ic { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
 .add-pill[hidden] { display: none !important; }
+.podium { position: absolute; inset: 0; z-index: 4; background: var(--bg); }
+.podium[hidden] { display: none; }
+#pod-gl { position: absolute; inset: 0; }
+#pod-gl canvas { display: block; touch-action: pan-y; }
+.pod-empty { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); max-width: 320px; text-align: center; color: var(--muted); font-size: 15px; }
+.pod-card { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); width: min(420px, calc(100vw - 24px)); background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 18px; padding: 12px 14px; box-shadow: 0 12px 34px rgba(0,0,0,.18); }
+.pod-card[hidden] { display: none; }
+.pod-head { display: flex; align-items: center; gap: 12px; }
+.pod-medal { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 18px; flex: none; }
+.pod-t { flex: 1; min-width: 0; }
+.pod-t small { display: block; font-size: 12px; color: var(--muted); }
+.pod-t b { display: block; font-family: var(--font-display); font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pod-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
+.pod-tiles span { background: color-mix(in srgb, var(--line) 45%, transparent); border-radius: 10px; padding: 6px 2px; text-align: center; font-size: 11px; color: var(--muted); }
+.pod-tiles b { display: block; font-size: 15px; color: var(--ink); font-family: var(--font-display); }
+.pod-nav { display: flex; align-items: center; gap: 8px; }
+.pod-nav #pod-prev { width: 44px; padding: 8px 0; }
+.pod-nav #pod-next { min-width: 110px; }
+.pod-dots { flex: 1; display: flex; justify-content: center; gap: 5px; font-size: 12px; color: var(--muted); }
+.pod-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); display: block; transition: width .2s; }
+.pod-dots i.on { width: 16px; border-radius: 99px; background: var(--accent); }
+@media (max-width: 760px) { .pod-card { bottom: calc(var(--tabh, 64px) + 10px); } }
 .nt-react { display: flex; align-items: center; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
 .nt-react button { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 16px; line-height: 1.2; min-height: 0; box-shadow: none; cursor: pointer; transition: transform .12s; }
 .nt-react button:hover:not([disabled]) { transform: scale(1.15); }
@@ -1422,6 +1444,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
   <div class="seg view-top" id="view-top" role="group" aria-label="Choose a view">
     <button type="button" data-view="map" aria-pressed="true">Map</button>
     <button type="button" data-view="world" aria-pressed="false" title="Every bird you've heard, together in their habitats (W)">World</button>
+    <button type="button" data-view="podium" aria-pressed="false" title="Your most-heard birds on podiums (P)">Podium</button>
     <button type="button" data-view="collection" aria-pressed="false" title="Your collection of UK birds (C)">Birds</button>
   </div>
   <div id="map" aria-label="3D map of sightings by county"><div class="loading">Drawing the map…</div></div>
@@ -1473,6 +1496,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
   <nav class="tabbar" id="tabbar" aria-label="Main views">
     <button type="button" data-view="map" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Map</span></button>
     <button type="button" data-view="world" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c-2 4-6 6-6 11a6 6 0 0 0 12 0c0-5-4-7-6-11z"/><path d="M12 21v-6"/></svg><span>World</span></button>
+    <button type="button" data-view="podium" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg><span>Podium</span></button>
     <button type="button" data-view="collection" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 7h.01"/><path d="M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20"/><path d="m20 7 2 .5-2 .5"/><path d="M10 18v3M14 17.75V21"/><path d="M7 18a6 6 0 0 0 3.84-10.61"/></svg><span>Birds</span></button>
     <button type="button" data-tab-flock><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 4.8"/></svg><span>Flock</span><i class="tab-n" id="tab-flock-n" hidden></i></button>
   </nav>
@@ -1486,6 +1510,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
         <div class="seg coll-views" role="group" aria-label="Choose a view">
           <button type="button" data-view="map" aria-pressed="false">Map</button>
           <button type="button" data-view="world" aria-pressed="false">World</button>
+          <button type="button" data-view="podium" aria-pressed="false">Podium</button>
           <button type="button" data-view="collection" aria-pressed="true">Birds</button>
         </div>
       </div>
@@ -1507,6 +1532,15 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
     </div>
     <div class="coll-pop" id="coll-pop" hidden></div>
     <div class="coll-pop bd-pop" id="bd-pop" hidden></div>
+  </section>
+  <section class="podium" id="podium" hidden aria-label="Your most-heard birds, one per podium">
+    <div id="pod-gl"></div>
+    <p class="pod-empty" id="pod-empty" hidden>Add your birds and your most-heard ones will line up on the podiums here.</p>
+    <div class="pod-card" id="pod-card">
+      <div class="pod-head"><span class="pod-medal" id="pod-medal">1</span><div class="pod-t"><small id="pod-eyb"></small><b id="pod-name"></b></div><button type="button" class="linkish" id="pod-story">Story</button></div>
+      <div class="pod-tiles"><span><b id="pod-days"></b>days heard</span><span><b id="pod-places"></b>places</span><span><b id="pod-first"></b>first</span><span><b id="pod-last"></b>last</span></div>
+      <div class="pod-nav"><button type="button" id="pod-prev" aria-label="Back up the podium">←</button><span class="pod-dots" id="pod-dots"></span><button type="button" class="primary" id="pod-next">Next</button></div>
+    </div>
   </section>
   <section class="world" id="world" hidden aria-label="Habitat world: every bird you've heard, together in their habitats">
     <div id="world-gl"></div>
@@ -2210,6 +2244,7 @@ function restyleBasemap() {
   try { mlmap.setLight({ anchor: "viewport", color: "#ffffff", intensity: themeName === "night" ? 0.25 : 0.42, position: [1.4, 215, 38] }); } catch (e) {}
 }
 function setTheme(name) {
+  setTimeout(() => { try { Podium.rebuild(); } catch (e) {} }, 0);
   themeName = name;
   document.body.classList.toggle("night", name === "night");
   const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute("content", name === "night" ? "#0f191d" : "#f3f5f4");
@@ -3821,6 +3856,7 @@ function render() {
   pushLayers();
   crumbSig = ""; queueCrumbs();
   try { World.dataChanged(); } catch (e) {}
+  try { Podium.dataChanged(); } catch (e) {}
   renderLatest();
   renderFav();
   Coll.render();
@@ -5557,15 +5593,206 @@ const World = (() => {
   }
   return { open, close, dataChanged, focus, setLight, setSpin, showBird, get light() { return light; } };
 })();
+/* ---------- Podium: your most-heard birds, one per podium, stepping down from the tallest ---------- */
+const Podium = (() => {
+  const MAXN = 25, SP = 3.6;
+  let R = null, S = null, C = null, host = null, sun = null, spot = null, raf = 0, last = 0, T = 0;
+  let visible = false, dirty = true, list = [], items = [], cur = 0, hop = 0, confetti = [];
+  const cam = { x: 0, y: 3, z: 8 }, look = { x: 0, y: 1.5, z: 0 };
+  const M = (c, o) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o || {}));
+  const MEDAL = ["#f2c14e", "#c9d1d7", "#d69563"], MEDAL3 = [0xe8b84a, 0xc3ccd3, 0xc98656];
+  const night = () => themeName === "night";
+
+  /* each bird's days, places and dates, from whatever is showing (yours, a friend's, or the flock) */
+  function rank() {
+    const m = new Map();
+    for (const d of filtered()) {
+      let b = m.get(d.name);
+      if (!b) m.set(d.name, (b = { n: d.name, s: d.sci, fam: d.family, days: new Set(), places: new Set(), first: d.date, last: d.date }));
+      b.days.add(d.date); b.places.add(d.locId);
+      if (d.date < b.first) b.first = d.date; if (d.date > b.last) b.last = d.date;
+    }
+    const L = [...m.values()].map((b) => ({ ...b, d: b.days.size, p: b.places.size })).sort((a, b) => b.d - a.d || b.p - a.p || (a.first < b.first ? -1 : 1)).slice(0, MAXN);
+    L.forEach((b, i) => (b.rank = i && b.d === L[i - 1].d ? L[i - 1].rank : i + 1));
+    return L;
+  }
+
+  function ensure() {
+    if (R) return true;
+    host = $("pod-gl");
+    if (typeof THREE === "undefined") return false;
+    R = new THREE.WebGLRenderer({ antialias: !LITE });
+    R.setPixelRatio(LITE ? 1 : Math.min(2, window.devicePixelRatio || 1));
+    R.shadowMap.enabled = !LITE; R.shadowMap.type = THREE.PCFSoftShadowMap;
+    host.appendChild(R.domElement);
+    C = new THREE.PerspectiveCamera(36, 1, 0.1, 200);
+    resize(); window.addEventListener("resize", resize);
+    /* swipe or drag sideways to move along; tap a bird for its story */
+    const el = R.domElement; let down = null;
+    el.addEventListener("pointerdown", (e) => { down = { x: e.clientX, y: e.clientY, t: Date.now() }; });
+    el.addEventListener("pointerup", (e) => {
+      if (!down) return; const dx = e.clientX - down.x, dy = e.clientY - down.y; const d0 = down; down = null;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { go(cur + (dx < 0 ? 1 : -1)); return; }
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && Date.now() - d0.t < 500) pick(e);
+    });
+    return true;
+  }
+  function resize() {
+    if (!R) return;
+    const w = host.clientWidth || innerWidth, h = host.clientHeight || innerHeight;
+    R.setSize(w, h); C.aspect = w / h; C.fov = C.aspect < 1 ? 36 + (1 - C.aspect) * 26 : 36; C.updateProjectionMatrix(); dirty = true;
+  }
+  function pick(e) {
+    const r = R.domElement.getBoundingClientRect(), v = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    const rc = new THREE.Raycaster(); rc.setFromCamera(v, C);
+    const hit = rc.intersectObjects(items.map((it) => it.g), true)[0];
+    if (!hit) return;
+    let o = hit.object; while (o && o.userData.i === undefined) o = o.parent;
+    if (!o) return;
+    if (o.userData.i !== cur) go(o.userData.i); else openSpecies(list[cur].n);
+  }
+  /* a number painted on the front of each podium */
+  function face(rk, days, col) {
+    const cv = document.createElement("canvas"); cv.width = 256; cv.height = 256; const x = cv.getContext("2d");
+    x.fillStyle = col; x.textAlign = "center";
+    x.font = "800 128px 'Bricolage Grotesque', system-ui, sans-serif"; x.fillText(String(rk), 128, 148);
+    x.font = "600 34px 'IBM Plex Sans', system-ui, sans-serif"; x.fillText(`${days} ${days === 1 ? "day" : "days"}`, 128, 206);
+    const t = new THREE.CanvasTexture(cv); t.anisotropy = 4;
+    return new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: t, transparent: true }));
+  }
+  function build() {
+    list = rank(); items = []; confetti = [];
+    S = new THREE.Scene();
+    const nt = night(), bg = nt ? 0x0e1b22 : 0xdcebef;
+    S.background = new THREE.Color(bg); S.fog = new THREE.Fog(bg, 14, 46);
+    S.add(new THREE.HemisphereLight(nt ? 0x8fa6c4 : 0xffffff, nt ? 0x1d2a2e : 0xbfcfb4, nt ? 0.5 : 0.62));
+    sun = new THREE.DirectionalLight(nt ? 0xc6d6ff : 0xfff4e4, nt ? 0.42 : 0.7);
+    sun.position.set(-6, 14, 9); sun.castShadow = !LITE;
+    if (!LITE) { sun.shadow.mapSize.set(1024, 1024); const sc = sun.shadow.camera; sc.left = -10; sc.right = 10; sc.top = 10; sc.bottom = -10; sc.far = 50; sun.shadow.bias = -0.0008; }
+    S.add(sun); S.add(sun.target);
+    if (!LITE) { spot = new THREE.SpotLight(nt ? 0xffe9b8 : 0xffffff, nt ? 1.1 : 0.55, 16, 0.42, 0.7, 1.4); S.add(spot); S.add(spot.target); } else spot = null;
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(120, 64), M(nt ? 0x15262d : 0xeaf2f0));
+    ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; S.add(ground);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(2.0, 2.06, 64), new THREE.MeshBasicMaterial({ color: nt ? 0x2f4a55 : 0xc9dadd }));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = 0.005; S.add(ring);
+    if (!list.length) { $("pod-empty").hidden = false; $("pod-card").hidden = true; dirty = true; return; }
+    $("pod-empty").hidden = true; $("pod-card").hidden = false;
+    const max = list[0].d;
+    list.forEach((b, i) => {
+      const h = 0.55 + 2.6 * Math.pow(b.d / max, 0.85), x = i * SP, z = -i * 0.5;
+      const g = new THREE.Group(); g.position.set(x, 0, z); g.userData.i = i; S.add(g);
+      const medal = b.rank <= 3 ? MEDAL3[b.rank - 1] : nt ? 0x34474f : 0xf3eee4;
+      const body = new THREE.Mesh(new THREE.BoxGeometry(2.3, h, 2.3), M(medal)); body.position.y = h / 2; body.castShadow = body.receiveShadow = true; g.add(body);
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.14, 2.5), M(new THREE.Color(medal).lerp(new THREE.Color(0xffffff), 0.28))); lip.position.y = h + 0.07; lip.castShadow = lip.receiveShadow = true; g.add(lip);
+      const base = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.12, 2.6), M(new THREE.Color(medal).multiplyScalar(0.82))); base.position.y = 0.06; base.receiveShadow = true; g.add(base);
+      const f = face(b.rank, b.d, b.rank <= 3 ? "rgba(60,40,10,.78)" : nt ? "rgba(220,235,240,.85)" : "rgba(40,60,66,.8)"); f.position.set(0, Math.min(h / 2 + 0.1, h - 0.7), 1.152); if (h > 1.1) g.add(f);
+      let bird = null;
+      try { bird = BirdLook.three(b.n, b.s, b.fam, 2.6, (c) => M(c), false); } catch (e) { bird = null; }
+      if (!bird) { bird = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 12), M(0x7d8b8f)); }
+      bird.position.y = h + 0.14; bird.rotation.y = -0.35;
+      bird.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+      g.add(bird);
+      items.push({ g, bird, h, x, z, b });
+    });
+    cur = Math.min(cur, list.length - 1);
+    const it = items[cur];
+    Object.assign(look, { x: it.x, y: lookY(it), z: it.z }); Object.assign(cam, goal(cur));
+    paint(); dirty = true;
+  }
+  const goal = (i) => { const it = items[i], narrow = C && C.aspect < 1; return { x: it.x - (narrow ? 2.0 : 3.4), y: it.h + (narrow ? 3.9 : 3.6), z: it.z + (narrow ? 12.8 : 11.8) }; };
+  /* aim a little below the bird, so the podium sits in the upper part of the screen above the card */
+  const lookY = (it) => it.h - (C && C.aspect < 1 ? 1.9 : 1.2);
+
+  /* the card: who's on this podium */
+  function paint() {
+    const b = list[cur]; if (!b) return;
+    const tied = list.filter((x) => x.rank === b.rank).length > 1;
+    const short = (iso) => fmtDate(iso).replace(/ \d{4}$/, "");
+    $("pod-eyb").textContent = (b.rank === 1 ? "Most heard" : `Number ${b.rank}`) + (tied ? " · tied" : "") + ` · ${cur + 1} of ${list.length}`;
+    $("pod-name").textContent = b.n;
+    const md = $("pod-medal"); md.textContent = b.rank; md.style.background = b.rank <= 3 ? MEDAL[b.rank - 1] : "var(--line)"; md.style.color = b.rank <= 3 ? "#3d2a08" : "var(--ink)";
+    $("pod-days").textContent = b.d; $("pod-places").textContent = b.p; $("pod-first").textContent = short(b.first); $("pod-last").textContent = short(b.last);
+    $("pod-prev").disabled = cur === 0;
+    $("pod-next").innerHTML = cur === list.length - 1 ? "Back to the top" : "Next";
+    const dots = $("pod-dots"); dots.innerHTML = list.length <= 12 ? list.map((_, i) => `<i class="${i === cur ? "on" : ""}"></i>`).join("") : `<span>${cur + 1} / ${list.length}</span>`;
+  }
+  function go(i) {
+    if (!list.length) return;
+    const n = i >= list.length ? 0 : Math.max(0, i);
+    if (n === cur && i < list.length) return;
+    cur = n; hop = 0.0001; paint(); dirty = true;
+    if (list[cur].rank <= 3 && !REDUCE_MOTION) burst();
+  }
+  /* a little confetti for the top three */
+  function burst() {
+    const it = items[cur]; if (!it) return;
+    const cols = [0xf2c14e, 0xe0645c, 0x5fb4d6, 0x7cc36b, 0xffffff];
+    for (let k = 0; k < (LITE ? 18 : 40); k++) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.09, 0.14), new THREE.MeshBasicMaterial({ color: cols[k % cols.length], side: THREE.DoubleSide }));
+      m.position.set(it.x + (Math.random() - 0.5) * 0.6, it.h + 1.4, it.z + (Math.random() - 0.5) * 0.6);
+      S.add(m); confetti.push({ m, v: new THREE.Vector3((Math.random() - 0.5) * 3, 2.5 + Math.random() * 2.5, (Math.random() - 0.5) * 3), r: Math.random() * 6, life: 1.8 });
+    }
+  }
+  function frame(now) {
+    raf = visible ? requestAnimationFrame(frame) : 0;
+    if (!R || !S) return;
+    const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; T += dt;
+    const it = items[cur];
+    if (it) {
+      const gg = goal(cur), k = Math.min(1, dt * 2.6);
+      cam.x += (gg.x - cam.x) * k; cam.y += (gg.y - cam.y) * k; cam.z += (gg.z - cam.z) * k;
+      look.x += (it.x - look.x) * k; look.y += (lookY(it) - look.y) * k; look.z += (it.z - look.z) * k;
+      if (spot) { spot.position.set(it.x + 0.6, it.h + 7, it.z + 2.2); spot.target.position.set(it.x, it.h, it.z); }
+      sun.position.set(look.x - 6, 14, look.z + 9); sun.target.position.set(look.x, 0, look.z);
+    }
+    C.position.set(cam.x, cam.y, cam.z); C.lookAt(look.x, look.y, look.z);
+    items.forEach((o, i) => {
+      const on = i === cur, face2 = Math.atan2(cam.x - o.x, cam.z - o.z);
+      o.bird.rotation.y += ((on ? face2 : -0.35) - o.bird.rotation.y) * Math.min(1, dt * 4);
+      let y = o.h + 0.14 + (REDUCE_MOTION ? 0 : Math.sin(T * (on ? 3 : 1.6) + i) * (on ? 0.035 : 0.015));
+      if (on && hop > 0 && !REDUCE_MOTION) { hop += dt * 2.4; y += Math.sin(Math.min(Math.PI, hop * Math.PI)) * 0.45; if (hop >= 1) hop = 0; }
+      o.bird.position.y = y;
+      const sc = on ? 1 : 0.9; o.bird.scale.x += (sc - o.bird.scale.x) * 0.1; o.bird.scale.y = o.bird.scale.z = o.bird.scale.x;
+    });
+    for (let j = confetti.length - 1; j >= 0; j--) {
+      const c = confetti[j]; c.life -= dt; c.v.y -= 6 * dt; c.m.position.addScaledVector(c.v, dt); c.m.rotation.x += c.r * dt; c.m.rotation.y += c.r * dt * 0.7;
+      if (c.life <= 0 || c.m.position.y < 0) { S.remove(c.m); confetti.splice(j, 1); }
+    }
+    R.render(S, C);
+  }
+  function open() {
+    visible = true;
+    if (!ensure()) { $("pod-empty").hidden = false; $("pod-empty").textContent = "This view needs 3D graphics, which this browser can't show."; return; }
+    resize();
+    if (dirty || !S) build();
+    if (!raf) { last = 0; raf = requestAnimationFrame(frame); }
+  }
+  function close() { visible = false; if (raf) cancelAnimationFrame(raf); raf = 0; }
+  function dataChanged() { cur = 0; S = null; if (visible) build(); else dirty = true; }
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("#pod-next")) go(cur + 1);
+    else if (e.target.closest("#pod-prev")) go(cur - 1);
+    else if (e.target.closest("#pod-story")) { if (list[cur]) openSpecies(list[cur].n); }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (!visible || /input|textarea|select/i.test((e.target.tagName || ""))) return;
+    if (e.key === "ArrowRight") { go(cur + 1); e.preventDefault(); } else if (e.key === "ArrowLeft") { go(cur - 1); e.preventDefault(); }
+  });
+  return { open, close, dataChanged, rebuild: () => { S = null; if (visible) build(); else dirty = true; } };
+})();
+
 
 let viewMode = "map";
 function setView(v) {
   viewMode = v;
   setTools(false);
-  const on = v === "world", co = v === "collection";
-  document.body.classList.toggle("world-on", on);
+  const on = v === "world", co = v === "collection", pd = v === "podium";
+  document.body.classList.toggle("world-on", on || pd);
+  document.body.classList.toggle("podium-on", pd);
   document.body.classList.toggle("coll-on", co);
   $("world").hidden = !on;
+  $("podium").hidden = !pd;
+  if (pd) { Podium.open(); if (window.innerWidth < 760) setPanel(false); } else Podium.close();
   $("coll").hidden = !co;
   Tips.hideCur(); paintEmpty();
   if (co) { $("coll").scrollTop = 0; if (Badges.mode === "badges") Badges.render(); else Coll.render(); if (window.innerWidth < 760) setPanel(false); }
@@ -5591,6 +5818,7 @@ const Tips = (() => {
     map: { t: "Your map", x: () => `${phone() ? "Pinch" : "Scroll"} in to go from counties down to the exact spot you heard each bird. Press play at the bottom to watch your list grow.`, at: () => (phone() ? ".replay .play, .tabbar [data-view=\"map\"]" : ".replay .play") },
     world: { t: "Habitat world", x: () => "Every bird you've heard lives here. Tap a signpost to fly to that habitat, or tap a bird to read its story.", at: () => (phone() ? '.tabbar [data-view="world"]' : ".world-focus") },
     coll: { t: "Your Collection", x: () => "A wall of every UK bird. The coloured ones you've heard, the grey ones are still to find. Tap any bird to listen to its song.", at: () => (phone() ? '.tabbar [data-view="collection"]' : "#coll-main .coll-bar .seg") },
+    podium: { t: "Your podium", x: () => `Your most-heard birds, one per podium. ${phone() ? "Swipe" : "Use the arrows or tap Next"} to step down the line, and tap a bird for its story.`, at: () => "#pod-card" },
     badges: { t: "Badges", x: () => "You earn these from the birds you log. Tap a badge to see what it needs, and pin your favourites to your profile.", at: () => '[data-cmode="badges"]' },
     flock: { t: "Your flock", x: () => "These are your friends' birds, all together. Tap Flock again to pick just a few friends to compare.", at: () => '#who [data-scope="flock"]' },
   };
@@ -5600,7 +5828,7 @@ const Tips = (() => {
   const busy = () => document.body.classList.contains("welcoming") || !$("wel-pop").hidden || !$("help").hidden || !$("acct").hidden || !$("rare-pop").hidden || !!document.querySelector(".mem-pop:not([hidden]), .guide:not([hidden])") || !$("bell-card").hidden || (typeof viewMode !== "undefined" && false);
   const visible = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight; };
   /* a tip belongs to the screen you're on; leave it waiting if you've moved on */
-  const fits = (k) => (k === "map" ? viewMode === "map" && state.data.length > 0 : k === "world" ? viewMode === "world" : k === "coll" ? viewMode === "collection" && !$("coll-main").hidden : k === "badges" ? viewMode === "collection" && !$("badges").hidden : k === "flock" ? state.source === "flock" && viewMode === "map" : false);
+  const fits = (k) => (k === "map" ? viewMode === "map" && state.data.length > 0 : k === "world" ? viewMode === "world" : k === "podium" ? viewMode === "podium" && !!state.data.length : k === "coll" ? viewMode === "collection" && !$("coll-main").hidden : k === "badges" ? viewMode === "collection" && !$("badges").hidden : k === "flock" ? state.source === "flock" && viewMode === "map" : false);
   function place(el) {
     const tip = $("tip"), a = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
     const below = a.top + a.height / 2 < innerHeight / 2;
@@ -5678,6 +5906,7 @@ document.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.target.closest("input, textarea, select") || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key.toLowerCase() === "w") setView(viewMode === "world" ? "map" : "world");
+  if (e.key.toLowerCase() === "p") setView(viewMode === "podium" ? "map" : "podium");
   if (e.key.toLowerCase() === "c") setView(viewMode === "collection" ? "map" : "collection");
   else if (e.key === "Escape" && viewMode === "world" && !document.body.classList.contains("panel-open") && $("help").hidden) setView("map");
 });
