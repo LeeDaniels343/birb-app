@@ -516,6 +516,12 @@ export default async (req) => {
       const item = { t: new Date().toISOString(), kind: cut(b.kind, 30), msg: cut(b.msg, 300), where: cut(b.where, 300), ua: cut(b.ua, 220), gpu: cut(b.gpu, 140), mem: Number(b.mem) || 0, lite: !!b.lite, why: cut(b.why, 20), view: cut(b.view, 40), signedIn: !!b.signedIn };
       const key = `reports/${item.t.slice(0, 10)}`;
       await edit(key, (day) => (day.length < 400 ? [...day, item] : false), { init: () => [] });
+      /* reports are only kept for 14 days, as the privacy page says; the first report of each day clears out older ones */
+      if (!(await store().get(`reports-swept/${item.t.slice(0, 10)}`, { type: "text" }))) {
+        await store().set(`reports-swept/${item.t.slice(0, 10)}`, "1");
+        const edge = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
+        for (const pre of ["reports/", "reports-swept/"]) { const { blobs } = await store().list({ prefix: pre }); for (const x of blobs) if (x.key.slice(pre.length) < edge) await store().delete(x.key); }
+      }
       return json({ ok: true });
     }
 

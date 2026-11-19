@@ -6234,7 +6234,7 @@ const Acct = (() => {
   let inbox = { items: [], read: "", unread: 0 }, inboxShownRead = "", pollT = 0;
   let phrase = "", phraseNext = "profile", shareUrl = "", shareBlob = null, shareKind = "post";
   const inviteLink = () => me && me.invite ? `${location.origin}/?invite=${encodeURIComponent(me.invite)}` : location.origin + "/";
-  let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "", firstUp = false, fbKind = "idea";
+  let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "", firstUp = false, fbKind = "idea", privFrom = "";
   /* one pop-up note per visit is plenty: later ones become a small toast, and notes never start the Help guide */
   let notesShown = 0, welNote = false;
   let scope = "", backTo = "me", memberU = "";
@@ -6714,7 +6714,8 @@ const Acct = (() => {
           <div class="fld"><label for="j-user">Username</label><input id="j-user" autocomplete="username" maxlength="20" value="${esc(draft.username || "")}" placeholder="sam"><span class="hint">Your link will be ${esc(location.host)}/?who=<span id="j-userp">${esc(draft.username || "…")}</span></span></div>
           <div class="fld"><label for="j-pass">Passcode</label><input id="j-pass" type="password" autocomplete="new-password" placeholder="At least 6 characters"><span class="hint">Don't reuse a password from somewhere else.</span></div>
           <div class="err" id="acct-err" role="alert"></div>
-          <div class="acts"><span class="switch">Already joined? <button type="button" data-acct="signin">Sign in</button></span><button type="submit" class="primary">Next: build your birb</button></div></form>`;
+          <div class="acts"><span class="switch">Already joined? <button type="button" data-acct="signin">Sign in</button></span><button type="submit" class="primary">Next: build your birb</button></div>
+          <p class="hint switch" style="margin:2px 0 0">Before you join, see <button type="button" data-acct="privacy">what BIRB keeps and who can see it</button>.</p></form>`;
       else if (joinStep === 2) h = `${X}${steps(2)}<h2 id="acct-h">Build your birb</h2><p class="sub">Your birb is you around BIRB. You can change it any time.</p>${builderHTML()}
         <div class="err" id="acct-err" role="alert"></div><div class="acts"><span></span><button type="button" class="primary" data-av-save="join">Next: add your birds</button></div>`;
       else h = `${X}${steps(3)}<div class="prof">${Avatar.html(me && me.avatar)}<div><h2 id="acct-h">Welcome, ${esc(nameOf(me))}</h2><p class="sub" style="margin:0">Last step: add the birds you've heard.</p></div></div>${uploadHTML()}
@@ -6751,8 +6752,8 @@ const Acct = (() => {
           <div class="acts"><button type="button" class="ghost" data-acct="signin">Back</button><button type="submit" class="primary">Set new passcode</button></div>
           <p class="hint">No phrase? Ask Lee to reset your passcode.</p></form>`;
     } else if (view === "privacy") {
-      h = `${X}${tabs()}<h2 id="acct-h">Your data and privacy</h2><p class="sub">BIRB is a small app Lee runs for friends. Here's what it keeps and who can see it, in plain English.</p>${privacyHTML()}
-        <div class="acts"><span></span><button type="button" class="primary" data-acct="${me ? "profile" : "signin"}">${me ? "Back to your profile" : "OK"}</button></div>`;
+      h = `${X}${tabs()}<h2 id="acct-h">Your data and privacy</h2><p class="sub">Here's what BIRB keeps, why, and who can see it, in plain English.</p>${privacyHTML()}
+        <div class="acts"><span></span><button type="button" class="primary" data-acct="${me ? "profile" : privFrom === "join" ? "join" : "signin"}">${me ? "Back to your profile" : privFrom === "join" ? "Back to joining" : "OK"}</button></div>`;
     } else if (view === "feedback" && me) {
       const o = founder(), FK = [["idea", "An idea"], ["problem", "A problem"], ["other", "Something else"]];
       h = `${X}${tabs()}<h2 id="acct-h">Send feedback</h2>
@@ -6864,14 +6865,21 @@ const Acct = (() => {
   }
   function privacyHTML() {
     const sec = (t, b) => `<div class="pv"><b>${t}</b><p>${b}</p></div>`;
+    const lee = esc(nameOf(founder()) || "Lee");
     return `<div class="pv-list">
-      ${sec("What's kept", "Your username, display name and birb, your friends list and notifications, and your eBird sightings. From your eBird file only the columns the map needs are kept: the bird, the place, the date and time, and the count. Your passcode and recovery phrase are scrambled before they're saved, so nobody can read them, Lee included.")}
-      ${sec("Home addresses", "Any place in your file that looks like a home address is renamed to the nearest town (like \"Near Hindley\"), moved to about a kilometre away, and has its eBird checklist link removed, before anything is saved.")}
-      ${sec("Who sees your birds", "You choose in Your profile: only your friends (the default), anyone with your link, or only you. Friends of your friends can't see them. Birds you hide don't show to anyone.")}
+      ${sec("Who runs BIRB", `BIRB is a free app ${lee} runs as a hobby, with no adverts and no money involved. ${lee} decides what the app keeps and is responsible for looking after it.`)}
+      ${sec("What's kept", "Your username, display name and birb, your privacy setting, your friends list and friend requests, your notifications and reactions, the badges you earn, any feedback you send, and your eBird sightings. From your eBird file only the columns the map needs are kept: the bird, the place, the date and time, and the count. Your passcode and recovery phrase are scrambled before they're saved, so nobody can read them, " + lee + " included.")}
+      ${sec("Why it's kept", "Only so BIRB can do what you joined it for: show your birds on the map, in Habitat world and in your Collection, and share them with the people you choose. It isn't used for anything else.")}
+      ${sec("Home spots", "Any place in your file that looks like a home, such as a street address or a name like \"Back garden\" or \"Balcony\", is renamed to the nearest town (like \"Near Hindley\"), moved to about a kilometre away, and has its eBird checklist link removed, before anything is saved.")}
+      ${sec("Who sees your birds", "You choose in Your profile: only your friends (the default), anyone with your link, or only you. Friends of your friends can't see them. Birds you hide don't show to anyone. When you upload new birds or earn a badge, your friends get a note in their notifications.")}
+      ${sec(`What ${lee} can see`, `As the person running BIRB, ${lee} sees a list of members with each name, username, birb, species count, join date and privacy setting, plus any feedback you send. He sees your actual birds only if you share them with him, like any friend. He also runs a check that looks through everyone's account and bird file for problems, such as a friendship that only works one way, and fixes them. That check reports counts, not your sightings.`)}
+      ${sec("Where it's stored", "BIRB is hosted by Netlify, a US company, which stores the data on its servers in the United States. Netlify's data protection terms cover data sent there from the UK.")}
+      ${sec("How long it's kept", "Everything stays until you delete your account. Notifications keep your 60 most recent. Problem reports are cleared after 14 days.")}
       ${sec("What BIRB doesn't do", "No adverts, no selling data, no tracking cookies. Your phone remembers a few settings for BIRB, like staying signed in, night mode and lite mode, in its own storage.")}
-      ${sec("Other services", "The app is hosted on Netlify, which stores the data. Map tiles come from OpenFreeMap, bird photos from iNaturalist and fonts from Google Fonts. Like any website, they see your device's internet address when they send these.")}
-      ${sec("Problem reports", "If something goes wrong in the app, it sends Lee an anonymous note: the error, the type of phone and browser, and its graphics chip. No name, birds or places.")}
-      ${sec("Your controls", "Download your data or delete your account at any time from Your profile. Deleting removes your birds, profile, notifications and friendships straight away. Questions? Ask Lee, who runs BIRB.")}
+      ${sec("Other services", "Map tiles come from OpenFreeMap, bird photos from iNaturalist and Wikipedia, bird sounds from xeno-canto, and fonts from Google Fonts. Like any website, they see your device's internet address when they send these, but none of them get your account or your birds.")}
+      ${sec("Problem reports", `If something goes wrong in the app, it sends ${lee} an anonymous note: the error, the type of phone and browser, and its graphics chip. No name, birds or places.`)}
+      ${sec("Your controls and rights", `Download your data or delete your account at any time from Your profile. Deleting removes your birds, profile, notifications and friendships straight away. You can also ask ${lee} for a copy of your data, to correct something, or to delete it.`)}
+      ${sec("Questions or worries", `Use "Ideas or problems?" in Your profile and pick Other, or ask the friend who invited you to pass a message on. If you're unhappy with how your data is handled, tell ${lee} first. You can also complain to the Information Commissioner's Office at ico.org.uk.`)}
     </div>`;
   }
   async function exportData() {
@@ -7420,7 +7428,9 @@ const Acct = (() => {
     if (t.closest("[data-fl-map]")) { close(); await showFlock(); return; }
     if (t.closest("[data-acct-badges]")) { close(); setView("collection"); Badges.setMode("badges"); return; }
     const fk = t.closest("[data-fbk]"); if (fk) { const txt = $("fb-text").value; fbKind = fk.dataset.fbk; render(); $("fb-text").value = txt; $("fb-n").textContent = `${txt.length} / 1500`; return; }
-    const go = t.closest("[data-acct]"); if (go) { if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }
+    const go = t.closest("[data-acct]"); if (go) {
+      if (go.dataset.acct === "privacy") { privFrom = view; if (view === "join" && $("f-join")) draft = { ...draft, invite: $("j-inv").value, name: $("j-name").value, username: $("j-user").value }; }
+      if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }
     const vu = t.closest("[data-view-u]"); if (vu) { openMember(vu.dataset.viewU); return; }
     const fr = t.closest("[data-fr]"); if (fr) { fr.disabled = true; await friendAct(fr.dataset.fr, fr.dataset.u); return; }
     const uf = t.closest("[data-unfriend]");
