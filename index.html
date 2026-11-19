@@ -553,6 +553,17 @@ body.night .mem-acts .primary { color: #0f191d; }
 .mem-row span { display: grid; gap: 1px; min-width: 0; }
 .mem-row b { font-size: 14px; font-weight: 600; }
 .mem-row small { font-size: 12px; color: var(--muted); }
+.dc { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 4px 0 14px; display: grid; gap: 8px; }
+.dc-h { display: flex; align-items: center; gap: 10px; }
+.dc-h b { flex: 1; font-size: 15px; }
+.dc-sum { font-size: 13px; color: var(--muted); margin: 0; }
+.dc-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.dc-list li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; font-size: 13px; align-items: start; }
+.dc-list i { font-style: normal; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.dc-list i.y { background: color-mix(in srgb, #3f9b5f 18%, transparent); color: #2f7a49; }
+.dc-list i.n { background: color-mix(in srgb, #d08a2a 22%, transparent); color: #9a5e10; }
+.dc-list small { display: block; color: var(--muted); font-size: 12px; margin-top: 1px; }
+.dc-ok { font-size: 13px; font-weight: 600; color: #2f7a49; }
 .adm-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .adm-row .av { width: 34px; height: 34px; }
 .adm-row .t { flex: 1; min-width: 120px; font-size: 13px; }
@@ -1348,7 +1359,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
     <button type="button" class="close-panel" id="close-panel" aria-label="Close the bird panel" title="Close (Esc)">&times;</button>
     <h1>BIRB app</h1>
     <p class="sub">Where I've heard birds with Merlin Sound ID, from my eBird export</p>
-    <p class="updated">Last updated 14 Nov 2026</p>
+    <p class="updated">Last updated 19 Nov 2026</p>
     <div class="seg view-switch" role="group" aria-label="Choose a view">
       <button type="button" data-view="map" aria-pressed="true">Map</button>
       <button type="button" data-view="world" aria-pressed="false">Habitat world</button>
@@ -1652,7 +1663,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
 <div class="dropzone-overlay" id="overlay"><div>Drop your eBird CSV to update the map</div></div>
 
 <script type="text/plain" id="embedded-csv">Submission ID,Common Name,Scientific Name,Taxonomic Order,Count,State/Province,County,Location ID,Location,Latitude,Longitude,Date,Time,Protocol,Duration (Min),All Obs Reported,Distance Traveled (km),Area Covered (ha),Number of Observers,Breeding Code,Observation Details,Checklist Comments,ML Catalog Numbers</script>
-<script type="text/plain" id="embedded-meta">MyEBirdData.csv (14 Nov 2026)</script>
+<script type="text/plain" id="embedded-meta">MyEBirdData.csv (19 Nov 2026)</script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -6837,7 +6848,9 @@ const Acct = (() => {
     } else if (view === "flock") {
       h = `${X}${tabs()}${me ? flockTabHTML() : `<h2 id="acct-h">The flock</h2><p class="sub">Tap someone to see their birds on the map, in Habitat world and in their Collection.</p>${flockHTML(false)}<div class="acts"><span></span><span style="display:flex;gap:6px"><button type="button" data-acct="signin">Sign in</button><button type="button" class="primary" data-acct="join">Join</button></span></div>`}`;
     } else if (view === "admin" && me && me.admin) {
-      h = `${X}${tabs()}<h2 id="acct-h">Admin</h2><p class="sub">Only you can see this.</p><div id="adm" class="stack"><p class="hint">Loading members…</p></div>
+      h = `${X}${tabs()}<h2 id="acct-h">Admin</h2><p class="sub">Only you can see this.</p>
+        <div class="dc" id="adm-dc"><div class="dc-h"><b>Data check</b><button type="button" data-adm-check>Check everyone's data</button></div><p class="dc-sum">Looks through every member's account and bird file for anything out of step. Checking changes nothing.</p></div>
+        <div id="adm" class="stack"><p class="hint">Loading members…</p></div>
         <div class="fr-sec">Feedback from members</div><div id="adm-fb"><p class="hint">Loading…</p></div>
         <div class="fr-sec">Problem reports, last 14 days</div><p class="hint" style="margin:0 0 6px">Anonymous notes the app sends when something goes wrong, with the phone type.</p><div id="adm-rep"><p class="hint">Loading…</p></div>`;
     } else { view = me ? "profile" : "signin"; return render(); }
@@ -7249,6 +7262,25 @@ const Acct = (() => {
       <div class="rep-d">${[...g.devices].slice(0, 4).map(([d, n]) => `<span>${esc(d)}${n > 1 ? ` (${n})` : ""}</span>`).join("")}</div>${g.where && g.kind === "error" ? `<code>${esc(g.where.slice(0, 160))}</code>` : ""}</div>`).join("")
       : `<p class="hint">Nothing in the last two weeks. That's a good sign.</p>`;
   }
+  /* the data check: each line is a tick or a note; Fix only appears when there's something it can put right */
+  function paintCheck(d, fixedNow) {
+    const box = $("adm-dc"); if (!box) return;
+    const todo = d.checks.filter((c) => c.bad && !c.info), allGood = !d.checks.some((c) => c.bad);
+    box.innerHTML = `<div class="dc-h"><b>Data check</b><button type="button" data-adm-check>Check again</button></div>
+      <p class="dc-sum">${d.people} members, ${d.withBirds} with birds.${fixedNow ? " Fixes applied, then checked again." : ""}</p>
+      ${allGood ? `<p class="dc-ok">✓ Everyone's data is in good shape.</p>` : ""}
+      <ul class="dc-list">${d.checks.map((c) => `<li><i class="${c.bad ? "n" : "y"}">${c.bad ? "!" : "✓"}</i><span>${esc(c.label)}${c.bad ? `<small>${esc(c.note)}</small>` : ""}</span></li>`).join("")}</ul>
+      ${d.info ? `<p class="dc-sum">${esc(d.info)}</p>` : ""}
+      ${todo.length ? `<div class="acts" style="margin:0"><span class="hint">Fix only changes the items marked !. No sightings are removed.</span><button type="button" class="primary" data-adm-fix>Fix ${todo.length === 1 ? "this" : `these ${todo.length}`}</button></div>` : ""}`;
+  }
+  async function runCheck(fix) {
+    const box = $("adm-dc"), btn = box && box.querySelector(fix ? "[data-adm-fix]" : "[data-adm-check]");
+    if (btn) { btn.disabled = true; btn.textContent = fix ? "Fixing…" : "Checking…"; }
+    const r = fix ? await call("admin/repair", { method: "POST", body: {} }) : await call("admin/check");
+    if (!r.ok) { if (btn) { btn.disabled = false; btn.textContent = "Try again"; } box.insertAdjacentHTML("beforeend", `<p class="err">${esc(r.error)}</p>`); return; }
+    paintCheck(r.data, fix);
+    if (fix) { await refresh(); loadAdmin(); }
+  }
   async function loadAdmin() {
     const r = await call("admin/users"), box = $("adm"); if (!box) return;
     if (!r.ok) { box.innerHTML = `<p class="err">${esc(r.error)}</p>`; return; }
@@ -7418,6 +7450,8 @@ const Acct = (() => {
       if (sv.dataset.avSave === "join") { joinStep = 3; view = "join"; } else { view = "profile"; notice = "Your birb is saved."; }
       render(); return;
     }
+    if (t.closest("[data-adm-check]")) { runCheck(false); return; }
+    if (t.closest("[data-adm-fix]")) { runCheck(true); return; }
     const rs = t.closest("[data-adm-reset]");
     if (rs) { const u = rs.dataset.admReset; const r = await call("admin/reset", { method: "POST", body: { u } }); $("adm-" + u).textContent = r.ok ? `Temporary passcode for ${u}: ${r.data.temp} (they'll be asked to change it)` : r.error; return; }
     const rm = t.closest("[data-adm-remove]");

@@ -50,7 +50,7 @@ async function ensureInvite(user, fresh = false) {
   if (user.invite) await store().delete(`invites/${user.invite}`);
   user.invite = newCode();
   await store().set(`invites/${user.invite}`, user.u);
-  await putUser(user);
+  await saveUser(user, ["invite"]);
   return user;
 }
 
@@ -80,7 +80,10 @@ const normPhrase = (p) => String(p || "").toLowerCase().replace(/[^a-z]+/g, " ")
 function setPhrase(user) { const phrase = makePhrase(), salt = crypto.randomBytes(16).toString("base64"); user.rec = { salt, hash: hashPass(phrase, salt), made: new Date().toISOString() }; return phrase; }
 const phraseOk = (user, p) => !!user.rec && hashPass(normPhrase(p), user.rec.salt) === user.rec.hash;
 /* failed passcode and phrase tries share one lockout */
-async function failTry(user) { user.fails = (user.fails || 0) + 1; if (user.fails >= 5) { user.lockUntil = Date.now() + 15 * 60000; user.fails = 0; } await putUser(user); }
+async function failTry(user) {
+  const f = await editUser(user.u, (x) => { x.fails = (x.fails || 0) + 1; if (x.fails >= 5) { x.lockUntil = Date.now() + 15 * 60000; x.fails = 0; } });
+  if (f) Object.assign(user, f);
+}
 const locked = (user) => (user.lockUntil > Date.now() ? `Too many wrong tries. Try again in ${Math.ceil((user.lockUntil - Date.now()) / 60000)} minutes.` : "");
 
 const SESSION_DAYS = 180;
@@ -90,7 +93,52 @@ const tokenFor = (user) => sign({ u: user.u, v: user.v || 1, exp: Date.now() + S
 const USERNAME = /^[a-z0-9_-]{2,20}$/;
 const RESERVED = new Set(["admin", "api", "birb", "root", "flock", "me", "null", "undefined", "everyone", "all"]);
 const getUser = async (u) => (u && USERNAME.test(u) ? store().get(`users/${u}`, { type: "json" }) : null);
+/* Safe saves. Two requests can touch the same record at once (two people joining with Lee's code, or a friend accepting
+   while you upload). A plain save lets the last one win and quietly drops the other's change. So every save reads the
+   record, makes its change, and writes only if nobody else wrote in between; if they did, it reads again and redoes the change. */
+const pause = (i) => new Promise((r) => setTimeout(r, 15 + Math.random() * 40 * (i + 1)));
+async function edit(key, fn, { text = false, init } = {}) {
+  for (let i = 0; i < 10; i++) {
+    const got = await store().getWithMetadata(key, { type: text ? "text" : "json" });
+    let cur = got ? got.data : typeof init === "function" ? init() : init;
+    if (cur == null) return null;
+    const out = await fn(cur);
+    if (out === false) return cur;
+    if (out !== undefined) cur = out;
+    const opt = !got ? { onlyIfNew: true } : got.etag ? { onlyIfMatch: got.etag } : {};
+    const res = text ? await store().set(key, cur, opt) : await store().setJSON(key, cur, opt);
+    if (!res || res.modified !== false) return cur;
+    await pause(i);
+  }
+  throw new Error(`Busy saving ${key}`);
+}
+/* change one person's record; returns the fresh record, or null if they don't exist */
+const editUser = (u, fn) => edit(`users/${u}`, fn);
+/* save just the named fields of an in-memory record, keeping whatever else changed meanwhile, then refresh the copy */
+async function saveUser(user, fields) {
+  const fresh = await editUser(user.u, (x) => { for (const f of fields) x[f] = user[f]; });
+  if (fresh) Object.assign(user, fresh);
+  return user;
+}
+/* a brand-new record: fails if the key already exists, so two people can't claim one username at the same moment */
+const createUser = async (user) => { const r = await store().setJSON(`users/${user.u}`, user, { onlyIfNew: true }); return !r || r.modified !== false; };
 const putUser = (user) => store().setJSON(`users/${user.u}`, user);
+/* friendship changes, applied to each side as its own safe save */
+const LISTS = ["friends", "reqIn", "reqOut"];
+const linkSide = (x, other) => { lists(x); x.friends = withOne(x.friends, other); x.reqIn = without(x.reqIn, other); x.reqOut = without(x.reqOut, other); };
+const unlinkSide = (x, other) => { lists(x); for (const k of LISTS) x[k] = without(x[k], other); };
+async function befriendSafe(a, b) {
+  const [fa, fb] = [await editUser(a.u, (x) => linkSide(x, b.u)), await editUser(b.u, (x) => linkSide(x, a.u))];
+  if (fa) Object.assign(a, fa); if (fb) Object.assign(b, fb);
+}
+async function unlinkSafe(a, b) {
+  const [fa, fb] = [await editUser(a.u, (x) => unlinkSide(x, b.u)), await editUser(b.u, (x) => unlinkSide(x, a.u))];
+  if (fa) Object.assign(a, fa); if (fb) Object.assign(b, fb);
+}
+/* someone has gone: take them off everyone's lists */
+async function dropEverywhere(gone) {
+  await Promise.all((await allUsers()).map((x) => (LISTS.some((k) => (x[k] || []).includes(gone)) ? editUser(x.u, (y) => unlinkSide(y, gone)) : null)));
+}
 const isAdmin = (u) => !!u && u === env("ADMIN_USER").toLowerCase();
 async function allUsers() {
   const { blobs } = await store().list({ prefix: "users/" });
@@ -102,15 +150,6 @@ const lists = (x) => { x.friends = x.friends || []; x.reqIn = x.reqIn || []; x.r
 const without = (arr, u) => (arr || []).filter((v) => v !== u);
 const withOne = (arr, u) => ((arr || []).includes(u) ? arr : [...(arr || []), u]);
 const isFriend = (a, b) => !!a && !!b && (a.friends || []).includes(b.u);
-function befriend(a, b) {
-  lists(a); lists(b);
-  a.friends = withOne(a.friends, b.u); b.friends = withOne(b.friends, a.u);
-  for (const [x, y] of [[a, b], [b, a]]) { x.reqIn = without(x.reqIn, y.u); x.reqOut = without(x.reqOut, y.u); }
-}
-function unlink(a, b) {
-  lists(a); lists(b);
-  for (const [x, y] of [[a, b], [b, a]]) { x.friends = without(x.friends, y.u); x.reqIn = without(x.reqIn, y.u); x.reqOut = without(x.reqOut, y.u); }
-}
 const relation = (me, x) => (me.u === x.u ? "me" : isFriend(me, x) ? "friends" : (me.reqOut || []).includes(x.u) ? "sent" : (me.reqIn || []).includes(x.u) ? "received" : "none");
 
 /* a renamed account leaves a pointer behind, so old links and signed-in devices keep working */
@@ -167,9 +206,13 @@ const INBOX_MAX = 60;
 const REACTIONS = ["🎉", "👏", "🙌", "❤️", "😮"];
 const getInbox = async (u) => (await store().get(`inbox/${u}`, { type: "json" })) || { items: [], read: "" };
 /* adds one item; a run of uploads from the same friend while unread is merged into one item */
-async function notify(u, item, mergeBirds = false) {
+async function notify(u, item0, mergeBirds = false) {
   if (!u) return;
-  const box = await getInbox(u), now = new Date().toISOString();
+  await edit(`inbox/${u}`, (box) => { addItem(box, item0, mergeBirds); }, { init: () => ({ items: [], read: "" }) });
+}
+function addItem(box, item, mergeBirds) {
+  const now = new Date().toISOString();
+  box.items = box.items || [];
   item = { id: crypto.randomBytes(6).toString("base64url"), t: now, ...item };
   if (mergeBirds && item.kind === "badges") {
     const i = box.items.findIndex((x) => x.kind === "badges" && x.by.u === item.by.u && x.t > (box.read || "") && !x.reacted && Date.now() - Date.parse(x.t) < 6 * 3600e3);
@@ -183,7 +226,6 @@ async function notify(u, item, mergeBirds = false) {
   }
   box.items.unshift(item);
   box.items = box.items.slice(0, INBOX_MAX);
-  await store().setJSON(`inbox/${u}`, box);
 }
 const speciesIn = (csv) => { const m = new Map(); for (const r of toObjs(csv).objs) if (r["Common Name"]) m.set(r["Common Name"], r["Scientific Name"] || ""); return m; };
 const visibleRows = (user, objs) => { const h = new Set(user.hidden || []); return h.size ? objs.filter((r) => !h.has(r["Common Name"])) : objs; };
@@ -211,6 +253,18 @@ function parseCSV(text) {
 const cell = (v) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 const KEEP = ["Submission ID", "Common Name", "Scientific Name", "Taxonomic Order", "Count", "State/Province", "County", "Location ID", "Location", "Latitude", "Longitude", "Date", "Time", "Protocol", "Duration (Min)", "Number of Observers"];
 const ROAD = /^\s*\d+[a-z]?\s|\b(road|street|lane|avenue|close|drive|crescent|terrace|gardens|grove|court|cottages?|farm|house|mews|place|row|walk|way|home)\b/i;
+/* names people give their own garden: "Back garden", "My yard", "Balcony", "Our flat" */
+const HOME = /\b(my|our|back|front|rear|side)\s+(garden|yard|patch)\b|\b(back ?yard|balcony|flat|apartment)\b/i;
+const looksHome = (loc) => ROAD.test(loc || "") || HOME.test(loc || "");
+const PRIVATE_ID = /^P[0-9a-f]{8}$/;
+/* the stand-in for a private place: an area name, a ~1 km position and a fixed id */
+function privateSpot(priv, loc, lat, lng) {
+  if (!priv.has(loc)) {
+    const t = nearestTown(lng, lat);
+    priv.set(loc, { name: t ? `Near ${t}` : "A private spot", lat: lat.toFixed(2), lng: lng.toFixed(2), id: "P" + crypto.createHash("sha1").update(loc).digest("hex").slice(0, 8) });
+  }
+  return priv.get(loc);
+}
 function nearestTown(lng, lat) {
   let best = null, bd = Infinity;
   const k = Math.cos((lat * Math.PI) / 180);
@@ -233,12 +287,8 @@ function cleanCSV(text) {
     const lat = parseFloat(get("Latitude")), lng = parseFloat(get("Longitude"));
     if (!get("Common Name") || !isFinite(lat) || !isFinite(lng)) continue;
     const rec = Object.fromEntries(cols.map((h) => [h, get(h)]));
-    if (ROAD.test(rec.Location || "")) {
-      if (!priv.has(rec.Location)) {
-        const t = nearestTown(lng, lat);
-        priv.set(rec.Location, { name: t ? `Near ${t}` : "A private spot", lat: lat.toFixed(2), lng: lng.toFixed(2), id: "P" + crypto.createHash("sha1").update(rec.Location).digest("hex").slice(0, 8) });
-      }
-      const p = priv.get(rec.Location);
+    if (looksHome(rec.Location)) {
+      const p = privateSpot(priv, rec.Location, lat, lng);
       rec.Location = p.name; rec.Latitude = p.lat; rec.Longitude = p.lng; rec["Submission ID"] = "";
       if ("Location ID" in rec) rec["Location ID"] = p.id;
     }
@@ -296,6 +346,101 @@ async function readBody(req) {
 }
 const jsonBody = async (req) => { try { return await req.json(); } catch { return {}; } };
 
+/* ---------- data check: finds anything out of step and, when asked, puts it right ---------- */
+const csvBad = (objs) => objs.filter((r) => !r["Common Name"] || !isFinite(parseFloat(r.Latitude)) || !isFinite(parseFloat(r.Longitude)) || !/^\d{4}-\d{2}-\d{2}$/.test(r.Date || "")).length;
+const privCount = (objs) => new Set(objs.filter((r) => PRIVATE_ID.test(r["Location ID"] || "")).map((r) => r["Location ID"])).size;
+/* home-looking places that slipped through before the wider check existed */
+function blurHomes(csv) {
+  const { head, objs } = toObjs(csv), priv = new Map(); let changed = 0;
+  for (const r of objs) {
+    if (PRIVATE_ID.test(r["Location ID"] || "") || !looksHome(r.Location)) continue;
+    const lat = parseFloat(r.Latitude), lng = parseFloat(r.Longitude); if (!isFinite(lat) || !isFinite(lng)) continue;
+    const p = privateSpot(priv, r.Location, lat, lng);
+    r.Location = p.name; r.Latitude = p.lat; r.Longitude = p.lng; if ("Submission ID" in r) r["Submission ID"] = ""; if (head.includes("Location ID")) r["Location ID"] = p.id;
+    changed++;
+  }
+  return { csv: [head.join(","), ...objs.map((r) => head.map((h) => cell(r[h] || "")).join(","))].join("\n"), changed, places: priv.size };
+}
+async function audit(fix) {
+  const users = await allUsers(), by = new Map(users.map((x) => [x.u, x]));
+  const { blobs: aliasB } = await store().list({ prefix: "aliases/" });
+  const alias = new Map(await Promise.all(aliasB.map(async (a) => [a.key.slice(8), await store().get(a.key, { type: "text" })])));
+  const live = (u) => (by.has(u) ? u : by.has(alias.get(u)) ? alias.get(u) : null);
+  const C = {}, add = (id, who) => { (C[id] = C[id] || new Set()).add(who); };
+  const jobs = new Map(); /* user -> list of changes to their own record */
+  const job = (u, f) => { if (!jobs.has(u)) jobs.set(u, []); jobs.get(u).push(f); };
+
+  for (const x of users) {
+    lists(x);
+    for (const k of LISTS) for (const v of x[k]) {
+      const to = live(v);
+      if (!to || to === x.u) { add("gone", x.u); job(x.u, (y) => { y[k] = without(y[k], v); }); }
+      else if (to !== v) { add("gone", x.u); job(x.u, (y) => { y[k] = withOne(without(y[k], v), to); }); }
+    }
+    for (const f of x.friends) {
+      const o = by.get(live(f)); if (!o || o.u === x.u) continue;
+      if (!(o.friends || []).includes(x.u)) { add("oneway", `${x.u}~${o.u}`); job(o.u, (y) => linkSide(y, x.u)); job(x.u, (y) => linkSide(y, o.u)); }
+      if (x.reqIn.includes(o.u) || x.reqOut.includes(o.u)) { add("requests", x.u); job(x.u, (y) => { y.reqIn = without(y.reqIn, o.u); y.reqOut = without(y.reqOut, o.u); }); }
+    }
+    for (const t of x.reqOut) { const o = by.get(live(t)); if (o && !x.friends.includes(o.u) && !(o.reqIn || []).includes(x.u)) { add("requests", x.u); job(o.u, (y) => { lists(y); y.reqIn = withOne(y.reqIn, x.u); }); } }
+    for (const t of x.reqIn) { const o = by.get(live(t)); if (o && !x.friends.includes(o.u) && !(o.reqOut || []).includes(x.u)) { add("requests", x.u); job(o.u, (y) => { lists(y); y.reqOut = withOne(y.reqOut, x.u); }); } }
+    if (!x.invite) { add("invites", x.u); }
+  }
+
+  /* each person's birds: file readable, counts match, homes blurred */
+  const homes = { people: 0, places: 0 }, pins = { people: 0, places: 0 };
+  const csvFix = new Map();
+  for (const x of users) {
+    const csv = await store().get(`csv/${x.u}`, { type: "text" });
+    if (!csv) { if (x.birds) { add("counts", x.u); job(x.u, (y) => { y.birds = null; }); } continue; }
+    const objs = toObjs(csv).objs;
+    if (csvBad(objs)) add("broken", x.u);
+    const hp = new Set(objs.filter((r) => !PRIVATE_ID.test(r["Location ID"] || "") && looksHome(r.Location)).map((r) => r.Location));
+    if (hp.size) { homes.people++; homes.places += hp.size; add("homes", x.u); csvFix.set(x.u, true); }
+    const pp = new Set(objs.filter((r) => !PRIVATE_ID.test(r["Location ID"] || "") && /-?\d{1,2}\.\d{3,}\s*,\s*-?\d{1,3}\.\d{3,}/.test(r.Location || "")).map((r) => r.Location));
+    if (pp.size) { pins.people++; pins.places += pp.size; }
+    const vis = visibleRows(x, objs), want = statsOf(vis, privCount(objs)), b = x.birds || {};
+    if (!x.birds || ["species", "rows", "places", "first", "last"].some((k) => b[k] !== want[k]) || !b.latest) {
+      add("counts", x.u); if (!csvFix.has(x.u)) csvFix.set(x.u, false);
+    }
+  }
+
+  /* leftover files from removed accounts, and invite links that point at the wrong person */
+  const left = [];
+  for (const pre of ["csv/", "inbox/"]) { const { blobs } = await store().list({ prefix: pre }); for (const b of blobs) if (!by.has(b.key.slice(pre.length))) left.push(b.key); }
+  const { blobs: invB } = await store().list({ prefix: "invites/" }), badInv = [];
+  for (const b of invB) { const to = await store().get(b.key, { type: "text" }), o = by.get(to); if (!o || o.invite !== b.key.slice(8)) badInv.push(b.key); }
+
+  const fixed = [];
+  if (fix) {
+    for (const [u, fs] of jobs) await editUser(u, (y) => { lists(y); for (const f of fs) f(y); });
+    for (const [u, blur] of csvFix) {
+      let csv = null, priv = 0;
+      if (blur) csv = await edit(`csv/${u}`, (c) => { const r = blurHomes(c); return r.changed ? r.csv : false; }, { text: true });
+      else csv = await store().get(`csv/${u}`, { type: "text" });
+      if (!csv) continue;
+      const objs = toObjs(csv).objs; priv = privCount(objs);
+      await editUser(u, (y) => { const vis = visibleRows(y, objs); y.birds = { ...(y.birds || {}), ...statsOf(vis, priv), latest: latestLifer(objs, new Set(y.hidden || [])), updated: (y.birds && y.birds.updated) || new Date().toISOString() }; });
+    }
+    for (const x of users) if (!x.invite) { const f = await getUser(x.u); if (f && !f.invite) await ensureInvite(f); }
+    for (const k of [...left, ...badInv]) await store().delete(k);
+    fixed.push("done");
+  }
+  const n = (id) => (C[id] ? C[id].size : 0);
+  const checks = [
+    { id: "oneway", label: "Friendships work both ways", bad: n("oneway"), note: n("oneway") ? `${n("oneway")} friendship${n("oneway") > 1 ? "s" : ""} only on one side, so one person can't see the other's birds. Fix makes them two-way.` : "" },
+    { id: "requests", label: "Friend requests match up", bad: n("requests"), note: n("requests") ? `${n("requests")} ${n("requests") > 1 ? "people have" : "person has"} a request out of step. Fix tidies them.` : "" },
+    { id: "gone", label: "No links to removed people", bad: n("gone"), note: n("gone") ? `${n("gone")} ${n("gone") > 1 ? "people still list" : "person still lists"} someone who has left or renamed. Fix updates or clears them.` : "" },
+    { id: "counts", label: "Bird counts match the files", bad: n("counts"), note: n("counts") ? `${n("counts")} ${n("counts") > 1 ? "people's" : "person's"} species or place counts are out of date. Fix recounts from their file. No sightings change.` : "" },
+    { id: "broken", label: "Every bird file reads cleanly", bad: n("broken"), note: n("broken") ? `${n("broken")} ${n("broken") > 1 ? "files have" : "file has"} rows with a missing name, date or position. Those rows are skipped on the map. Nothing to fix here.` : "", info: true },
+    { id: "homes", label: "Home spots are blurred", bad: n("homes"), note: n("homes") ? `${homes.places} place${homes.places > 1 ? "s" : ""} across ${homes.people} ${homes.people > 1 ? "people" : "person"} look like a home (such as "back garden" or "balcony") and still show an exact spot. Fix moves them to "Near [town]" at about 1 km.` : "" },
+    { id: "invites", label: "Invite codes all work", bad: n("invites") + badInv.length, note: n("invites") + badInv.length ? "Some invite codes are missing or point to the wrong person. Fix makes fresh ones where needed." : "" },
+    { id: "left", label: "Nothing left behind by removed accounts", bad: left.length, note: left.length ? `${left.length} leftover file${left.length > 1 ? "s" : ""} (birds or notifications) from accounts that were deleted. Fix removes them.` : "" },
+  ];
+  const info = pins.places ? `${pins.places} place${pins.places > 1 ? "s" : ""} across ${pins.people} ${pins.people > 1 ? "people are" : "person is"} named by map pin coordinates. These are usually birding spots, so they stay as they are.` : "";
+  return { people: users.length, withBirds: users.filter((x) => x.birds).length, checks, info, fixed: fix };
+}
+
 /* ---------- routes ---------- */
 export default async (req) => {
   const url = new URL(req.url);
@@ -319,8 +464,10 @@ export default async (req) => {
       const recovery = setPhrase(user);
       const firsts = [...new Set([inv.by, env("ADMIN_USER").toLowerCase()])].filter((x) => x && x !== u);
       const told = [];
-      for (const f of firsts) { const other = await findUser(f); if (other) { befriend(user, other); await putUser(other); told.push(other.u); } }
-      await putUser(user);
+      const others = (await Promise.all(firsts.map(findUser))).filter(Boolean);
+      for (const o of others) linkSide(user, o.u);
+      if (!(await createUser(user))) return fail(409, "That username is taken. Try another.");
+      for (const o of others) { await editUser(o.u, (x) => linkSide(x, user.u)); told.push(o.u); }
       for (const t of told) await notify(t, { kind: "joined", by: mini(user), viaYou: t === inv.by });
       await ensureInvite(user);
       return json({ token: tokenFor(user), me: publicMe(user), recovery }, 201);
@@ -339,13 +486,8 @@ export default async (req) => {
       const user = await findUser(String(b.username || "").trim().toLowerCase());
       if (!user) return fail(401, "That username and passcode don't match.");
       if (user.lockUntil > Date.now()) return fail(429, `Too many wrong tries. Try again in ${Math.ceil((user.lockUntil - Date.now()) / 60000)} minutes.`);
-      if (hashPass(String(b.passcode || ""), user.salt) !== user.hash) {
-        user.fails = (user.fails || 0) + 1;
-        if (user.fails >= 5) { user.lockUntil = Date.now() + 15 * 60000; user.fails = 0; }
-        await putUser(user);
-        return fail(401, "That username and passcode don't match.");
-      }
-      user.fails = 0; user.lockUntil = 0; await putUser(user);
+      if (hashPass(String(b.passcode || ""), user.salt) !== user.hash) { await failTry(user); return fail(401, "That username and passcode don't match."); }
+      if (user.fails || user.lockUntil) { user.fails = 0; user.lockUntil = 0; await saveUser(user, ["fails", "lockUntil"]); }
       return json({ token: tokenFor(user), me: publicMe(user) });
     }
 
@@ -361,7 +503,7 @@ export default async (req) => {
       user.salt = crypto.randomBytes(16).toString("base64"); user.hash = hashPass(String(b.passcode), user.salt);
       user.v = (user.v || 1) + 1; user.fails = 0; user.lockUntil = 0; user.mustChange = false;
       const recovery = setPhrase(user);
-      await putUser(user);
+      await saveUser(user, ["salt", "hash", "v", "fails", "lockUntil", "mustChange", "rec"]);
       return json({ token: tokenFor(user), me: publicMe(user), recovery });
     }
 
@@ -373,8 +515,7 @@ export default async (req) => {
       const cut = (v, n) => String(v ?? "").slice(0, n);
       const item = { t: new Date().toISOString(), kind: cut(b.kind, 30), msg: cut(b.msg, 300), where: cut(b.where, 300), ua: cut(b.ua, 220), gpu: cut(b.gpu, 140), mem: Number(b.mem) || 0, lite: !!b.lite, why: cut(b.why, 20), view: cut(b.view, 40), signedIn: !!b.signedIn };
       const key = `reports/${item.t.slice(0, 10)}`;
-      const day = (await store().get(key, { type: "json" })) || [];
-      if (day.length < 400) { day.push(item); await store().setJSON(key, day); }
+      await edit(key, (day) => (day.length < 400 ? [...day, item] : false), { init: () => [] });
       return json({ ok: true });
     }
 
@@ -391,7 +532,7 @@ export default async (req) => {
         if (me.invite) await store().delete(`invites/${me.invite}`);
         const { blobs } = await store().list({ prefix: "aliases/" });
         await Promise.all(blobs.map(async (a) => { if ((await store().get(a.key, { type: "text" })) === me.u) await store().delete(a.key); }));
-        await Promise.all((await allUsers()).map((x) => { if ([x.friends, x.reqIn, x.reqOut].some((a) => (a || []).includes(me.u))) { x.friends = without(x.friends, me.u); x.reqIn = without(x.reqIn, me.u); x.reqOut = without(x.reqOut, me.u); return putUser(x); } }));
+        await dropEverywhere(me.u);
         return json({ deleted: true });
       }
       if (m === "GET") { await ensureInvite(me); return json({ me: publicMe(me) }); }
@@ -403,14 +544,19 @@ export default async (req) => {
         if (b.favourite !== undefined) me.favourite = cleanFav(b.favourite);
         if (b.pins !== undefined) me.pins = cleanPins(b.pins);
         let fresh = [];
-        if (b.badges !== undefined) {
-          const had = me.badges || {}, add = cleanBadges(b.badges);
-          fresh = Object.keys(add).filter((k) => !had[k]);
-          /* the very first save fills in badges earned before badges existed, so that one stays quiet */
-          if (!Object.keys(had).length) fresh = [];
-          me.badges = { ...add, ...had }; if (Object.keys(me.badges).length > 200) me.badges = Object.fromEntries(Object.entries(me.badges).slice(0, 200));
-        }
-        await putUser(me);
+        const add = b.badges !== undefined ? cleanBadges(b.badges) : null;
+        const f = await editUser(me.u, (x) => {
+          for (const k of ["name", "avatar", "visibility", "favourite", "pins"]) x[k] = me[k];
+          fresh = [];
+          if (add) {
+            const had = x.badges || {};
+            fresh = Object.keys(add).filter((k) => !had[k]);
+            /* the very first save fills in badges earned before badges existed, so that one stays quiet */
+            if (!Object.keys(had).length) fresh = [];
+            x.badges = { ...add, ...had }; if (Object.keys(x.badges).length > 200) x.badges = Object.fromEntries(Object.entries(x.badges).slice(0, 200));
+          }
+        });
+        if (f) Object.assign(me, f);
         if (fresh.length) {
           const friends = (await Promise.all((me.friends || []).map(findUser))).filter((f) => f && canSee(me, f));
           for (const f of friends) await notify(f.u, { kind: "badges", by: mini(me), ids: fresh.slice(0, 20) }, true);
@@ -424,7 +570,7 @@ export default async (req) => {
       const b = await jsonBody(req);
       if (locked(me)) return fail(429, locked(me));
       if (hashPass(String(b.passcode || ""), me.salt) !== me.hash) { await failTry(me); return fail(401, "That passcode isn't right."); }
-      const recovery = setPhrase(me); me.fails = 0; await putUser(me);
+      const recovery = setPhrase(me); me.fails = 0; await saveUser(me, ["rec", "fails"]);
       return json({ me: publicMe(me), recovery });
     }
 
@@ -441,10 +587,12 @@ export default async (req) => {
       const b = await jsonBody(req);
       const name = String(b.name || "").slice(0, 80);
       if (!name) return fail(400, "Which bird?");
-      me.hidden = b.hide === false ? without(me.hidden, name) : withOne(me.hidden || [], name);
       const csv = await store().get(`csv/${me.u}`, { type: "text" });
-      if (csv && me.birds) me.birds = { ...me.birds, ...statsOf(visibleRows(me, toObjs(csv).objs), me.birds.privatePlaces || 0) };
-      await putUser(me);
+      const f = await editUser(me.u, (x) => {
+        x.hidden = b.hide === false ? without(x.hidden, name) : withOne(x.hidden || [], name);
+        if (csv && x.birds) x.birds = { ...x.birds, ...statsOf(visibleRows(x, toObjs(csv).objs), x.birds.privatePlaces || 0) };
+      });
+      if (f) Object.assign(me, f);
       return json({ me: publicMe(me) });
     }
 
@@ -460,7 +608,7 @@ export default async (req) => {
       const old = me.u, wasAdmin = isAdmin(old);
       const csv = await store().get(`csv/${old}`, { type: "text" });
       me.u = nu; me.v = me.v || 1;
-      await putUser(me);
+      if (!(await createUser(me))) { me.u = old; return fail(409, "That username is taken. Try another."); }
       if (csv) await store().set(`csv/${nu}`, csv);
       const ib = await store().get(`inbox/${old}`, { type: "json" }); if (ib) { await store().setJSON(`inbox/${nu}`, ib); await store().delete(`inbox/${old}`); }
       if (wasAdmin) { cfg.ADMIN_USER = nu; await store().setJSON("config/settings", cfg); }
@@ -468,12 +616,10 @@ export default async (req) => {
       await store().delete(`aliases/${nu}`);
       if (me.invite) await store().set(`invites/${me.invite}`, nu);
       const swap = (arr) => (arr || []).map((v) => (v === old ? nu : v));
-      await Promise.all((await allUsers()).filter((x) => x.u !== nu).map((x) => {
-        const before = JSON.stringify([x.friends, x.reqIn, x.reqOut]);
-        x.friends = swap(x.friends); x.reqIn = swap(x.reqIn); x.reqOut = swap(x.reqOut);
-        if (x.invitedBy === old) x.invitedBy = nu;
-        return JSON.stringify([x.friends, x.reqIn, x.reqOut]) !== before ? putUser(x) : null;
-      }));
+      await Promise.all((await allUsers()).filter((x) => x.u !== nu && x.u !== old).map((x) =>
+        LISTS.some((k) => (x[k] || []).includes(old)) || x.invitedBy === old
+          ? editUser(x.u, (y) => { for (const k of LISTS) y[k] = swap(y[k]); if (y.invitedBy === old) y.invitedBy = nu; })
+          : null));
       const { blobs } = await store().list({ prefix: "aliases/" });
       await Promise.all(blobs.map(async (a) => { if ((await store().get(a.key, { type: "text" })) === old) await store().set(a.key, nu); }));
       await store().delete(`csv/${old}`); await store().delete(`users/${old}`);
@@ -486,7 +632,7 @@ export default async (req) => {
       if (hashPass(String(b.old || ""), me.salt) !== me.hash) return fail(401, "Your current passcode isn't right.");
       if (String(b.passcode || "").length < 6) return fail(400, "Passcodes need at least 6 characters.");
       me.salt = crypto.randomBytes(16).toString("base64"); me.hash = hashPass(String(b.passcode), me.salt); me.v = (me.v || 1) + 1; me.mustChange = false;
-      await putUser(me);
+      await saveUser(me, ["salt", "hash", "v", "mustChange"]);
       return json({ token: tokenFor(me), me: publicMe(me) });
     }
 
@@ -506,19 +652,22 @@ export default async (req) => {
         if (text.length > 60e6) return fail(413, "That file is too big.");
         let res;
         try { res = cleanCSV(text); } catch (e) { return fail(400, e.message); }
-        const prev = await store().get(`csv/${me.u}`, { type: "text" });
-        const replace = url.searchParams.get("mode") === "replace";
-        const before = prev ? speciesIn(prev) : new Map();
-        if (prev && !replace) res = mergeCSV(prev, res.csv, res.stats.privatePlaces);
-        else res.stats = { ...res.stats, added: res.stats.rows, newSpecies: [], replaced: true };
-        await store().set(`csv/${me.u}`, res.csv);
+        const replace = url.searchParams.get("mode") === "replace", clean = res;
+        let prev = null, before = new Map();
+        /* two uploads at once (two tabs, a double tap) both land: the second merges into the first */
+        await edit(`csv/${me.u}`, (old) => {
+          prev = old || null; before = prev ? speciesIn(prev) : new Map();
+          if (prev && !replace) res = mergeCSV(prev, clean.csv, clean.stats.privatePlaces);
+          else res = { csv: clean.csv, stats: { ...clean.stats, added: clean.stats.rows, newSpecies: [], replaced: true } };
+          return res.csv;
+        }, { text: true, init: "" });
         const after = speciesIn(res.csv), first = !prev, hid = new Set(me.hidden || []);
         const fresh = [...after.keys()].filter((n) => !before.has(n) && !hid.has(n));
         if (hid.size) res.stats = { ...res.stats, ...statsOf(visibleRows(me, toObjs(res.csv).objs), res.stats.privatePlaces || 0) };
         const rare = fresh.filter((n) => isRare(after.get(n)));
         res.stats.rare = rare;
         me.birds = { ...res.stats, updated: new Date().toISOString(), latest: latestLifer(toObjs(res.csv).objs, hid) };
-        await putUser(me);
+        await saveUser(me, ["birds"]);
         /* tell friends who can see these birds: one note per upload, plus a special one for rare finds */
         if (res.stats.added > 0 && fresh.length + (first ? 1 : 0) + res.stats.added > 0) {
           const friends = (await Promise.all((me.friends || []).map(findUser))).filter((f) => f && canSee(me, f));
@@ -531,7 +680,7 @@ export default async (req) => {
       }
       if (m === "DELETE") {
         await store().delete(`csv/${me.u}`);
-        me.birds = null; await putUser(me);
+        me.birds = null; await saveUser(me, ["birds"]);
         return json({ me: publicMe(me) });
       }
     }
@@ -543,12 +692,11 @@ export default async (req) => {
       const text = String(b.text || "").trim().slice(0, 1500);
       if (text.length < 3) return fail(400, "Write a few words first.");
       const day = new Date().toISOString().slice(0, 10);
-      if (!me.fb || me.fb.d !== day) me.fb = { d: day, n: 0 };
-      if (me.fb.n >= 10) return fail(429, "That's a lot of feedback for one day. Thank you! Try again tomorrow.");
-      me.fb.n++; await putUser(me);
+      let over = false;
+      await editUser(me.u, (x) => { if (!x.fb || x.fb.d !== day) x.fb = { d: day, n: 0 }; if (x.fb.n >= 10) { over = true; return false; } x.fb.n++; });
+      if (over) return fail(429, "That's a lot of feedback for one day. Thank you! Try again tomorrow.");
       const item = { id: crypto.randomBytes(6).toString("base64url"), t: new Date().toISOString(), u: me.u, name: me.name || me.u, kind, text, ua: b.device ? String(b.ua || "").slice(0, 220) : "", view: String(b.view || "").slice(0, 30) };
-      const all = (await store().get("feedback/all", { type: "json" })) || [];
-      all.unshift(item); await store().setJSON("feedback/all", all.slice(0, 300));
+      await edit("feedback/all", (all) => [item, ...all].slice(0, 300), { init: () => [] });
       const admin = env("ADMIN_USER").toLowerCase();
       if (admin && admin !== me.u) await notify(admin, { kind: "feedback", by: mini(me), fk: kind, text: text.slice(0, 180) });
       return json({ ok: true });
@@ -563,8 +711,8 @@ export default async (req) => {
       if (!item || !item.by || !["birds", "rare", "badges", "joined"].includes(item.kind)) return fail(404, "That notification has gone.");
       const them = await findUser(item.by.u);
       if (!them || !isFriend(me, them)) return fail(403, "You can only react to friends.");
-      const first = !item.reacted;
-      item.reacted = e; await store().setJSON(`inbox/${me.u}`, box);
+      let first = false;
+      await edit(`inbox/${me.u}`, (bx) => { const it = (bx.items || []).find((x) => x.id === item.id); if (!it) return false; first = !it.reacted; it.reacted = e; });
       if (first) await notify(them.u, { kind: "react", by: mini(me), e, about: { kind: item.kind, ids: (item.ids || []).slice(0, 3), n: (item.ids || []).length, bird: item.kind === "rare" ? ((item.birds || [])[0] || {}).name || "" : "", added: item.added || 0 } });
       return json({ reacted: e });
     }
@@ -572,7 +720,7 @@ export default async (req) => {
     if (path === "inbox") {
       if (!me) return fail(401, "Please sign in.");
       const box = await getInbox(me.u);
-      if (m === "POST") { box.read = new Date().toISOString(); await store().setJSON(`inbox/${me.u}`, box); return json({ read: box.read, unread: 0 }); }
+      if (m === "POST") { const read = new Date().toISOString(); await edit(`inbox/${me.u}`, (bx) => { bx.read = read; }, { init: () => ({ items: [], read: "" }) }); return json({ read, unread: 0 }); }
       return json({ items: box.items, read: box.read || "", unread: box.items.filter((x) => x.t > (box.read || "")).length });
     }
 
@@ -616,17 +764,21 @@ export default async (req) => {
       let note = null;
       if (act === "request") {
         if (isFriend(me, other)) { /* already friends */ }
-        else if (me.reqIn.includes(other.u)) { befriend(me, other); note = "accepted"; } /* they'd already asked you, so this counts as yes */
-        else { if (!other.reqIn.includes(me.u)) note = "request"; me.reqOut = withOne(me.reqOut, other.u); other.reqIn = withOne(other.reqIn, me.u); }
+        else if (me.reqIn.includes(other.u)) { await befriendSafe(me, other); note = "accepted"; } /* they'd already asked you, so this counts as yes */
+        else {
+          if (!other.reqIn.includes(me.u)) note = "request";
+          const fm = await editUser(me.u, (x) => { lists(x); x.reqOut = withOne(x.reqOut, other.u); });
+          const fo = await editUser(other.u, (x) => { lists(x); x.reqIn = withOne(x.reqIn, me.u); });
+          if (fm) Object.assign(me, fm); if (fo) Object.assign(other, fo);
+        }
       } else if (act === "accept") {
         if (!me.reqIn.includes(other.u) && !isFriend(me, other)) return fail(400, "That request has been withdrawn.");
         if (!isFriend(me, other)) note = "accepted";
-        befriend(me, other);
+        await befriendSafe(me, other);
       } else if (act === "decline" || act === "cancel" || act === "remove") {
         /* declining, withdrawing and unfriending are all silent: nobody gets told */
-        unlink(me, other);
+        await unlinkSafe(me, other);
       } else return fail(404, "Not found.");
-      await putUser(other); await putUser(me);
       if (note) await notify(other.u, { kind: note, by: mini(me) });
       return json({ status: relation(me, other), user: mini(other), me: publicMe(me) });
     }
@@ -637,6 +789,8 @@ export default async (req) => {
         const users = await allUsers();
         return json({ users: users.map((x) => ({ ...card(x, me), birds: x.birds || null, joined: x.joined, locked: x.lockUntil > Date.now(), friend: isFriend(me, x), invitedBy: x.invitedBy || null })), invite: envRaw("INVITE_CODE") || cfg.INVITE_CODE || "" });
       }
+      if (path === "admin/check" && m === "GET") return json(await audit(false));
+      if (path === "admin/repair" && m === "POST") { await audit(true); return json(await audit(false)); }
       if (path === "admin/feedback" && m === "GET") return json({ feedback: (await store().get("feedback/all", { type: "json" })) || [] });
       if (path === "admin/reports" && m === "GET") {
         const out = [];
@@ -657,14 +811,14 @@ export default async (req) => {
         const temp = crypto.randomBytes(5).toString("base64url").replace(/[-_]/g, "x").slice(0, 7);
         target.salt = crypto.randomBytes(16).toString("base64"); target.hash = hashPass(temp, target.salt);
         target.v = (target.v || 1) + 1; target.fails = 0; target.lockUntil = 0; target.mustChange = true;
-        await putUser(target);
+        await saveUser(target, ["salt", "hash", "v", "fails", "lockUntil", "mustChange"]);
         return json({ u: target.u, temp });
       }
       if (path === "admin/remove" && m === "POST") {
         if (target.u === me.u) return fail(400, "You can't remove yourself.");
         await store().delete(`csv/${target.u}`); await store().delete(`users/${target.u}`); await store().delete(`inbox/${target.u}`);
         if (target.invite) await store().delete(`invites/${target.invite}`);
-        await Promise.all((await allUsers()).map((x) => { if ([x.friends, x.reqIn, x.reqOut].some((a) => (a || []).includes(target.u))) { x.friends = without(x.friends, target.u); x.reqIn = without(x.reqIn, target.u); x.reqOut = without(x.reqOut, target.u); return putUser(x); } }));
+        await dropEverywhere(target.u);
         return json({ removed: target.u });
       }
     }
