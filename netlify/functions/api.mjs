@@ -9,7 +9,18 @@ import WORDS from "./words.mjs";
 export const config = { path: "/api/*" };
 
 const envRaw = (k) => (globalThis.Netlify ? Netlify.env.get(k) : process.env[k]) || "";
-const store = () => globalThis.__BIRB_TEST_STORE__ || getStore({ name: "birb", consistency: "strong" });
+/* Live and dev keep their data apart. Netlify's stores are shared by every copy of the site, so the live site reads
+   and writes "birb" and every other copy (the dev branch, previews) uses "birb-dev". Nothing done on dev can touch
+   members' real accounts. */
+let LIVE = true;
+const STORE_NAME = () => (LIVE ? "birb" : "birb-dev");
+const store = () => globalThis.__BIRB_TEST_STORE__ || (globalThis.__BIRB_TEST_STORES__ && globalThis.__BIRB_TEST_STORES__(STORE_NAME())) || getStore({ name: STORE_NAME(), consistency: "strong" });
+function whichSite(req, context) {
+  const dc = context && context.deploy && context.deploy.context, host = new URL(req.url).host;
+  /* the dev branch and previews always have "--" in their address (dev--birb-app.netlify.app) */
+  LIVE = dc ? dc === "production" : !host.includes("--");
+  if (globalThis.__BIRB_FORCE_DEV__) LIVE = false;
+}
 
 /* settings: site environment variables win; otherwise they live in private storage. The first invite code is only
    stored here as a fingerprint, so it can't be read from the public code. Lee can change it from the admin screen. */
@@ -347,6 +358,35 @@ async function readBody(req) {
 }
 const jsonBody = async (req) => { try { return await req.json(); } catch { return {}; } };
 
+/* ---------- dev copy: sample members ---------- */
+const SAMPLE_BIRDS = [["European Robin", "Erithacus rubecula"], ["Eurasian Wren", "Troglodytes troglodytes"], ["Eurasian Blackbird", "Turdus merula"], ["Great Tit", "Parus major"], ["Eurasian Blue Tit", "Cyanistes caeruleus"], ["Common Chiffchaff", "Phylloscopus collybita"], ["Eurasian Blackcap", "Sylvia atricapilla"], ["Common Chaffinch", "Fringilla coelebs"], ["European Goldfinch", "Carduelis carduelis"], ["Eurasian Magpie", "Pica pica"], ["Carrion Crow", "Corvus corone"], ["Common Wood-Pigeon", "Columba palumbus"], ["Tawny Owl", "Strix aluco"], ["Eurasian Nuthatch", "Sitta europaea"], ["Long-tailed Tit", "Aegithalos caudatus"], ["Goldcrest", "Regulus regulus"], ["Eurasian Curlew", "Numenius arquata"], ["Common Redshank", "Tringa totanus"], ["Herring Gull", "Larus argentatus"], ["Eurasian Oystercatcher", "Haematopus ostralegus"]];
+const SAMPLE_SPAIN = [["European Robin", "Erithacus rubecula"], ["Eurasian Blackbird", "Turdus merula"], ["Great Tit", "Parus major"], ["Sardinian Warbler", "Curruca melanocephala"], ["Spotless Starling", "Sturnus unicolor"], ["Eurasian Hoopoe", "Upupa epops"], ["European Serin", "Serinus serinus"], ["Iberian Green Woodpecker", "Picus sharpei"], ["Crested Lark", "Galerida cristata"], ["Zitting Cisticola", "Cisticola juncidis"], ["Monk Parakeet", "Myiopsitta monachus"], ["Azure-winged Magpie", "Cyanopica cooki"], ["Common Nightingale", "Luscinia megarhynchos"], ["Scops Owl", "Otus scops"]];
+const SAMPLE_PEOPLE = [
+  { u: "sample-priya", name: "Priya (sample)", county: "Leeds", region: "GB-ENG", lat: 53.83, lng: -1.53, birds: SAMPLE_BIRDS.slice(0, 15), friend: true },
+  { u: "sample-tom", name: "Tom (sample)", county: "Lancashire", region: "GB-ENG", lat: 53.76, lng: -2.7, birds: SAMPLE_BIRDS.slice(0, 8).concat(SAMPLE_BIRDS.slice(16)), friend: true },
+  { u: "sample-ruth", name: "Ruth (sample)", county: "Devon", region: "GB-ENG", lat: 50.72, lng: -3.53, birds: SAMPLE_BIRDS.slice(2, 14), friend: false },
+  { u: "sample-ewan", name: "Ewan (sample)", county: "Edinburgh", region: "GB-SCT", lat: 55.95, lng: -3.19, birds: SAMPLE_BIRDS.slice(0, 6).concat(SAMPLE_BIRDS.slice(13, 18)), friend: false },
+  { u: "sample-lucia", name: "Lucía (sample)", county: "Madrid", region: "ES-MD", lat: 40.42, lng: -3.7, birds: SAMPLE_SPAIN, friend: false },
+  { u: "sample-javi", name: "Javi (sample)", county: "Málaga", region: "ES-AN", lat: 36.72, lng: -4.42, birds: SAMPLE_SPAIN.slice(0, 10), friend: true },
+];
+async function seedSamples(admin) {
+  const head = KEEP.join(","), made = [];
+  for (const p of SAMPLE_PEOPLE) {
+    const day = (i) => `2026-${String(9 + (i % 3)).padStart(2, "0")}-${String(1 + ((i * 7) % 27)).padStart(2, "0")}`;
+    const rows = p.birds.map(([n, sci], i) => [`S${p.u}${i}`, n, sci, i + 1, "X", p.region, p.county, `L${p.u}${i % 3}`, `${p.county} park ${(i % 3) + 1}`, (p.lat + (i % 3) * 0.02).toFixed(4), (p.lng + (i % 4) * 0.02).toFixed(4), day(i), "07:30", "Incidental", "", "1"].map(cell).join(","));
+    const csv = [head, ...rows].join("\n"), objs = toObjs(csv).objs;
+    const user = { u: p.u, name: p.name, salt: "x", hash: crypto.randomBytes(16).toString("base64"), v: 1, joined: new Date().toISOString(), visibility: "friends", avatar: cleanAvatar(null), fails: 0, lockUntil: 0, friends: [], reqIn: [], reqOut: [], invitedBy: admin.u, suggest: true, sample: true,
+      birds: { ...statsOf(objs, 0), updated: new Date().toISOString(), latest: latestLifer(objs, new Set()) } };
+    if (p.friend) linkSide(user, admin.u);
+    await store().setJSON(`users/${p.u}`, user);
+    await store().set(`csv/${p.u}`, csv);
+    if (!(await store().get(`invites/${user.invite || "-"}`, { type: "text" }))) { user.invite = null; await ensureInvite(user); }
+    if (p.friend) await editUser(admin.u, (x) => linkSide(x, p.u)); else await editUser(admin.u, (x) => unlinkSide(x, p.u));
+    made.push(p.u);
+  }
+  return made;
+}
+
 /* ---------- birders to meet ----------
    Only people who've said yes to being suggested are ever shown. What's shown is their name, birb, species count
    and county, plus what you have in common. Their actual sightings stay behind the usual friends rule. */
@@ -477,7 +517,8 @@ async function audit(fix) {
 }
 
 /* ---------- routes ---------- */
-export default async (req) => {
+export default async (req, context) => {
+  whichSite(req, context);
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/api\/?/, "").replace(/\/$/, "");
   const m = req.method;
@@ -541,6 +582,9 @@ export default async (req) => {
       await saveUser(user, ["salt", "hash", "v", "fails", "lockUntil", "mustChange", "rec"]);
       return json({ token: tokenFor(user), me: publicMe(user), recovery });
     }
+
+    /* which copy this is, so the app can show a DEV label */
+    if (path === "site" && m === "GET") return json({ live: LIVE });
 
     /* anonymous problem reports from the app, so Lee can see what breaks on which phones */
     if (path === "report" && m === "POST") {
@@ -869,6 +913,12 @@ export default async (req) => {
         await notify(x.u, { kind: "intro", by: mini(me), other: about(y, my), note });
         await notify(y.u, { kind: "intro", by: mini(me), other: about(x, mx), note });
         return json({ ok: true });
+      }
+      /* dev only: made-up members with sample birds, so features have something to show */
+      if (path === "admin/seed" && m === "POST") {
+        if (LIVE) return fail(403, "Sample members are only for the dev copy.");
+        const made = await seedSamples(me);
+        return json({ made });
       }
       if (path === "admin/check" && m === "GET") return json(await audit(false));
       if (path === "admin/repair" && m === "POST") { await audit(true); return json(await audit(false)); }
