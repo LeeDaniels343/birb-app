@@ -186,6 +186,7 @@ const publicMe = (user) => ({
   admin: isAdmin(user.u), birds: user.birds || null, joined: user.joined, mustChange: !!user.mustChange, favourite: user.favourite || null,
   invite: user.invite || null, requests: (user.reqIn || []).length, friends: (user.friends || []).length,
   hasRecovery: !!user.rec, hidden: user.hidden || [], pins: user.pins || [], badges: user.badges || {},
+  suggest: typeof user.suggest === "boolean" ? user.suggest : null,
 });
 const canSee = (owner, viewer) => {
   const vis = visOf(owner);
@@ -346,6 +347,40 @@ async function readBody(req) {
 }
 const jsonBody = async (req) => { try { return await req.json(); } catch { return {}; } };
 
+/* ---------- birders to meet ----------
+   Only people who've said yes to being suggested are ever shown. What's shown is their name, birb, species count
+   and county, plus what you have in common. Their actual sightings stay behind the usual friends rule. */
+const matchKey = (x) => (x.birds ? `${x.birds.updated || ""}|${x.birds.rows || 0}|${(x.hidden || []).length}` : "");
+async function matchOf(x) {
+  if (!x.birds) return { sp: [], county: "" };
+  if (x.match && x.match.key === matchKey(x)) return x.match;
+  const csv = await store().get(`csv/${x.u}`, { type: "text" });
+  const vis = csv ? visibleRows(x, toObjs(csv).objs) : [];
+  const counties = new Map();
+  for (const r of vis) { const c = (r.County || "").trim(); if (c) counties.set(c, (counties.get(c) || 0) + 1); }
+  const county = [...counties].sort((a, b) => b[1] - a[1])[0];
+  const match = { key: matchKey(x), sp: [...new Set(vis.map((r) => r["Common Name"]).filter(Boolean))].slice(0, 800), county: county ? county[0] : "" };
+  await editUser(x.u, (y) => { y.match = match; });
+  return match;
+}
+async function suggestionsFor(me) {
+  lists(me);
+  const skip = new Set([me.u, ...me.friends, ...(me.hideSug || [])]);
+  const pool = (await allUsers()).filter((x) => x.suggest === true && !skip.has(x.u));
+  const mine = await matchOf(me), have = new Set(mine.sp);
+  /* how many people in the pool have each bird, so the "has heard" hook picks something special */
+  const rows = [];
+  for (const x of pool) rows.push({ x, m: await matchOf(x) });
+  const seen = new Map(); for (const { m } of rows) for (const n of m.sp) seen.set(n, (seen.get(n) || 0) + 1);
+  return rows.map(({ x, m }) => {
+    const common = m.sp.filter((n) => have.has(n)).length;
+    const sameCounty = !!(m.county && mine.county && m.county === mine.county);
+    const extra = have.size ? m.sp.filter((n) => !have.has(n)).sort((a, b) => (seen.get(a) || 0) - (seen.get(b) || 0))[0] || "" : "";
+    const score = common + (sameCounty ? 8 : 0) + Math.min(m.sp.length, 40) / 20 + (x.birds ? 0 : -1);
+    return { ...mini(x), species: x.birds ? x.birds.species : 0, county: m.county, common, sameCounty, extra, requested: me.reqOut.includes(x.u), asked: me.reqIn.includes(x.u), joined: x.joined || null, score };
+  }).sort((a, b) => b.score - a.score || (a.joined < b.joined ? 1 : -1)).slice(0, 30).map(({ score, ...r }) => r);
+}
+
 /* ---------- data check: finds anything out of step and, when asked, puts it right ---------- */
 const csvBad = (objs) => objs.filter((r) => !r["Common Name"] || !isFinite(parseFloat(r.Latitude)) || !isFinite(parseFloat(r.Longitude)) || !/^\d{4}-\d{2}-\d{2}$/.test(r.Date || "")).length;
 const privCount = (objs) => new Set(objs.filter((r) => PRIVATE_ID.test(r["Location ID"] || "")).map((r) => r["Location ID"])).size;
@@ -458,7 +493,7 @@ export default async (req) => {
       if (String(b.passcode || "").length < 6) return fail(400, "Passcodes need at least 6 characters.");
       if (await getUser(u)) return fail(409, "That username is taken. Try another.");
       const salt = crypto.randomBytes(16).toString("base64");
-      const user = { u, name: String(b.name || u).slice(0, 40), salt, hash: hashPass(String(b.passcode), salt), v: 1, joined: new Date().toISOString(), visibility: isAdmin(u) ? "public" : "friends", avatar: cleanAvatar(b.avatar), fails: 0, lockUntil: 0, friends: [], reqIn: [], reqOut: [], invitedBy: inv.by };
+      const user = { u, name: String(b.name || u).slice(0, 40), salt, hash: hashPass(String(b.passcode), salt), v: 1, joined: new Date().toISOString(), visibility: isAdmin(u) ? "public" : "friends", avatar: cleanAvatar(b.avatar), fails: 0, lockUntil: 0, friends: [], reqIn: [], reqOut: [], invitedBy: inv.by, suggest: b.suggest !== false };
       await store().delete(`aliases/${u}`);
       /* the person who invited you, plus Lee, who starts as everyone's friend (you can remove him) */
       const recovery = setPhrase(user);
@@ -549,10 +584,11 @@ export default async (req) => {
         if (b.visibility != null) { const v = b.visibility === "group" ? "friends" : b.visibility; if (VIS.has(v)) me.visibility = v; }
         if (b.favourite !== undefined) me.favourite = cleanFav(b.favourite);
         if (b.pins !== undefined) me.pins = cleanPins(b.pins);
+        if (typeof b.suggest === "boolean") me.suggest = b.suggest;
         let fresh = [];
         const add = b.badges !== undefined ? cleanBadges(b.badges) : null;
         const f = await editUser(me.u, (x) => {
-          for (const k of ["name", "avatar", "visibility", "favourite", "pins"]) x[k] = me[k];
+          for (const k of ["name", "avatar", "visibility", "favourite", "pins", "suggest"]) if (me[k] !== undefined) x[k] = me[k];
           fresh = [];
           if (add) {
             const had = x.badges || {};
@@ -673,7 +709,15 @@ export default async (req) => {
         const rare = fresh.filter((n) => isRare(after.get(n)));
         res.stats.rare = rare;
         me.birds = { ...res.stats, updated: new Date().toISOString(), latest: latestLifer(toObjs(res.csv).objs, hid) };
-        await saveUser(me, ["birds"]);
+        /* the counts always come from the file as it finally stands: if another upload landed meanwhile, count again */
+        let used = res.csv;
+        for (let k = 0; k < 4; k++) {
+          await saveUser(me, ["birds"]);
+          const now = await store().get(`csv/${me.u}`, { type: "text" });
+          if (!now || now === used) break;
+          used = now; const objs = toObjs(now).objs, h2 = new Set(me.hidden || []);
+          me.birds = { ...me.birds, ...statsOf(visibleRows(me, objs), me.birds.privatePlaces || 0), latest: latestLifer(objs, h2) };
+        }
         /* tell friends who can see these birds: one note per upload, plus a special one for rare finds */
         if (res.stats.added > 0 && fresh.length + (first ? 1 : 0) + res.stats.added > 0) {
           const friends = (await Promise.all((me.friends || []).map(findUser))).filter((f) => f && canSee(me, f));
@@ -723,6 +767,13 @@ export default async (req) => {
       return json({ reacted: e });
     }
 
+    /* an introduction you've answered (sent a request or said not now) stays answered on every device */
+    if (path === "inbox/done" && m === "POST") {
+      if (!me) return fail(401, "Please sign in.");
+      const id = String((await jsonBody(req)).id || "");
+      await edit(`inbox/${me.u}`, (bx) => { const it = (bx.items || []).find((x) => x.id === id); if (!it) return false; it.done = true; });
+      return json({ ok: true });
+    }
     if (path === "inbox") {
       if (!me) return fail(401, "Please sign in.");
       const box = await getInbox(me.u);
@@ -730,6 +781,17 @@ export default async (req) => {
       return json({ items: box.items, read: box.read || "", unread: box.items.filter((x) => x.t > (box.read || "")).length });
     }
 
+    if (path === "suggest" && m === "GET") {
+      if (!me) return fail(401, "Please sign in.");
+      return json({ people: await suggestionsFor(me), listed: me.suggest === true });
+    }
+    if (path === "suggest/hide" && m === "POST") {
+      if (!me) return fail(401, "Please sign in.");
+      const who = String((await jsonBody(req)).u || "").toLowerCase();
+      if (!USERNAME.test(who)) return fail(400, "Who?");
+      await editUser(me.u, (x) => { x.hideSug = withOne(x.hideSug || [], who).slice(-300); });
+      return json({ ok: true });
+    }
     if (path === "flock" && m === "GET") {
       const ownerU = env("ADMIN_USER").toLowerCase() || null;
       if (!me) {
@@ -793,7 +855,20 @@ export default async (req) => {
       if (!me || !isAdmin(me.u)) return fail(404, "Not found.");
       if (path === "admin/users" && m === "GET") {
         const users = await allUsers();
-        return json({ users: users.map((x) => ({ ...card(x, me), birds: x.birds || null, joined: x.joined, locked: x.lockUntil > Date.now(), friend: isFriend(me, x), invitedBy: x.invitedBy || null })), invite: envRaw("INVITE_CODE") || cfg.INVITE_CODE || "" });
+        return json({ users: users.map((x) => ({ ...card(x, me), birds: x.birds || null, joined: x.joined, locked: x.lockUntil > Date.now(), friend: isFriend(me, x), invitedBy: x.invitedBy || null, friendCount: (x.friends || []).length, suggest: typeof x.suggest === "boolean" ? x.suggest : null })), invite: envRaw("INVITE_CODE") || cfg.INVITE_CODE || "" });
+      }
+      if (path === "admin/introduce" && m === "POST") {
+        const b = await jsonBody(req);
+        const [x, y] = await Promise.all([findUser(String(b.a || "").toLowerCase()), findUser(String(b.b || "").toLowerCase())]);
+        if (!x || !y) return fail(404, "Pick two members.");
+        if (x.u === y.u) return fail(400, "Pick two different people.");
+        if (isFriend(x, y)) return fail(400, `${x.name || x.u} and ${y.name || y.u} are already friends.`);
+        const note = String(b.note || "").trim().slice(0, 140);
+        const [mx, my] = [await matchOf(x), await matchOf(y)], hx = new Set(mx.sp), common = my.sp.filter((n) => hx.has(n)).length;
+        const about = (o, mo) => ({ ...mini(o), species: o.birds ? o.birds.species : 0, county: mo.county, common });
+        await notify(x.u, { kind: "intro", by: mini(me), other: about(y, my), note });
+        await notify(y.u, { kind: "intro", by: mini(me), other: about(x, mx), note });
+        return json({ ok: true });
       }
       if (path === "admin/check" && m === "GET") return json(await audit(false));
       if (path === "admin/repair" && m === "POST") { await audit(true); return json(await audit(false)); }

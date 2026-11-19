@@ -553,6 +553,33 @@ body.night .mem-acts .primary { color: #0f191d; }
 .mem-row span { display: grid; gap: 1px; min-width: 0; }
 .mem-row b { font-size: 14px; font-weight: 600; }
 .mem-row small { font-size: 12px; color: var(--muted); }
+.sg-opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; }
+.sg-opt input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
+.sg-opt b { display: block; font-size: 14px; }
+.sg-opt small { display: block; color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 2px; }
+.sug { margin-top: 6px; }
+.sug .lede-s { margin: 0 0 8px; font-size: 12.5px; color: var(--muted); }
+.sug-list { display: grid; gap: 8px; }
+.sug-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 7px; }
+.sug-top { display: flex; align-items: center; gap: 10px; }
+.sug-top .t { flex: 1; min-width: 0; display: grid; }
+.sug-top .t b { font-size: 14px; }
+.sug-top .t small { color: var(--muted); font-size: 12px; }
+.sug-top .av { width: 40px; height: 40px; flex: none; }
+.nt.intro .eyebrow { display: block; font-size: 10.5px; font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 1px; }
+.sug-why { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sug-chip { font-size: 11.5px; padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink); }
+.sug-chip.c { background: color-mix(in srgb, #1d9e75 16%, transparent); color: #0f6e56; }
+.sug-chip.x { background: color-mix(in srgb, #d08a2a 20%, transparent); color: #854f0b; }
+.night .sug-chip.c, html.night .sug-chip.c { color: #7fd8b8; }
+html.night .sug-chip.x { color: #f3c27a; }
+.sug-x { margin-left: auto; font-size: 12px; color: var(--muted); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+.sug-done { font-size: 12.5px; color: var(--muted); }
+.nt-note { display: block; font-style: italic; color: var(--muted); margin: 3px 0 1px; }
+.nt-meta { display: block; color: var(--muted); font-size: 12px; }
+.adm-intro select, .adm-intro input { width: 100%; font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.adm-intro .fld { display: grid; gap: 4px; }
+.adm-intro .fld span { font-size: 12px; color: var(--muted); }
 .dc { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 4px 0 14px; display: grid; gap: 8px; }
 .dc-h { display: flex; align-items: center; gap: 10px; }
 .dc-h b { flex: 1; font-size: 15px; }
@@ -6234,7 +6261,7 @@ const Acct = (() => {
   let inbox = { items: [], read: "", unread: 0 }, inboxShownRead = "", pollT = 0;
   let phrase = "", phraseNext = "profile", shareUrl = "", shareBlob = null, shareKind = "post";
   const inviteLink = () => me && me.invite ? `${location.origin}/?invite=${encodeURIComponent(me.invite)}` : location.origin + "/";
-  let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "", firstUp = false, fbKind = "idea", privFrom = "";
+  let me = null, owner = null, members = [], viewing = null, view = "", draft = null, live = null, joinStep = 1, notice = "", firstUp = false, fbKind = "idea", privFrom = "", sug = null, sugAll = false, sugBusy = false;
   /* one pop-up note per visit is plenty: later ones become a small toast, and notes never start the Help guide */
   let notesShown = 0, welNote = false;
   let scope = "", backTo = "me", memberU = "";
@@ -6354,6 +6381,11 @@ const Acct = (() => {
     } else if (x.kind === "feedback") {
       cls = " fb";
       tx = `<span class="eyebrow">Feedback · ${esc({ idea: "an idea", problem: "a problem", other: "something else" }[x.fk] || "note")}</span>${nm}: “${esc(x.text || "")}${(x.text || "").length >= 180 ? "…" : ""}”${when}${acts(btn("feedback", "See all feedback"))}`;
+    } else if (x.kind === "intro") {
+      const o = x.other || {}, isFr = members.some((m) => m.u === o.u), sent = requests.out.some((q) => q.u === o.u);
+      cls = " intro"; lead = Avatar.html(o.avatar, nameOf(o));
+      const st = isFr ? `<span class="sug-done">You're friends now.</span>` : sent ? `<span class="sug-done">Friend request sent.</span>` : x.done ? "" : btn("intro-no", "Not now", `data-id="${esc(x.id)}"`) + btn("intro-yes", "Send friend request", `data-id="${esc(x.id)}" data-o="${esc(o.u)}"`, true);
+      tx = `<span class="eyebrow">An introduction</span>${nm} thinks you'd get on with <b>${esc(nameOf(o))}</b>.${x.note ? `<span class="nt-note">“${esc(x.note)}”</span>` : ""}<span class="nt-meta">${o.species ? `${o.species} species` : "New to BIRB"}${o.county ? ` · ${esc(o.county)}` : ""}${o.common ? ` · ${o.common} ${o.common === 1 ? "bird" : "birds"} in common` : ""}</span>${when}${acts(st)}`;
     } else if (x.kind === "react") {
       const a = x.about || {}, bs = (a.ids || []).map((id) => Badges.def(id)).filter(Boolean);
       const what = a.kind === "badges" ? (bs.length ? (a.n > 1 ? `your ${a.n} new badges` : `your <b>${esc(bs[0].name)}</b> badge`) : "your new badges")
@@ -6365,9 +6397,11 @@ const Acct = (() => {
     if (canReact) tx += `<div class="nt-react" role="group" aria-label="React to ${esc(nameOf(by))}'s news">${REACTS.map(([e, label]) => `<button type="button" data-react="${esc(x.id)}" data-e="${e}" aria-label="${label}" title="${label}" aria-pressed="${x.reacted === e}"${x.reacted && x.reacted !== e ? " disabled" : ""}>${e}</button>`).join("")}${x.reacted ? `<small>Sent</small>` : ""}</div>`;
     return `<div class="nt${cls}${isNew ? " new" : ""}">${lead}<div class="tx">${tx}</div></div>`;
   }
+  /* existing members who haven't answered yet: the question waits at the top of the bell */
+  const sugAskHTML = () => (!me || me.suggest !== null ? "" : `<div class="nt intro new">${Avatar.html(founder().avatar, "")}<div class="tx"><span class="eyebrow">New</span><b>Meet other birders</b><span class="nt-meta" style="font-size:13px">BIRB can now suggest people to each other, matched by birds you've both heard. Want to be suggested? Only your name, birb, species count and county are shown.</span><div class="acts"><button type="button" class="ghost" data-sug-no>No thanks</button><button type="button" class="primary" data-sug-yes>Yes, suggest me</button></div></div></div>`);
   function renderBell() {
     const c = $("bell-card"), items = inbox.items || [];
-    const clock = clockHTML();
+    const clock = clockHTML() + sugAskHTML();
     c.innerHTML = `<header><b>Notifications</b><small>${items.length ? "From your flock" : ""}</small></header>` + clock +
       (items.length ? items.map(ntHTML).join("") : clock ? "" : `<div class="bell-empty">Nothing yet. When friends add birds, earn badges, find something rare or accept your requests, you'll see it here.</div>`);
     Photos.fill(c);
@@ -6398,7 +6432,17 @@ const Acct = (() => {
     $("rare-pop").hidden = false; Photos.fill(c);
     setTimeout(() => c.querySelector(".primary").focus({ preventScroll: true }), 60);
   }
-  async function ntAct(k, u, bird) {
+  async function ntAct(k, u, bird, ds = {}) {
+    if (k === "intro-yes" || k === "intro-no") {
+      if (k === "intro-yes") {
+        const r = await call("friends/request", { method: "POST", body: { u: ds.o } });
+        if (!r.ok) { toast(`<span>${esc(r.error)}</span>`, $("bell-btn")); renderBell(); return; }
+        await refresh(); paintChrome(); sug = null;
+      }
+      await call("inbox/done", { method: "POST", body: { id: ds.id } });
+      const it = (inbox.items || []).find((x) => x.id === ds.id); if (it) it.done = true;
+      renderBell(); return;
+    }
     closeBell(); $("rare-pop").hidden = true;
     if (k === "birds") { await show(u); return; }
     if (k === "feedback") { open("admin"); setTimeout(() => { const f = $("adm-fb"); if (f) f.scrollIntoView({ block: "start" }); }, 600); return; }
@@ -6513,7 +6557,7 @@ const Acct = (() => {
     else if (invite) await showInvite(invite);
     else if (!me && !seen()) showWelcome();
     else document.body.classList.remove("welcoming");
-    if (me) { setTimeout(maybeNightNote, 2500); setTimeout(() => Badges.check(), 3600); }
+    if (me) { setTimeout(maybeNightNote, 2500); setTimeout(() => Badges.check(), 3600); setTimeout(maybeSuggestNote, 5000); }
   }
 
   /* ---------- the front door: a welcome card on a first visit, an invite card from a friend's link ---------- */
@@ -6599,6 +6643,30 @@ const Acct = (() => {
     const first = nb.slice().sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")))[0];
     try { localStorage.setItem(NIGHT_KEY(), "1"); } catch (e) {}
     nightNote(first.name);
+  }
+  /* the one-time question for members who joined before suggestions existed */
+  const SUG_KEY = () => `birb-sug-asked:${me ? me.u : ""}`;
+  let sugT = 0;
+  function maybeSuggestNote(tries = 0) {
+    clearTimeout(sugT);
+    if (!me || me.suggest !== null) return;
+    try { if (localStorage.getItem(SUG_KEY())) return; } catch (e) { return; }
+    const busy = document.body.classList.contains("welcoming") || !$("acct").hidden || !!document.querySelector(".mem-pop:not([hidden])") || !$("help").hidden || (typeof Tips !== "undefined" && Tips.open);
+    if (busy) { if (tries < 40) sugT = setTimeout(() => maybeSuggestNote(tries + 1), 4000); return; }
+    try { localStorage.setItem(SUG_KEY(), "1"); } catch (e) {}
+    const o = founder(); welNote = true; notesShown++;
+    popCard(o.avatar, `<span class="eyebrow" style="text-align:center">New from ${esc(nameOf(o))}</span>
+      <h2 id="wel-h" style="text-align:center">Meet other birders</h2>
+      <p class="lede" style="text-align:center">BIRB can now suggest people to each other, matched by the birds you've both heard. Would you like to be suggested?</p>
+      <p class="hint" style="text-align:center;margin:2px 0 0">Only your name, birb, species count and county are shown. Your birds stay private until you accept someone. You can change this any time in Settings.</p>
+      <div class="wel-acts"><button type="button" class="primary" data-sug-yes>Yes, suggest me</button><div class="row"><button type="button" class="ghost" data-sug-no>No thanks</button></div><span class="hint" style="text-align:center">Not sure? Close this and it'll wait in your notifications.</span></div>`);
+  }
+  async function setSuggest(on) {
+    const r = await call("me", { method: "PUT", body: { suggest: on } });
+    if (!r.ok) { toast(`<span>${esc(r.error)}</span>`, $("me-btn")); return; }
+    me = r.data.me; sug = null; closeWel(); renderBell(); paintBell();
+    if (!$("acct").hidden) render();
+    toast(`<span>${on ? "Done. Other birders can now find you in Birders to meet." : "No problem. You won't be suggested. You can change this in Settings."}</span>`, $("me-btn"));
   }
   /* once a year, when the clocks go back, a short reminder from the founder sits in the bell for three weeks */
   const clocksBack = () => { const d = new Date(new Date().getFullYear(), 9, 31); d.setDate(31 - d.getDay()); return d; };
@@ -6713,6 +6781,7 @@ const Acct = (() => {
           <div class="fld"><label for="j-name">Your name</label><input id="j-name" autocomplete="nickname" maxlength="40" value="${esc(draft.name || "")}" placeholder="Sam"></div>
           <div class="fld"><label for="j-user">Username</label><input id="j-user" autocomplete="username" maxlength="20" value="${esc(draft.username || "")}" placeholder="sam"><span class="hint">Your link will be ${esc(location.host)}/?who=<span id="j-userp">${esc(draft.username || "…")}</span></span></div>
           <div class="fld"><label for="j-pass">Passcode</label><input id="j-pass" type="password" autocomplete="new-password" placeholder="At least 6 characters"><span class="hint">Don't reuse a password from somewhere else.</span></div>
+          <label class="sg-opt"><input type="checkbox" id="j-sug" ${draft.suggest === false ? "" : "checked"}><span><b>Suggest me to other birders</b><small>Others on BIRB can see your name, birb, species count and county, and send you a friend request. Your birds stay private until you accept. You can turn this off any time.</small></span></label>
           <div class="err" id="acct-err" role="alert"></div>
           <div class="acts"><span class="switch">Already joined? <button type="button" data-acct="signin">Sign in</button></span><button type="submit" class="primary">Next: build your birb</button></div>
           <p class="hint switch" style="margin:2px 0 0">Before you join, see <button type="button" data-acct="privacy">what BIRB keeps and who can see it</button>.</p></form>`;
@@ -6829,6 +6898,7 @@ const Acct = (() => {
           <div class="pv2-sec">Privacy</div>
           <div class="fld"><label for="pr-vis">Who can see your birds</label><select id="pr-vis">
             ${[["friends", "Only my friends"], ["public", "Anyone with your link"], ["private", "Only me"]].map(([v, l]) => `<option value="${v}" ${me.visibility === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+          <label class="sg-opt"><input type="checkbox" id="pr-sug" ${me.suggest === true ? "checked" : ""}><span><b>Suggest me to other birders</b><small>Shown in "Birders to meet" with your name, birb, species count and county. You'll still only see someone's birds once you're friends.</small></span></label>
           <div class="pv2-sec">Links</div>
           ${inviteHTML()}
           <div class="fld"><label>Your birds link</label><div class="copybox"><code>${esc(location.origin)}/?who=${esc(me.u)}</code><button type="button" data-copy="${esc(location.origin)}/?who=${esc(me.u)}">Copy</button></div><span class="hint">Shows your birds to friends, or to anyone if you pick "Anyone with your link" above.</span></div>
@@ -6851,6 +6921,7 @@ const Acct = (() => {
     } else if (view === "admin" && me && me.admin) {
       h = `${X}${tabs()}<h2 id="acct-h">Admin</h2><p class="sub">Only you can see this.</p>
         <div class="dc" id="adm-dc"><div class="dc-h"><b>Data check</b><button type="button" data-adm-check>Check everyone's data</button></div><p class="dc-sum">Looks through every member's account and bird file for anything out of step. Checking changes nothing.</p></div>
+        <div class="dc adm-intro" id="adm-intro"><div class="dc-h"><b>Introduce two members</b></div><p class="dc-sum">Each gets a suggestion to connect. Nobody is added until they say yes.</p><p class="hint">Loading members…</p></div>
         <div id="adm" class="stack"><p class="hint">Loading members…</p></div>
         <div class="fr-sec">Feedback from members</div><div id="adm-fb"><p class="hint">Loading…</p></div>
         <div class="fr-sec">Problem reports, last 14 days</div><p class="hint" style="margin:0 0 6px">Anonymous notes the app sends when something goes wrong, with the phone type.</p><div id="adm-rep"><p class="hint">Loading…</p></div>`;
@@ -6859,7 +6930,7 @@ const Acct = (() => {
     if ($("abld-stage")) mountBuilder();
     if (view === "admin") { loadAdmin(); loadReports(); loadFeedback(); }
     if (view === "profile" && me && me.birds) fillTop();
-    if (view === "flock" && me) fillFlockTotal();
+    if (view === "flock" && me) { fillFlockTotal(); loadSug(); }
     Photos.fill(el);
     const first = view === "flock" || view === "profile" ? null : el.querySelector("input:not([type=file]), select"); if (first && !("ontouchstart" in window)) first.focus();
   }
@@ -6872,6 +6943,7 @@ const Acct = (() => {
       ${sec("Why it's kept", "Only so BIRB can do what you joined it for: show your birds on the map, in Habitat world and in your Collection, and share them with the people you choose. It isn't used for anything else.")}
       ${sec("Home spots", "Any place in your file that looks like a home, such as a street address or a name like \"Back garden\" or \"Balcony\", is renamed to the nearest town (like \"Near Hindley\"), moved to about a kilometre away, and has its eBird checklist link removed, before anything is saved.")}
       ${sec("Who sees your birds", "You choose in Your profile: only your friends (the default), anyone with your link, or only you. Friends of your friends can't see them. Birds you hide don't show to anyone. When you upload new birds or earn a badge, your friends get a note in their notifications.")}
+      ${sec("Birders to meet", "If you say yes to being suggested, other members can see your name, birb, species count and the county where most of your sightings are, plus how many birds you have in common. They can send you a friend request, which you can accept or ignore. Your sightings stay private until you're friends. New members are asked when they join and existing members are asked once. You can change your answer in Settings. " + lee + " can also introduce two members to each other, which sends each a suggestion and nothing more.")}
       ${sec(`What ${lee} can see`, `As the person running BIRB, ${lee} sees a list of members with each name, username, birb, species count, join date and privacy setting, plus any feedback you send. He sees your actual birds only if you share them with him, like any friend. He also runs a check that looks through everyone's account and bird file for problems, such as a friendship that only works one way, and fixes them. That check reports counts, not your sightings.`)}
       ${sec("Where it's stored", "BIRB is hosted by Netlify, a US company, which stores the data on its servers in the United States. Netlify's data protection terms cover data sent there from the UK.")}
       ${sec("How long it's kept", "Everything stays until you delete your account. Notifications keep your 60 most recent. Problem reports are cleared after 14 days.")}
@@ -7137,6 +7209,7 @@ const Acct = (() => {
       return `<div class="fl-empty"><span class="fl-ic">${ICO.users}</span><h2 id="acct-h">Start your flock</h2><p>Invite friends and see what everyone's hearing, together on one map.</p>
         ${link ? `<button type="button" class="primary" data-copy="${esc(link)}">Copy invite link</button><button type="button" data-invite-card>Make an Instagram card</button>` : ""}
         ${rout.length ? `<div class="pv2-sec">Waiting for a reply</div>${rout.map((x) => frRow(x, "request sent", frBtn("cancel", x.u, "Cancel"))).join("")}` : ""}
+        <div style="text-align:left;width:100%">${sugHTML()}</div>
         ${findHTML("Or add someone by their username")}</div>`;
     }
     const sorters = { recent: (a, b) => (b.birds?.updated || "").localeCompare(a.birds?.updated || ""), species: (a, b) => (b.birds?.species || 0) - (a.birds?.species || 0), az: (a, b) => nameOf(a).localeCompare(nameOf(b)) };
@@ -7154,7 +7227,29 @@ const Acct = (() => {
           <small>${line(m)}</small>${dots(m) ? `<span class="fl-pins">${dots(m)}</span>` : ""}</span>
         <span class="n">${m.birds ? m.birds.species : "–"}<small>species</small></span></button>`).join("")}</div>
       ${rout.length ? `<div class="pv2-sec">Waiting for a reply</div>${rout.map((x) => frRow(x, "request sent", frBtn("cancel", x.u, "Cancel"))).join("")}` : ""}
+      ${sugHTML()}
       ${findHTML("Add a friend by username")}`;
+  }
+  /* people who've said yes to being suggested, best matches first */
+  const sugHTML = () => `<div class="sug" id="sug-box">${sugInner()}</div>`;
+  function sugInner() {
+    const head = `<div class="pv2-sec">Birders to meet</div>`;
+    if (!sug) return `${head}<p class="lede-s">Looking for birders…</p>`;
+    const L = sug.people, list = sugAll ? L : L.slice(0, 3);
+    const chips = (p) => [p.common ? `<span class="sug-chip c">${p.common} ${p.common === 1 ? "bird" : "birds"} in common</span>` : "", p.sameCounty ? `<span class="sug-chip">Same county</span>` : "", p.extra ? `<span class="sug-chip x">Has heard ${esc(p.extra)}</span>` : "", !p.species ? `<span class="sug-chip">New to BIRB</span>` : ""].join("");
+    const act = (p) => p.requested ? `<span class="sug-done">Requested</span>` : p.asked ? frBtn("accept", p.u, "Accept", true) : `<button type="button" data-sug-add="${esc(p.u)}">Add</button>`;
+    const card = (p) => `<div class="sug-card"><div class="sug-top">${Avatar.html(p.avatar)}<span class="t"><b>${esc(nameOf(p))}</b><small>${p.species ? `${p.species} species` : "No birds yet"}${p.county ? ` · ${esc(p.county)}` : ""}</small></span>${act(p)}</div>
+      <div class="sug-why">${chips(p)}${p.requested ? "" : `<button type="button" class="sug-x" data-sug-hide="${esc(p.u)}">Not now</button>`}</div></div>`;
+    return `${head}<p class="lede-s">${L.length ? "People who've said they're happy to be suggested, matched by birds you've both heard." : "No one to suggest yet. As more people say yes, they'll show up here."}</p>
+      ${L.length ? `<div class="sug-list">${list.map(card).join("")}</div>` : ""}
+      ${L.length > 3 && !sugAll ? `<p class="switch" style="margin:6px 0 0;text-align:right"><button type="button" data-sug-all>See all ${L.length}</button></p>` : ""}
+      ${sug.listed ? "" : `<p class="hint switch" style="margin:8px 0 0">You're not listed yet. <button type="button" data-sug-yes>Suggest me to other birders</button></p>`}`;
+  }
+  async function loadSug() {
+    if (sugBusy || !me) return; sugBusy = true;
+    const r = await call("suggest"); sugBusy = false;
+    sug = r.ok ? r.data : { people: [], listed: me.suggest === true };
+    const b = $("sug-box"); if (b) { b.innerHTML = sugInner(); Photos.fill(b); }
   }
   function findHTML(ph) {
     return `<form id="f-find" class="fr-add" novalidate role="search"><input id="fr-u" maxlength="21" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="${esc(ph)}" aria-label="Friend's username"><button type="submit">Find</button></form><div class="fr-res" id="fr-res" aria-live="polite">${findResHTML()}</div>`;
@@ -7292,6 +7387,15 @@ const Acct = (() => {
   async function loadAdmin() {
     const r = await call("admin/users"), box = $("adm"); if (!box) return;
     if (!r.ok) { box.innerHTML = `<p class="err">${esc(r.error)}</p>`; return; }
+    const ppl = r.data.users.filter((u) => !u.owner).sort((a, b) => (a.friendCount || 0) - (b.friendCount || 0) || nameOf(a).localeCompare(nameOf(b)));
+    const opt = (u) => `<option value="${esc(u.u)}">${esc(nameOf(u))} (@${esc(u.u)})${(u.friendCount || 0) <= 1 ? " · no friends but you" : ""}</option>`;
+    const ib = $("adm-intro");
+    if (ib) ib.innerHTML = `<div class="dc-h"><b>Introduce two members</b></div><p class="dc-sum">Each gets a suggestion to connect. Nobody is added until they say yes.</p>
+      ${ppl.length < 2 ? `<p class="hint">You need at least two members besides you.</p>` : `<label class="fld"><span>Introduce</span><select id="in-a">${ppl.map(opt).join("")}</select></label>
+      <label class="fld"><span>To</span><select id="in-b">${ppl.map(opt).join("")}</select></label>
+      <label class="fld"><span>Note (optional)</span><input id="in-note" maxlength="140" placeholder="You're both near Leeds and into owls"></label>
+      <div class="acts" style="margin:0"><span class="hint">Members with no friends but you are listed first.</span><button type="button" class="primary" data-adm-intro>Send introduction</button></div><p id="in-out" class="ok" role="status"></p>`}`;
+    if ($("in-b") && ppl.length > 1) $("in-b").selectedIndex = 1;
     const inv = r.data.invite;
     const link = inv ? `${location.origin}/?invite=${encodeURIComponent(inv)}` : "";
     box.innerHTML = `<div class="fld"><label>Back-door invite code</label>
@@ -7365,7 +7469,9 @@ const Acct = (() => {
     }
     if (t.closest("#bell-btn")) { $("bell-card").hidden ? openBell() : closeBell(); return; }
     const rx = t.closest("[data-react]"); if (rx) { await react(rx.dataset.react, rx.dataset.e, rx); return; }
-    const nt = t.closest("[data-nt]"); if (nt) { nt.disabled = true; await ntAct(nt.dataset.nt, nt.dataset.u, nt.dataset.bird); return; }
+    const nt = t.closest("[data-nt]"); if (nt) { nt.disabled = true; await ntAct(nt.dataset.nt, nt.dataset.u, nt.dataset.bird, nt.dataset); return; }
+    if (t.closest("[data-sug-yes]")) { await setSuggest(true); return; }
+    if (t.closest("[data-sug-no]")) { await setSuggest(false); return; }
     if (!$("bell-card").hidden && !t.closest("#bell-card")) closeBell();
     if (t.closest("[data-feedback]")) { try { setHelp(false); } catch (x) {} if (me) open("feedback"); else open("signin"); return; }
     if (t.closest("[data-night-help]")) { try { setHelp(false); } catch (x) {} $("bell-card").hidden = true; $("bell-btn").setAttribute("aria-expanded", "false"); nightNote(""); return; }
@@ -7429,7 +7535,7 @@ const Acct = (() => {
     if (t.closest("[data-acct-badges]")) { close(); setView("collection"); Badges.setMode("badges"); return; }
     const fk = t.closest("[data-fbk]"); if (fk) { const txt = $("fb-text").value; fbKind = fk.dataset.fbk; render(); $("fb-text").value = txt; $("fb-n").textContent = `${txt.length} / 1500`; return; }
     const go = t.closest("[data-acct]"); if (go) {
-      if (go.dataset.acct === "privacy") { privFrom = view; if (view === "join" && $("f-join")) draft = { ...draft, invite: $("j-inv").value, name: $("j-name").value, username: $("j-user").value }; }
+      if (go.dataset.acct === "privacy") { privFrom = view; if (view === "join" && $("f-join")) draft = { ...draft, invite: $("j-inv").value, name: $("j-name").value, username: $("j-user").value, suggest: $("j-sug") ? $("j-sug").checked : true }; }
       if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }
     const vu = t.closest("[data-view-u]"); if (vu) { openMember(vu.dataset.viewU); return; }
     const fr = t.closest("[data-fr]"); if (fr) { fr.disabled = true; await friendAct(fr.dataset.fr, fr.dataset.u); return; }
@@ -7459,6 +7565,29 @@ const Acct = (() => {
       me = r.data.me; await refresh(); paintChrome();
       if (sv.dataset.avSave === "join") { joinStep = 3; view = "join"; } else { view = "profile"; notice = "Your birb is saved."; }
       render(); return;
+    }
+    if (t.closest("[data-sug-all]")) { sugAll = true; const b = $("sug-box"); if (b) b.innerHTML = sugInner(); return; }
+    const sa = t.closest("[data-sug-add]");
+    if (sa) {
+      const u = sa.dataset.sugAdd; sa.disabled = true;
+      const r = await call("friends/request", { method: "POST", body: { u } });
+      if (!r.ok) { sa.disabled = false; toast(`<span>${esc(r.error)}</span>`, sa); return; }
+      const p = sug && sug.people.find((x) => x.u === u); if (p) p.requested = true;
+      await refresh(); paintChrome();
+      if (members.some((m) => m.u === u)) { sug.people = sug.people.filter((x) => x.u !== u); render(); toast(`<span>You and ${esc(nameOf(p || { u }))} are friends now.</span>`, $("who")); return; }
+      render(); return;
+    }
+    const sgh = t.closest("[data-sug-hide]");
+    if (sgh) { const u = sgh.dataset.sugHide; if (sug) sug.people = sug.people.filter((x) => x.u !== u); const b = $("sug-box"); if (b) b.innerHTML = sugInner(); call("suggest/hide", { method: "POST", body: { u } }); return; }
+    const ib = t.closest("[data-adm-intro]");
+    if (ib) {
+      const a = $("in-a").value, b = $("in-b").value, out = $("in-out");
+      if (!a || !b) { out.className = "err"; out.textContent = "Pick two members."; return; }
+      if (a === b) { out.className = "err"; out.textContent = "Pick two different people."; return; }
+      ib.disabled = true; const r = await call("admin/introduce", { method: "POST", body: { a, b, note: $("in-note").value } }); ib.disabled = false;
+      out.className = r.ok ? "ok" : "err"; out.textContent = r.ok ? "Sent. They'll each see it in their notifications." : r.error;
+      if (r.ok) $("in-note").value = "";
+      return;
     }
     if (t.closest("[data-adm-check]")) { runCheck(false); return; }
     if (t.closest("[data-adm-fix]")) { runCheck(true); return; }
@@ -7492,12 +7621,12 @@ const Acct = (() => {
     const btn = f.querySelector("[type=submit]");
     if (f.id === "f-join") {
       const invite = $("j-inv").value.trim(), name = $("j-name").value.trim(), username = $("j-user").value.trim().toLowerCase(), passcode = $("j-pass").value;
-      Object.assign(draft, { invite, name, username });
+      Object.assign(draft, { invite, name, username, suggest: $("j-sug") ? $("j-sug").checked : true });
       if (!invite) return err("Enter the invite code your friend sent you.");
       if (!name) return err("Enter the name you'd like people to see.");
       if (!/^[a-z0-9_-]{2,20}$/.test(username)) return err("Usernames are 2 to 20 letters, numbers, - or _.");
       if (passcode.length < 6) return err("Passcodes need at least 6 characters.");
-      btn.disabled = true; const r = await call("join", { method: "POST", body: { invite, name, username, passcode, avatar: draft.avatar } }); btn.disabled = false;
+      btn.disabled = true; const r = await call("join", { method: "POST", body: { invite, name, username, passcode, avatar: draft.avatar, suggest: draft.suggest !== false } }); btn.disabled = false;
       if (!r.ok) return err(r.error);
       await afterAuth(r); joinStep = 2; phrase = r.data.recovery || ""; phraseNext = "join";
       if (phrase) { view = "phrase"; render(); } else render();
@@ -7568,7 +7697,7 @@ const Acct = (() => {
         setToken(rn.data.token); me = rn.data.me;
         if (viewing && viewing.u === was) { viewing = { ...viewing, u: me.u }; const url = new URL(location.href); if (url.searchParams.get("who") === was) { url.searchParams.set("who", me.u); history.replaceState(null, "", url.pathname + url.search + location.hash); } }
       }
-      const r = await call("me", { method: "PUT", body: { name: $("pr-name").value.trim(), visibility: $("pr-vis").value } }); btn.disabled = false;
+      const r = await call("me", { method: "PUT", body: { name: $("pr-name").value.trim(), visibility: $("pr-vis").value, suggest: !!($("pr-sug") && $("pr-sug").checked) } }); sug = null; btn.disabled = false;
       if (!r.ok) return err(r.error);
       me = r.data.me; await refresh(); paintChrome(); notice = "Saved."; view = "settings"; render();
     }
