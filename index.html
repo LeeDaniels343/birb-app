@@ -1759,7 +1759,24 @@ function fetchWards() {
 const muniLoaded = new Set(), muniAsked = new Set();
 /* countries with municipality files: Spain (IGN) and Greece (ELSTAT) */
 const MUNI_COUNTRIES = new Set(["ES", "EL"]);
-function munisArrived(id, topo) {
+/* municipality files are unpacked together once the map stops moving, not one by one in the middle of a zoom */
+const muniQueue = []; let muniTimer = null, lastMove = 0;
+function queueMunis(id, topo) { muniQueue.push([id, topo]); scheduleMunis(); }
+function scheduleMunis() {
+  clearTimeout(muniTimer);
+  muniTimer = setTimeout(() => {
+    if (performance.now() - lastMove < 280) return scheduleMunis();
+    const batch = muniQueue.splice(0);
+    if (batch.length) munisArrived(batch);
+  }, 300);
+}
+function munisArrived(batch) {
+  for (const [id, topo] of batch) addMunis(id, topo);
+  geoVersion++; fixAreas(state.data);
+  lastWardsHere = null; crumbSig = "";
+  render();
+}
+function addMunis(id, topo) {
   const fc = topojson.feature(topo, topo.objects.m);
   fc.features = fc.features.filter((f) => f.geometry);
   for (const f of fc.features) f.properties.key = `${f.properties.name}, ${f.properties.district}`;
@@ -1767,9 +1784,6 @@ function munisArrived(id, topo) {
   WARDS = [...WARDS, ...ws];
   WARDS_FC = { ...WARDS_FC, features: [...WARDS_FC.features, ...fc.features] };
   muniLoaded.add(id); wardCache.clear(); wardWindow = null;
-  geoVersion++; fixAreas(state.data);
-  lastWardsHere = null; crumbSig = "";
-  render();
 }
 function fetchMunis() {
   if (!EUROPE_READY || viewState.zoom < PLACE_ZOOM - 0.7 || !/^https?:/.test(location.protocol)) return;
@@ -1779,7 +1793,7 @@ function fetchMunis() {
     if (!MUNI_COUNTRIES.has(p.country) || muniAsked.has(p.id)) continue;
     if (c.bbox[2] < x - ls * 0.7 || c.bbox[0] > x + ls * 0.7 || c.bbox[3] < y - la * 0.8 || c.bbox[1] > y + la * 0.8) continue;
     muniAsked.add(p.id);
-    fetch(`lau/${p.id}.json`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).then((t) => munisArrived(p.id, t)).catch(() => {});
+    fetch(`lau/${p.id}.json`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).then((t) => queueMunis(p.id, t)).catch(() => {});
   }
 }
 
@@ -2229,6 +2243,7 @@ function pushLayers() {
 }
 let labelView = null;   // set when county labels are close together, so they are spaced again as the view changes
 function handleView(v) {
+  lastMove = performance.now();
   const lv = labelView, relabel = lv && v.zoom < PLACE_ZOOM && (Math.abs(v.zoom - lv.z) > 0.1 || Math.abs((v.bearing || 0) - lv.b) > 3 || Math.abs((v.pitch || 0) - lv.p) > 3);
   let crossed = (v.zoom >= PLACE_ZOOM) !== (viewState.zoom >= PLACE_ZOOM) || (v.zoom >= WARD_ZOOM) !== (viewState.zoom >= WARD_ZOOM) || (v.zoom < COUNTRY_Z) !== (viewState.zoom < COUNTRY_Z);
   viewState = { ...viewState, longitude: v.longitude, latitude: v.latitude, zoom: v.zoom, pitch: v.pitch, bearing: v.bearing };
@@ -3640,12 +3655,52 @@ function shiftedFC(fc, dx, dy) {
 const makeShadows = () => [[0.10, -0.05, 26], [0.22, -0.11, 18], [0.36, -0.18, 12], [0.52, -0.26, 7]].map(([dx, dy, a]) => ({ fc: shiftedFC(GEO.regions, dx, dy), a }));
 let SHADOWS = makeShadows();
 const shadowCache = new Map();
+/* close up, the shadows are only drawn for the regions around the view (all of Europe's would be redrawn at every step
+   of a zoom, which made zooming stutter). The area is snapped to a grid so small pans reuse the same shadows. */
+const regionBox = new WeakMap();
+function featBox(f) {
+  let b = regionBox.get(f); if (b) return b;
+  b = [180, 90, -180, -90];
+  const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+  for (const p of polys) for (const [x, y] of p[0]) { if (x < b[0]) b[0] = x; if (y < b[1]) b[1] = y; if (x > b[2]) b[2] = x; if (y > b[3]) b[3] = y; }
+  regionBox.set(f, b); return b;
+}
+let nearRegions = null;
+function regionsNear() {
+  /* the regions around the view, on a grid sized to the view, so they only change after a decent pan or zoom */
+  const [ls, la] = viewSpan(), cell = 2 ** Math.round(Math.log2(Math.max(ls, la))), gx = Math.round(viewState.longitude / cell), gy = Math.round(viewState.latitude / cell);
+  const key = cell + "/" + gx + "/" + gy + "/" + geoVersion;
+  if (nearRegions && nearRegions.key === key) return nearRegions;
+  const x0 = (gx - 1.6) * cell, x1 = (gx + 1.6) * cell, y0 = (gy - 1.6) * cell, y1 = (gy + 1.6) * cell;
+  nearRegions = { type: "FeatureCollection", key, features: GEO.regions.features.filter((f) => { const b = featBox(f); return b[2] >= x0 && b[0] <= x1 && b[3] >= y0 && b[1] <= y1; }) };
+  return nearRegions;
+}
+/* shadows are soft offsets, so they don't need every islet and wiggle: a lighter copy of each region, about a pixel of detail */
+const shadowLite = new Map();
+function liteFC(fc, tol) {
+  const k = fc.key + "/" + tol;
+  if (shadowLite.has(k)) return shadowLite.get(k);
+  const thin = (r) => { const out = [r[0]]; let [px, py] = r[0]; for (let i = 1; i < r.length - 1; i++) { const [x, y] = r[i]; if (Math.abs(x - px) > tol || Math.abs(y - py) > tol) { out.push(r[i]); px = x; py = y; } } out.push(r[r.length - 1]); return out; };
+  const feats = [];
+  for (const f of fc.features) {
+    const polys = (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates)
+      .filter((p) => { const b = p[0].reduce((m, [x, y]) => [Math.min(m[0], x), Math.min(m[1], y), Math.max(m[2], x), Math.max(m[3], y)], [180, 90, -180, -90]); return b[2] - b[0] > tol * 5 || b[3] - b[1] > tol * 5; })
+      .map((p) => [thin(p[0])]).filter((p) => p[0].length >= 4);
+    if (polys.length) feats.push({ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: polys } });
+  }
+  const out = { type: "FeatureCollection", features: feats };
+  if (shadowLite.size > 8) shadowLite.clear();
+  shadowLite.set(k, out);
+  return out;
+}
 function shadowsAt(zq) {
-  if (shadowCache.has(zq)) return shadowCache.get(zq);
+  const near0 = regionsNear(), key = zq + "/" + near0.key;
+  if (shadowCache.has(key)) return shadowCache.get(key);
+  const near = liteFC(near0, 360 / (512 * 2 ** zq) * 4);
   const s = 2 ** (6 - zq);
-  const sets = [[0.10, -0.05, 26], [0.22, -0.11, 18], [0.36, -0.18, 12]].map(([dx, dy, a]) => ({ fc: shiftedFC(GEO.regions, dx * s, dy * s), a }));
+  const sets = [[0.10, -0.05, 26], [0.22, -0.11, 18], [0.36, -0.18, 12]].map(([dx, dy, a]) => ({ fc: shiftedFC(near, dx * s, dy * s), a }));
   if (shadowCache.size > 12) shadowCache.clear();
-  shadowCache.set(zq, sets);
+  shadowCache.set(key, sets);
   return sets;
 }
 const outlineCache = new Map();
@@ -3771,7 +3826,7 @@ function layers() {
       updateTriggers: { getFillColor: [themeName, fade] },
     })),
     wardZone && new deck.GeoJsonLayer({
-      id: "ward-plinth", data: GEO.regions, extruded: true, filled: true, stroked: false,
+      id: "ward-plinth", data: regionsNear(), extruded: true, filled: true, stroked: false,
       getElevation: tilted ? mpp * 4 : 0, getFillColor: (f) => (f.properties.country === "IE" ? S.slabIE : S.slab), opacity: fade,
       material: { ambient: 0.66, diffuse: 0.5, shininess: 12, specularColor: [25, 28, 30] },
       updateTriggers: { getElevation: [Math.round(z * 8), tilted], getFillColor: themeName },
@@ -3827,14 +3882,14 @@ function layers() {
       getPath: (p) => p.map(([x, y]) => [x, y, tilted ? (wardZone ? mpp * 9 : SCULPT_BASE + 150) : 0]),
       getColor: themeName === "night" ? [6, 14, 18, Math.round(190 * fade)] : [70, 88, 96, Math.round(150 * fade)],
       widthUnits: "pixels", getWidth: z < 6 ? 4.6 : 6, capRounded: true, jointRounded: true,
-      updateTriggers: { getPath: [tilted, wardZone, Math.round(z * 8)], getColor: [themeName, fade] },
+      updateTriggers: { getPath: [tilted, wardZone, wardZone ? Math.round(z * 8) : 0], getColor: [themeName, fade] },
     }),
     sculpt && GEO.border && new deck.PathLayer({
       id: "country-border", data: GEO.border, parameters: { depthCompare: "always", depthWriteEnabled: false, depthTest: false },
       getPath: (p) => p.map(([x, y]) => [x, y, tilted ? (wardZone ? mpp * 9 : SCULPT_BASE + 150) : 0]),
       getColor: themeName === "night" ? [236, 243, 246, Math.round(235 * fade)] : [255, 255, 255, Math.round(255 * fade)],
       widthUnits: "pixels", getWidth: z < 6 ? 2.4 : 3.2, capRounded: true, jointRounded: true,
-      updateTriggers: { getPath: [tilted, wardZone, Math.round(z * 8)], getColor: [themeName, fade] },
+      updateTriggers: { getPath: [tilted, wardZone, wardZone ? Math.round(z * 8) : 0], getColor: [themeName, fade] },
     }),
     /* country names when looking at the whole map */
     sculpt && GEO.countries && z < 7.2 && new deck.TextLayer({
