@@ -1740,7 +1740,9 @@ function buildWards(topo) {
 }
 let WARDS = typeof topojson !== "undefined" && GEO.wardsTopo ? buildWards(GEO.wardsTopo) : [];
 function wardsArrived(topo) {
-  WARDS = buildWards(topo);
+  const keepFeats = WARDS_FC.features.filter((f) => f.properties.country === "ES"), keep = WARDS.filter((w) => w.f.properties.country === "ES");
+  WARDS = [...buildWards(topo), ...keep];
+  WARDS_FC = { ...WARDS_FC, features: [...WARDS_FC.features, ...keepFeats] };
   wardCache.clear(); wardWindow = null;
   for (const d of state.data) d.ward = (wardFor(d.lng, d.lat) || { name: d.ward }).name;
   render();
@@ -1751,6 +1753,34 @@ function fetchWards() {
   wardsAsked = true;
   fetch("wards.json").then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).then(wardsArrived).catch((e) => console.warn("Ward shapes didn't load:", e && e.message));
 }
+/* ---------- Spain's municipalities: the Spanish equivalent of wards ----------
+   One small file per province (Spain's national mapping agency, IGN, CC BY 4.0), loaded only when someone zooms in
+   near that province. Once loaded they work exactly like UK wards: tiles, counts, hover cards and the breadcrumb. */
+const muniLoaded = new Set(), muniAsked = new Set();
+function munisArrived(id, topo) {
+  const fc = topojson.feature(topo, topo.objects.m);
+  fc.features = fc.features.filter((f) => f.geometry);
+  for (const f of fc.features) f.properties.key = `${f.properties.name}, ${f.properties.district}`;
+  const ws = prep(fc).map((w) => ({ ...w, name: w.f.properties.key, cx: (w.bbox[0] + w.bbox[2]) / 2, cy: (w.bbox[1] + w.bbox[3]) / 2 }));
+  WARDS = [...WARDS, ...ws];
+  WARDS_FC = { ...WARDS_FC, features: [...WARDS_FC.features, ...fc.features] };
+  muniLoaded.add(id); wardCache.clear(); wardWindow = null;
+  geoVersion++; fixAreas(state.data);
+  lastWardsHere = null; crumbSig = "";
+  render();
+}
+function fetchMunis() {
+  if (!EUROPE_READY || viewState.zoom < PLACE_ZOOM - 0.7 || !/^https?:/.test(location.protocol)) return;
+  const x = viewState.longitude, y = viewState.latitude, [ls, la] = viewSpan();
+  for (const c of COUNTIES) {
+    const p = c.f.properties;
+    if (p.country !== "ES" || muniAsked.has(p.id)) continue;
+    if (c.bbox[2] < x - ls * 0.7 || c.bbox[0] > x + ls * 0.7 || c.bbox[3] < y - la * 0.8 || c.bbox[1] > y + la * 0.8) continue;
+    muniAsked.add(p.id);
+    fetch(`lau/${p.id}.json`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).then((t) => munisArrived(p.id, t)).catch(() => {});
+  }
+}
+
 /* ---------- Europe ----------
    Europe's regions and provinces (Eurostat's NUTS 2024 boundaries, about 250 KB) load just after the map appears and
    join the UK's own regions and counties, so everything that works on a UK county works on a Spanish province too. */
@@ -1767,6 +1797,7 @@ function fixAreas(recs) {
     if (d.country && UKIE(d.country)) continue;
     const c = countyFor(d.lng, d.lat);
     if (c) { d.county = c.name; d.region = c.region; d.country = areaCountry(c); }
+    if (d.country === "ES") { const w = wardFor(d.lng, d.lat); if (w) d.ward = w.name; }
   }
   recs._geo = geoVersion;
   return recs;
@@ -2185,6 +2216,7 @@ function handleView(v) {
   /* panning close up between Great Britain (wards) and the rest of Europe (spot pillars) swaps how the map is drawn */
   if (EUROPE_READY && v.zoom >= PLACE_ZOOM && v.zoom < MODEL_ZOOM) { const wh = wardsHere(); if (wh !== lastWardsHere) { lastWardsHere = wh; crossed = true; } }
   if (v.zoom >= WARD_ZOOM - 1.5) fetchWards();
+  if (v.zoom >= PLACE_ZOOM - 0.7) fetchMunis();
   queueCrumbs();
   if ((crossed || relabel || (v.zoom >= PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.12) || (v.zoom >= WARD_ZOOM && wardWindowStale()) || (v.zoom > SCULPT_FADE_START - 0.3 && v.zoom < MODEL_ZOOM + 0.1 && Math.abs(v.zoom - layoutZoom) > 0.06) || ((v.zoom >= MODEL_ZOOM) !== (viewState.zoom >= MODEL_ZOOM)) || (state.level === "ward" && v.zoom < PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.15)) && !relayoutQueued) {
     relayoutQueued = true;
@@ -2203,7 +2235,7 @@ function countryLabels(z) {
 }
 function wardsHere() {
   const c = countyFor(viewState.longitude, viewState.latitude);
-  if (c) return areaCountry(c) === "GB";
+  if (c) return areaCountry(c) === "GB" || (areaCountry(c) === "ES" && muniLoaded.has(c.f.properties.id));
   return viewState.longitude > -8.7 && viewState.longitude < 2.2 && viewState.latitude > 49.8 && viewState.latitude < 61;
 }
 const EUROPE_VIEW = () => (innerWidth < 760 ? { longitude: 5, latitude: 47.5, zoom: 2.55 } : { longitude: 9, latitude: 48.2, zoom: 3.65 });
@@ -2561,7 +2593,7 @@ function tooltip({ object, layer }) {
     const isIE = props.country === "IE" || (lvl === "county" && (COUNTIES.find((c) => c.name === name) || { f: { properties: {} } }).f.properties.country === "IE");
     const lvlProps = props.country ? props : lvl === "county" ? ((COUNTIES.find((c) => c.name === name) || { f: { properties: {} } }).f.properties) : lvl === "region" ? ((REGIONS.find((c) => c.name === name) || { f: { properties: {} } }).f.properties) : props;
     const cn = lvlProps.country && !UKIE(lvlProps.country) ? COUNTRY_NAMES[lvlProps.country] || lvlProps.country : null;
-    const where = cn ? (lvl === "county" ? `${lvlProps.region2 && lvlProps.region2 !== name ? `In ${esc(lvlProps.region2)}, ` : ""}${esc(cn)}` : `Part of ${esc(cn)}`)
+    const where = cn ? (lvl === "ward" ? `Municipality in ${esc(district || "")}, ${esc(cn)}` : lvl === "county" ? `${lvlProps.region2 && lvlProps.region2 !== name ? `In ${esc(lvlProps.region2)}, ` : ""}${esc(cn)}` : `Part of ${esc(cn)}`)
       : lvl === "ward" && district ? (isIE ? `Electoral division in ${esc(district)}, Ireland` : `Ward in ${esc(district)}, UK`)
       : lvl === "county" ? (isIE ? `County in ${esc(props.region2 || "")}, Ireland` : `${props.region2 ? `In ${esc(props.region2)}, ` : ""}UK`)
       : lvl === "region" ? (isIE ? "Province of Ireland" : "Part of the UK") : "";
@@ -7102,7 +7134,7 @@ const Acct = (() => {
       ${sec("Where it's stored", "BIRB is hosted by Netlify, a US company, which stores the data on its servers in the United States. Netlify's data protection terms cover data sent there from the UK.")}
       ${sec("How long it's kept", "Everything stays until you delete your account. Notifications keep your 60 most recent. Problem reports are cleared after 14 days.")}
       ${sec("What BIRB doesn't do", "No adverts, no selling data, no tracking cookies. Your phone remembers a few settings for BIRB, like staying signed in, night mode and lite mode, in its own storage.")}
-      ${sec("Other services", "Map tiles come from OpenFreeMap, bird photos from iNaturalist and Wikipedia, bird sounds from xeno-canto, and fonts from Google Fonts. Like any website, they see your device's internet address when they send these, but none of them get your account or your birds. Europe's region and province shapes are © EuroGeographics for the administrative boundaries (Eurostat GISCO), and European town names come from GeoNames (CC BY 4.0).")}
+      ${sec("Other services", "Map tiles come from OpenFreeMap, bird photos from iNaturalist and Wikipedia, bird sounds from xeno-canto, and fonts from Google Fonts. Like any website, they see your device's internet address when they send these, but none of them get your account or your birds. Europe's region and province shapes are © EuroGeographics for the administrative boundaries (Eurostat GISCO), European town names come from GeoNames (CC BY 4.0), and Spain's municipalities from Spain's national mapping agency, IGN (CC BY 4.0).")}
       ${sec("Problem reports", `If something goes wrong in the app, it sends ${lee} an anonymous note: the error, the type of phone and browser, and its graphics chip. No name, birds or places.`)}
       ${sec("Your controls and rights", `Download your data or delete your account at any time from Your profile. Deleting removes your birds, profile, notifications and friendships straight away. You can also ask ${lee} for a copy of your data, to correct something, or to delete it.`)}
       ${sec("Questions or worries", `Use "Ideas or problems?" in Your profile and pick Other, or ask the friend who invited you to pass a message on. If you're unhappy with how your data is handled, tell ${lee} first. You can also complain to the Information Commissioner's Office at ico.org.uk.`)}
