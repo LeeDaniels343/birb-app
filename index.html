@@ -2173,12 +2173,19 @@ function handleView(v) {
 /* ---------- breadcrumb: jump back out to place, ward, county, region or the whole UK ---------- */
 const LEVEL_ZOOM = { uk: 0, region: 6.3, county: 7.4, ward: 9.8, place: 13.5 };
 function levelAt(z) { return z >= LEVEL_ZOOM.place ? "place" : z >= LEVEL_ZOOM.ward ? "ward" : z >= LEVEL_ZOOM.county ? "county" : z >= LEVEL_ZOOM.region ? "region" : "uk"; }
+/* country names: not the one you're zoomed into (it sits on top of its own bars), and not the tiniest ones */
+const SMALL_LANDS = new Set(["Liechtenstein", "Luxembourg", "Malta", "Kosovo", "Montenegro", "Andorra", "Monaco"]);
+function countryLabels(z) {
+  const here = z >= 4.7 ? COUNTRY_NAMES[areaCountry(countyFor(viewState.longitude, viewState.latitude))] : null;
+  const full = { UK: "United Kingdom" };
+  return (GEO.countries || []).filter((c) => !SMALL_LANDS.has(c[0]) && c[0] !== here && c[0] !== full[here]);
+}
 function wardsHere() {
   const c = countyFor(viewState.longitude, viewState.latitude);
   if (c) return areaCountry(c) === "GB";
   return viewState.longitude > -8.7 && viewState.longitude < 2.2 && viewState.latitude > 49.8 && viewState.latitude < 61;
 }
-const EUROPE_VIEW = () => (innerWidth < 760 ? { longitude: 8, latitude: 47, zoom: 3.15 } : { longitude: 9, latitude: 48.2, zoom: 3.65 });
+const EUROPE_VIEW = () => (innerWidth < 760 ? { longitude: 5, latitude: 47.5, zoom: 2.55 } : { longitude: 9, latitude: 48.2, zoom: 3.65 });
 function countryBox(cc) {
   const list = COUNTIES.filter((c) => areaCountry(c) === cc);
   if (!list.length) return null;
@@ -3677,7 +3684,7 @@ function layers() {
     }),
     /* country names when looking at the whole map */
     sculpt && GEO.countries && z < 7.2 && new deck.TextLayer({
-      id: "country-names", data: GEO.countries, parameters: { depthCompare: "always", depthWriteEnabled: false, depthTest: false },
+      id: "country-names", data: countryLabels(z), parameters: { depthCompare: "always", depthWriteEnabled: false, depthTest: false },
       getPosition: (c) => [c[1], c[2], tilted ? SCULPT_BASE + 400 : 0], getText: (c) => c[0].toUpperCase(),
       getSize: z < 5.6 ? 15 : 17, getColor: themeName === "night" ? [178, 206, 220, Math.round(235 * fade)] : [37, 62, 72, Math.round(220 * fade)],
       fontFamily: "'IBM Plex Mono', Menlo, monospace", fontWeight: 600, characterSet: "auto", billboard: true,
@@ -3781,7 +3788,7 @@ function initMap() {
     parent: $("map"),
     views: new deck.MapView({ repeat: false }),
     initialViewState: viewState,
-    controller: { dragRotate: true, touchRotate: true, inertia: 250, minZoom: 3.1, maxZoom: 12, maxPitch: 65 },
+    controller: { dragRotate: true, touchRotate: true, inertia: 250, minZoom: 2.5, maxZoom: 12, maxPitch: 65 },
     onViewStateChange: ({ viewState: v }) => { handleView(v); return v; },
     getTooltip: tooltip, useDevicePixels: LITE ? 1 : true,
     effects: !LITE && makeLighting() ? [lighting] : [],
