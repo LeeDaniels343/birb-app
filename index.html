@@ -1807,7 +1807,17 @@ function fixAreas(recs) {
 function europeArrived(e) {
   if (EUROPE_READY || !e || !e.topo) return;
   const reg = topojson.feature(e.topo, e.topo.objects.regions), cou = topojson.feature(e.topo, e.topo.objects.counties);
-  reg.features = reg.features.filter((f) => f.geometry); cou.features = cou.features.filter((f) => f.geometry);
+  /* drop the specks left where tiny islets or slivers shrank to nothing, which the 3D shapes can't draw */
+  const ringArea = (r) => { let s = 0; for (let i = 0; i < r.length - 1; i++) s += r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1]; return Math.abs(s / 2); };
+  const tidy = (f) => {
+    if (!f.geometry) return false;
+    const polys = (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates)
+      .filter((p) => p[0].length >= 4 && ringArea(p[0]) > 1e-8).map((p) => [p[0], ...p.slice(1).filter((r) => r.length >= 4 && ringArea(r) > 1e-8)]);
+    if (!polys.length) return false;
+    f.geometry = polys.length === 1 ? { type: "Polygon", coordinates: polys[0] } : { type: "MultiPolygon", coordinates: polys };
+    return true;
+  };
+  reg.features = reg.features.filter(tidy); cou.features = cou.features.filter(tidy);
   GEO.regions = { ...GEO.regions, features: [...GEO.regions.features, ...reg.features] };
   GEO.counties = { ...GEO.counties, features: [...GEO.counties.features, ...cou.features] };
   REGIONS.push(...prep(reg)); COUNTIES.push(...prep(cou));
@@ -1831,6 +1841,10 @@ function europeArrived(e) {
   }
   const have = new Set((GEO.countries || []).map((c) => c[0]));
   GEO.countries = [...(GEO.countries || [["United Kingdom", -3.4, 52.75]]), ...(e.countries || []).filter((c) => !have.has(c[0])).map((c) => [c[0], c[1], c[2]])];
+  /* every land border between two countries, drawn as a white line so neighbours don't run together */
+  if (!GEO.borderUKIE) GEO.borderUKIE = GEO.border || [];
+  const mesh = topojson.mesh(e.topo, e.topo.objects.counties, (a, b) => a !== b && a.properties.country !== b.properties.country);
+  GEO.border = [...GEO.borderUKIE, ...(mesh && mesh.coordinates ? mesh.coordinates : []), ...(e.borderExtra || [])];
   SHADOWS = makeShadows(); shadowCache.clear(); outlineCache.clear();
   lookupCache.clear(); EUROPE_READY = true; geoVersion++;
   fixAreas(state.data);
@@ -3772,20 +3786,19 @@ function layers() {
       getPath: (p) => p, getColor: [...S.edge, Math.round(255 * fade)], widthUnits: "pixels", getWidth: wardZone ? 0.6 : 0.7,
       updateTriggers: { getColor: [themeName, fade] },
     }),
-    /* the border between Northern Ireland (UK) and the Republic of Ireland: a white halo with a dashed line on top */
+    /* borders between countries: a solid white line on a soft dark edge, so it reads on light and dark maps alike */
     sculpt && GEO.border && new deck.PathLayer({
       id: "country-border-halo", data: GEO.border, parameters: { depthCompare: "always", depthWriteEnabled: false, depthTest: false },
       getPath: (p) => p.map(([x, y]) => [x, y, tilted ? (wardZone ? mpp * 9 : SCULPT_BASE + 150) : 0]),
-      getColor: themeName === "night" ? [10, 20, 26, Math.round(200 * fade)] : [255, 255, 255, Math.round(230 * fade)],
-      widthUnits: "pixels", getWidth: 7, capRounded: true, jointRounded: true,
+      getColor: themeName === "night" ? [6, 14, 18, Math.round(190 * fade)] : [70, 88, 96, Math.round(150 * fade)],
+      widthUnits: "pixels", getWidth: z < 6 ? 4.6 : 6, capRounded: true, jointRounded: true,
       updateTriggers: { getPath: [tilted, wardZone, Math.round(z * 8)], getColor: [themeName, fade] },
     }),
     sculpt && GEO.border && new deck.PathLayer({
       id: "country-border", data: GEO.border, parameters: { depthCompare: "always", depthWriteEnabled: false, depthTest: false },
       getPath: (p) => p.map(([x, y]) => [x, y, tilted ? (wardZone ? mpp * 9 : SCULPT_BASE + 150) : 0]),
-      getColor: themeName === "night" ? [178, 206, 220, Math.round(255 * fade)] : [37, 62, 72, Math.round(255 * fade)],
-      widthUnits: "pixels", getWidth: 2.4, capRounded: true, jointRounded: true,
-      ...(deck.PathStyleExtension ? { extensions: [new deck.PathStyleExtension({ dash: true })], getDashArray: [5, 3.5], dashJustified: true } : {}),
+      getColor: themeName === "night" ? [236, 243, 246, Math.round(235 * fade)] : [255, 255, 255, Math.round(255 * fade)],
+      widthUnits: "pixels", getWidth: z < 6 ? 2.4 : 3.2, capRounded: true, jointRounded: true,
       updateTriggers: { getPath: [tilted, wardZone, Math.round(z * 8)], getColor: [themeName, fade] },
     }),
     /* country names when looking at the whole map */
