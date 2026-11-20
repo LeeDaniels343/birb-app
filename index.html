@@ -2416,7 +2416,8 @@ function restyleBasemap() {
           "fill-extrusion-opacity": 1,
           "fill-extrusion-vertical-gradient": true,
         },
-      });
+      /* drawn beneath the street and place names, so buildings never hide them */
+      }, (style.layers.find((l) => l.type === "symbol") || {}).id);
     } else set("birdmap-3d-buildings", "fill-extrusion-color", c.building3d);
   } catch (e) {}
   try { if (mlmap.setSky) mlmap.setSky(c.sky); } catch (e) {}
