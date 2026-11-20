@@ -2250,12 +2250,12 @@ function countryBox(cc) {
   const near = list.filter((c) => Math.abs(c.cx - mx) < 14 && Math.abs(c.cy - my) < 11);
   return near.reduce((b, c) => [Math.min(b[0], c.bbox[0]), Math.min(b[1], c.bbox[1]), Math.max(b[2], c.bbox[2]), Math.max(b[3], c.bbox[3])], [180, 90, -180, -90]);
 }
-function flyToBox(b, minZ, maxZ) {
+function flyToBox(b, minZ, maxZ, opts) {
   const el = $("map");
   const vp = new deck.WebMercatorViewport({ width: el.clientWidth || 900, height: el.clientHeight || 700 });
   let f;
   try { f = vp.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: Math.min(120, (el.clientHeight || 700) / 6) }); } catch (e) { f = { longitude: (b[0] + b[2]) / 2, latitude: (b[1] + b[3]) / 2, zoom: minZ }; }
-  flyTo({ longitude: f.longitude, latitude: f.latitude - (state.tilt ? (b[3] - b[1]) * 0.12 : 0), zoom: Math.max(minZ, Math.min(maxZ, f.zoom)), pitch: state.tilt ? (minZ >= 13 ? 55 : 48) : LITE && minZ >= 13 ? 45 : 0 });
+  flyTo({ longitude: f.longitude, latitude: f.latitude - (state.tilt ? (b[3] - b[1]) * 0.12 : 0), zoom: Math.max(minZ, Math.min(maxZ, f.zoom)), pitch: state.tilt ? (minZ >= 13 ? 55 : 48) : LITE && minZ >= 13 ? 45 : 0 }, opts);
 }
 function nearestPlace(lng, lat) {
   let best = null, bd = Infinity;
@@ -2291,10 +2291,10 @@ function queueCrumbs() { if (!crumbsQueued) { crumbsQueued = true; requestAnimat
 $("crumbs").addEventListener("click", (e) => {
   const b = e.target.closest("[data-crumb]"); if (!b) return;
   const k = b.dataset.crumb, name = b.dataset.name;
-  if (k === "europe") return flyTo({ ...EUROPE_VIEW(), pitch: state.tilt ? 38 : 0, bearing: 0 });
-  if (k === "uk" && (name === "IE" || name === "Ireland")) { const b = IE_BOX(); return flyToBox(b, LEVEL_ZOOM.region - 0.3, LEVEL_ZOOM.region + 0.4); }
-  if (k === "uk" && (name === "GB" || name === "UK")) return flyTo({ ...HOME, pitch: state.tilt ? HOME.pitch : 0, bearing: state.tilt ? HOME.bearing : 0 });
-  if (k === "uk") { const b = countryBox(name); if (b) flyToBox(b, 4.6, LEVEL_ZOOM.region + 0.2); return; }
+  if (k === "europe") return flyTo({ ...EUROPE_VIEW(), pitch: state.tilt ? 38 : 0, bearing: 0 }, { glide: true });
+  if (k === "uk" && (name === "IE" || name === "Ireland")) { const b = IE_BOX(); return flyToBox(b, COUNTRY_Z + 0.35, LEVEL_ZOOM.region + 0.4, { glide: true }); }
+  if (k === "uk" && (name === "GB" || name === "UK") && !EUROPE_READY) return flyTo({ ...HOME, pitch: state.tilt ? HOME.pitch : 0, bearing: state.tilt ? HOME.bearing : 0 });
+  if (k === "uk") { const b = countryBox(name === "UK" ? "GB" : name); if (b) flyToBox(b, COUNTRY_Z + 0.35, LEVEL_ZOOM.region + 0.2, { glide: true }); return; }
   if (k === "region") { const r = REGIONS.find((x) => x.name === name); if (r) flyToBox(r.bbox, LEVEL_ZOOM.region + 0.05, LEVEL_ZOOM.county - 0.05); return; }
   if (k === "county") { const c = COUNTIES.find((x) => x.name === name); if (c) flyToBox(c.bbox, PLACE_ZOOM + 0.6, LEVEL_ZOOM.ward - 0.1); return; }
   if (k === "ward") { const w = WARDS.find((x) => x.name === name); if (w) flyToBox(w.bbox, LEVEL_ZOOM.ward + 1.2, LEVEL_ZOOM.place - 0.1); return; }
@@ -2649,9 +2649,8 @@ function pickArea(name, level) {
   if (level === "country") {
     /* tapping a country zooms into it */
     const cc = COUNTRY_CODE[name];
-    if (cc === "GB") return flyTo({ ...HOME, pitch: state.tilt ? HOME.pitch : 0, bearing: state.tilt ? HOME.bearing : 0 });
-    if (cc === "IE") return flyToBox(IE_BOX(), LEVEL_ZOOM.region - 0.3, LEVEL_ZOOM.region + 0.4);
-    const b = cc && countryBox(cc); if (b) flyToBox(b, 5.0, LEVEL_ZOOM.region + 0.2);
+    const b = cc === "IE" ? IE_BOX() : cc && countryBox(cc);
+    if (b) flyToBox(b, COUNTRY_Z + 0.35, LEVEL_ZOOM.region + 0.2, { glide: true });
     return;
   }
   if (state.area === name && state.areaLevel === level) state.area = null;
@@ -2665,15 +2664,20 @@ function pickArea(name, level) {
     else if (a) flyTo({ longitude: a.cx, latitude: a.cy, zoom: Math.max(viewState.zoom, Z[0]) });
   }
 }
-function flyTo(v) {
+/* glide: a smooth straight move, for short hops between Europe, a country and its regions. Without it the map "flies",
+   pulling out and swinging round first, which suits long jumps but wobbles on short ones. */
+const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+function flyTo(v, { glide = false } = {}) {
   if (BASEMAP === "tiles" && mlmap) {
     viewState = { ...viewState, ...v };
-    mlmap.flyTo({ center: [viewState.longitude, viewState.latitude], zoom: viewState.zoom, pitch: viewState.pitch, bearing: viewState.bearing, duration: 1000, essential: true });
+    const to = { center: [viewState.longitude, viewState.latitude], zoom: viewState.zoom, pitch: viewState.pitch, bearing: viewState.bearing, duration: glide ? 1100 : 1000, essential: true };
+    glide ? mlmap.easeTo({ ...to, easing: easeInOut }) : mlmap.flyTo(to);
     return;
   }
   if (!deckgl) return;
   viewState = { ...viewState, ...v };
-  deckgl.setProps({ initialViewState: { ...viewState, transitionDuration: 900, transitionInterpolator: new deck.FlyToInterpolator() } });
+  deckgl.setProps({ initialViewState: { ...viewState, transitionDuration: glide ? 1100 : 900, transitionEasing: glide ? easeInOut : undefined,
+    transitionInterpolator: glide ? new deck.LinearInterpolator(["longitude", "latitude", "zoom", "pitch", "bearing"]) : new deck.FlyToInterpolator() } });
 }
 /* ---------- street-level birds: song totem, flock, habitat diorama ---------- */
 function meshFromTris(tris) {
@@ -3647,7 +3651,7 @@ function layers() {
   const S = SCULPT[themeName === "night" ? "night" : "day"];
   const fade = Math.max(0, Math.min(1, (MODEL_ZOOM - viewState.zoom) / (MODEL_ZOOM - SCULPT_FADE_START)));
   /* close up on a country without wards, provinces stay on show but grow less tall, so they don't tower over the view */
-  const sculptMax = countryZone ? 110000 : state.level === "region" ? 95000 : 62000;
+  const sculptMax = countryZone ? 60000 : state.level === "region" ? 95000 : 62000;
   const wardLevel = state.level === "ward" && !countryZone;
   const slabHeight = (f) => {
     const a = wardLevel ? null : agg.get(fkey(f));
