@@ -1740,7 +1740,7 @@ function buildWards(topo) {
 }
 let WARDS = typeof topojson !== "undefined" && GEO.wardsTopo ? buildWards(GEO.wardsTopo) : [];
 function wardsArrived(topo) {
-  const keepFeats = WARDS_FC.features.filter((f) => f.properties.country === "ES"), keep = WARDS.filter((w) => w.f.properties.country === "ES");
+  const keepFeats = WARDS_FC.features.filter((f) => MUNI_COUNTRIES.has(f.properties.country)), keep = WARDS.filter((w) => MUNI_COUNTRIES.has(w.f.properties.country));
   WARDS = [...buildWards(topo), ...keep];
   WARDS_FC = { ...WARDS_FC, features: [...WARDS_FC.features, ...keepFeats] };
   wardCache.clear(); wardWindow = null;
@@ -1757,6 +1757,8 @@ function fetchWards() {
    One small file per province (Spain's national mapping agency, IGN, CC BY 4.0), loaded only when someone zooms in
    near that province. Once loaded they work exactly like UK wards: tiles, counts, hover cards and the breadcrumb. */
 const muniLoaded = new Set(), muniAsked = new Set();
+/* countries with municipality files: Spain (IGN) and Greece (ELSTAT) */
+const MUNI_COUNTRIES = new Set(["ES", "EL"]);
 function munisArrived(id, topo) {
   const fc = topojson.feature(topo, topo.objects.m);
   fc.features = fc.features.filter((f) => f.geometry);
@@ -1774,7 +1776,7 @@ function fetchMunis() {
   const x = viewState.longitude, y = viewState.latitude, [ls, la] = viewSpan();
   for (const c of COUNTIES) {
     const p = c.f.properties;
-    if (p.country !== "ES" || muniAsked.has(p.id)) continue;
+    if (!MUNI_COUNTRIES.has(p.country) || muniAsked.has(p.id)) continue;
     if (c.bbox[2] < x - ls * 0.7 || c.bbox[0] > x + ls * 0.7 || c.bbox[3] < y - la * 0.8 || c.bbox[1] > y + la * 0.8) continue;
     muniAsked.add(p.id);
     fetch(`lau/${p.id}.json`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).then((t) => munisArrived(p.id, t)).catch(() => {});
@@ -1797,7 +1799,7 @@ function fixAreas(recs) {
     if (d.country && UKIE(d.country)) continue;
     const c = countyFor(d.lng, d.lat);
     if (c) { d.county = c.name; d.region = c.region; d.country = areaCountry(c); }
-    if (d.country === "ES") { const w = wardFor(d.lng, d.lat); if (w) d.ward = w.name; }
+    if (MUNI_COUNTRIES.has(d.country)) { const w = wardFor(d.lng, d.lat); if (w) d.ward = w.name; }
   }
   recs._geo = geoVersion;
   return recs;
@@ -2235,7 +2237,7 @@ function countryLabels(z) {
 }
 function wardsHere() {
   const c = countyFor(viewState.longitude, viewState.latitude);
-  if (c) return areaCountry(c) === "GB" || (areaCountry(c) === "ES" && muniLoaded.has(c.f.properties.id));
+  if (c) return areaCountry(c) === "GB" || (MUNI_COUNTRIES.has(areaCountry(c)) && muniLoaded.has(c.f.properties.id));
   return viewState.longitude > -8.7 && viewState.longitude < 2.2 && viewState.latitude > 49.8 && viewState.latitude < 61;
 }
 const EUROPE_VIEW = () => (innerWidth < 760 ? { longitude: 5, latitude: 47.5, zoom: 2.55 } : { longitude: 9, latitude: 48.2, zoom: 3.65 });
@@ -7134,7 +7136,7 @@ const Acct = (() => {
       ${sec("Where it's stored", "BIRB is hosted by Netlify, a US company, which stores the data on its servers in the United States. Netlify's data protection terms cover data sent there from the UK.")}
       ${sec("How long it's kept", "Everything stays until you delete your account. Notifications keep your 60 most recent. Problem reports are cleared after 14 days.")}
       ${sec("What BIRB doesn't do", "No adverts, no selling data, no tracking cookies. Your phone remembers a few settings for BIRB, like staying signed in, night mode and lite mode, in its own storage.")}
-      ${sec("Other services", "Map tiles come from OpenFreeMap, bird photos from iNaturalist and Wikipedia, bird sounds from xeno-canto, and fonts from Google Fonts. Like any website, they see your device's internet address when they send these, but none of them get your account or your birds. Europe's region and province shapes are © EuroGeographics for the administrative boundaries (Eurostat GISCO), European town names come from GeoNames (CC BY 4.0), and Spain's municipalities from Spain's national mapping agency, IGN (CC BY 4.0).")}
+      ${sec("Other services", "Map tiles come from OpenFreeMap, bird photos from iNaturalist and Wikipedia, bird sounds from xeno-canto, and fonts from Google Fonts. Like any website, they see your device's internet address when they send these, but none of them get your account or your birds. Europe's region and province shapes are © EuroGeographics for the administrative boundaries (Eurostat GISCO), European town names come from GeoNames (CC BY 4.0), Spain's municipalities from Spain's national mapping agency, IGN (CC BY 4.0), and Greece's from the Hellenic Statistical Authority (ELSTAT) via the lctools package by Stamatis Kalogirou.")}
       ${sec("Problem reports", `If something goes wrong in the app, it sends ${lee} an anonymous note: the error, the type of phone and browser, and its graphics chip. No name, birds or places.`)}
       ${sec("Your controls and rights", `Download your data or delete your account at any time from Your profile. Deleting removes your birds, profile, notifications and friendships straight away. You can also ask ${lee} for a copy of your data, to correct something, or to delete it.`)}
       ${sec("Questions or worries", `Use "Ideas or problems?" in Your profile and pick Other, or ask the friend who invited you to pass a message on. If you're unhappy with how your data is handled, tell ${lee} first. You can also complain to the Information Commissioner's Office at ico.org.uk.`)}
