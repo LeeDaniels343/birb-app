@@ -2234,7 +2234,9 @@ function handleView(v) {
   if (v.zoom >= WARD_ZOOM - 1.5) fetchWards();
   if (v.zoom >= PLACE_ZOOM - 0.7) fetchMunis();
   queueCrumbs();
-  if ((crossed || relabel || (v.zoom >= PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.12) || (v.zoom >= WARD_ZOOM && wardWindowStale()) || (v.zoom > SCULPT_FADE_START - 0.3 && v.zoom < MODEL_ZOOM + 0.1 && Math.abs(v.zoom - layoutZoom) > 0.06) || ((v.zoom >= MODEL_ZOOM) !== (viewState.zoom >= MODEL_ZOOM)) || (state.level === "ward" && v.zoom < PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.15)) && !relayoutQueued) {
+  /* country names are thinned out so they don't overlap, which depends on the zoom */
+  const renames = EUROPE_READY && v.zoom < 7.3 && (Math.abs(v.zoom - namesZoom) > 0.15 || Math.abs((v.pitch || 0) - namesPitch) > 4);
+  if ((crossed || relabel || renames || (v.zoom >= PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.12) || (v.zoom >= WARD_ZOOM && wardWindowStale()) || (v.zoom > SCULPT_FADE_START - 0.3 && v.zoom < MODEL_ZOOM + 0.1 && Math.abs(v.zoom - layoutZoom) > 0.06) || ((v.zoom >= MODEL_ZOOM) !== (viewState.zoom >= MODEL_ZOOM)) || (state.level === "ward" && v.zoom < PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.15)) && !relayoutQueued) {
     relayoutQueued = true;
     requestAnimationFrame(() => { relayoutQueued = false; pushLayers(); });
   }
@@ -2244,10 +2246,40 @@ const LEVEL_ZOOM = { uk: 0, region: 6.3, county: 7.4, ward: 9.8, place: 13.5 };
 function levelAt(z) { return z >= LEVEL_ZOOM.place ? "place" : z >= LEVEL_ZOOM.ward ? "ward" : z >= LEVEL_ZOOM.county ? "county" : z >= LEVEL_ZOOM.region ? "region" : "uk"; }
 /* country names: not the one you're zoomed into (it sits on top of its own bars), and not the tiniest ones */
 const SMALL_LANDS = new Set(["Liechtenstein", "Luxembourg", "Malta", "Kosovo", "Montenegro", "Andorra", "Monaco"]);
+/* shorter names for the long ones, so they sit inside their country */
+const SHORT_NAMES = { "Bosnia and Herzegovina": "Bosnia & Herz.", "North Macedonia": "N. Macedonia" };
+const rankCache = new Map();
+let namesZoom = -9, namesPitch = 0;
+function countryRank(name) {
+  /* bigger countries win when names collide: rank by the size of the country's shape on the map */
+  if (rankCache.has(name)) return rankCache.get(name);
+  const a = COUNTRY_AREAS.find((c) => c.name === name || (name === "United Kingdom" && c.name === "UK"));
+  const r = a ? Math.min(1000, Math.round(Math.sqrt((a.bbox[2] - a.bbox[0]) * (a.bbox[3] - a.bbox[1])) * 40)) : 0;
+  if (COUNTRY_AREAS.length) rankCache.set(name, r);
+  return r;
+}
 function countryLabels(z) {
   const here = z >= 4.7 ? COUNTRY_NAMES[areaCountry(countyFor(viewState.longitude, viewState.latitude))] : null;
   const full = { UK: "United Kingdom" };
-  return (GEO.countries || []).filter((c) => !SMALL_LANDS.has(c[0]) && c[0] !== here && c[0] !== full[here]);
+  const list = (GEO.countries || []).filter((c) => !SMALL_LANDS.has(c[0]) && c[0] !== here && c[0] !== full[here]);
+  namesZoom = z; namesPitch = viewState.pitch || 0;
+  /* when two names would overlap on screen, the bigger country keeps its name (the other shows again as you zoom in) */
+  try {
+    const el = $("map"), size = z < 4.4 ? 12 : z < 5.6 ? 13 : 14.5;
+    const vp = new deck.WebMercatorViewport({ width: el.clientWidth || innerWidth, height: el.clientHeight || innerHeight, longitude: viewState.longitude, latitude: viewState.latitude, zoom: viewState.zoom, pitch: viewState.pitch || 0, bearing: viewState.bearing || 0 });
+    const boxes = [], keep = [];
+    for (const c of list.slice().sort((a, b) => countryRank(b[0]) - countryRank(a[0]))) {
+      const txt = SHORT_NAMES[c[0]] || c[0], words = txt.split(" ");
+      /* roughly how the name wraps: lines of up to about 7.5 font-widths */
+      const lines = []; for (const w of words) { const l = lines[lines.length - 1]; if (l && (l + " " + w).length * 0.56 <= 7.5) lines[lines.length - 1] = l + " " + w; else lines.push(w); }
+      const w = Math.max(...lines.map((l) => l.length)) * size * 0.56 + 10, h = lines.length * size * 1.15 + 6;
+      const [x, y] = vp.project([c[1], c[2], (state.tilt && viewState.pitch) ? SCULPT_BASE + 400 : 0]);
+      const b = [x - w / 2, y - h / 2, x + w / 2, y + h / 2];
+      if (boxes.some((o) => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1])) continue;
+      boxes.push(b); keep.push(c);
+    }
+    return keep;
+  } catch (e) { return list; }
 }
 function wardsHere() {
   const c = countyFor(viewState.longitude, viewState.latitude);
@@ -3804,11 +3836,12 @@ function layers() {
     /* country names when looking at the whole map */
     sculpt && GEO.countries && z < 7.2 && new deck.TextLayer({
       id: "country-names", data: countryLabels(z), parameters: { depthCompare: "always", depthWriteEnabled: false, depthTest: false },
-      getPosition: (c) => [c[1], c[2], tilted ? SCULPT_BASE + 400 : 0], getText: (c) => c[0].toUpperCase(),
-      getSize: z < 5.6 ? 15 : 17, getColor: themeName === "night" ? [178, 206, 220, Math.round(235 * fade)] : [37, 62, 72, Math.round(220 * fade)],
-      fontFamily: "'IBM Plex Mono', Menlo, monospace", fontWeight: 600, characterSet: "auto", billboard: true,
-      outlineWidth: 4, outlineColor: themeName === "night" ? [10, 20, 26, 230] : [255, 255, 255, 235], fontSettings: { sdf: true, fontSize: 64, buffer: 6 },
-      updateTriggers: { getPosition: tilted, getColor: [themeName, fade], getSize: z < 5.6 },
+      getPosition: (c) => [c[1], c[2], tilted ? SCULPT_BASE + 400 : 0], getText: (c) => SHORT_NAMES[c[0]] || c[0],
+      getSize: z < 4.4 ? 12 : z < 5.6 ? 13 : 14.5, getColor: themeName === "night" ? [200, 218, 226, Math.round(205 * fade)] : [52, 72, 80, Math.round(210 * fade)],
+      fontFamily: "'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif", fontWeight: 500, characterSet: "auto", billboard: true,
+      lineHeight: 1.1, wordBreak: "break-word", maxWidth: 7.5,
+      outlineWidth: 2.5, outlineColor: themeName === "night" ? [10, 20, 26, 200] : [255, 255, 255, 220], fontSettings: { sdf: true, fontSize: 64, buffer: 6 },
+      updateTriggers: { getPosition: tilted, getColor: [themeName, fade], getSize: z < 4.4 ? 0 : z < 5.6 ? 1 : 2 },
     }),
     sculpt && new deck.TextLayer({
       id: "sculpt-cities", parameters: { depthCompare: "always", depthWriteEnabled: false, depthTest: false }, data: wardZone ? [...GEO.places, ...townLabels.map((t) => [t[0], t[1], t[2], 9])] : GEO.places.filter((p) => p[3] <= (viewState.zoom < 6 ? 4 : 6)),
