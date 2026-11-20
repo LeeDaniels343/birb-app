@@ -2445,7 +2445,7 @@ function initTiles() {
     mlmap = new maplibregl.Map({
       container: "map", style: STYLE_URL,
       center: [viewState.longitude, viewState.latitude], zoom: viewState.zoom, pitch: viewState.pitch, bearing: viewState.bearing,
-      minZoom: 4.3, maxZoom: 18.5, maxPitch: 65, attributionControl: { compact: true }, hash: "view",
+      minZoom: 2.5, maxZoom: 18.5, maxPitch: 65, attributionControl: { compact: true }, hash: "view",
       ...(LITE ? { pixelRatio: Math.min(window.devicePixelRatio || 1, 1.25), fadeDuration: 0, maxTileCacheSize: 60 } : {}),
     });
     if (LITE) { mlmap.once("load", () => { try { if (mlmap.getPitch() > 0) mlmap.jumpTo({ pitch: 0, bearing: 0 }); } catch (e) {} }); }
