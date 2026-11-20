@@ -1783,6 +1783,14 @@ function europeArrived(e) {
   if (e.ctopo) {
     const cs = topojson.feature(e.ctopo, e.ctopo.objects.countries);
     cs.features = cs.features.filter((f) => f.geometry);
+    /* every other country's outline is stitched from its own provinces, so it's exactly as detailed as the close-up view */
+    const byCC = new Map();
+    for (const g of e.topo.objects.counties.geometries) { const cc = g.properties.country; if (!byCC.has(cc)) byCC.set(cc, []); byCC.get(cc).push(g); }
+    const lbl = new Map((e.countries || []).map((c) => [c[3], c]));
+    for (const [cc, geoms] of byCC) {
+      const l = lbl.get(cc);
+      cs.features.push({ type: "Feature", properties: { name: (e.names || {})[cc] || cc, code: cc, cx: l ? l[1] : undefined, cy: l ? l[2] : undefined }, geometry: topojson.merge(e.topo, geoms) });
+    }
     /* the UK is shown as "UK" everywhere else in the app, so its country shape carries that name too */
     for (const f of cs.features) if (f.properties.code === "GB") f.properties.name = "UK";
     GEO.countryShapes = cs;
