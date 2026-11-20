@@ -7108,7 +7108,7 @@ const Acct = (() => {
     } else if (view === "admin" && me && me.admin) {
       h = `${X}${tabs()}<h2 id="acct-h">Admin</h2><p class="sub">Only you can see this.</p>
         <div class="dc" id="adm-dc"><div class="dc-h"><b>Data check</b><button type="button" data-adm-check>Check everyone's data</button></div><p class="dc-sum">Looks through every member's account and bird file for anything out of step. Checking changes nothing.</p></div>
-        ${DEVSITE ? `<div class="dc"><div class="dc-h"><b>Sample members</b><button type="button" data-adm-seed>Add sample members</button></div><p class="dc-sum">Dev copy only. Adds six made-up birders with sample birds (four in the UK, two in Spain), so suggestions, the Flock and new features have something to show. Pressing it again resets them.</p><p class="ok" id="seed-out" role="status"></p></div>` : ""}
+        ${DEVSITE ? `<div class="dc"><div class="dc-h"><b>Sample members</b><button type="button" data-adm-seed>Add sample members</button></div><p class="dc-sum">Dev copy only. Adds eight made-up birders with sample birds (four in the UK, two in Spain, two in Greece), so suggestions, the Flock and new features have something to show. Pressing it again resets them.</p><p class="ok" id="seed-out" role="status"></p></div>` : ""}
         <div class="dc adm-intro" id="adm-intro"><div class="dc-h"><b>Introduce two members</b></div><p class="dc-sum">Each gets a suggestion to connect. Nobody is added until they say yes.</p><p class="hint">Loading members…</p></div>
         <div id="adm" class="stack"><p class="hint">Loading members…</p></div>
         <div class="fr-sec">Feedback from members</div><div id="adm-fb"><p class="hint">Loading…</p></div>
