@@ -1390,7 +1390,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
     <button type="button" class="close-panel" id="close-panel" aria-label="Close the bird panel" title="Close (Esc)">&times;</button>
     <h1>BIRB app</h1>
     <p class="sub">Where I've heard birds with Merlin Sound ID, from my eBird export</p>
-    <p class="updated">Last updated 19 Nov 2026</p>
+    <p class="updated">Last updated 20 Nov 2026</p>
     <div class="seg view-switch" role="group" aria-label="Choose a view">
       <button type="button" data-view="map" aria-pressed="true">Map</button>
       <button type="button" data-view="world" aria-pressed="false">Habitat world</button>
@@ -1694,7 +1694,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
 <div class="dropzone-overlay" id="overlay"><div>Drop your eBird CSV to update the map</div></div>
 
 <script type="text/plain" id="embedded-csv">Submission ID,Common Name,Scientific Name,Taxonomic Order,Count,State/Province,County,Location ID,Location,Latitude,Longitude,Date,Time,Protocol,Duration (Min),All Obs Reported,Distance Traveled (km),Area Covered (ha),Number of Observers,Breeding Code,Observation Details,Checklist Comments,ML Catalog Numbers</script>
-<script type="text/plain" id="embedded-meta">MyEBirdData.csv (19 Nov 2026)</script>
+<script type="text/plain" id="embedded-meta">MyEBirdData.csv (20 Nov 2026)</script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -1750,6 +1750,44 @@ function fetchWards() {
   if (wardsAsked || WARDS.length || typeof topojson === "undefined" || !/^https?:/.test(location.protocol)) return;
   wardsAsked = true;
   fetch("wards.json").then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).then(wardsArrived).catch((e) => console.warn("Ward shapes didn't load:", e && e.message));
+}
+/* ---------- Europe ----------
+   Europe's regions and provinces (Eurostat's NUTS 2024 boundaries, about 250 KB) load just after the map appears and
+   join the UK's own regions and counties, so everything that works on a UK county works on a Spanish province too. */
+const COUNTRY_NAMES = { GB: "UK", IE: "Ireland" };
+const areaCountry = (c) => (c ? c.f.properties.country || "GB" : "");
+const UKIE = (cc) => cc === "GB" || cc === "IE";
+let EUROPE_READY = false, europeAsked = false, geoVersion = 0;
+function fixAreas(recs) {
+  /* sightings read before Europe arrived: give the ones outside the UK and Ireland their region and province */
+  if (!recs || recs._geo === geoVersion) return recs;
+  for (const d of recs) {
+    if (d.country && UKIE(d.country)) continue;
+    const c = countyFor(d.lng, d.lat);
+    if (c) { d.county = c.name; d.region = c.region; d.country = areaCountry(c); }
+  }
+  recs._geo = geoVersion;
+  return recs;
+}
+function europeArrived(e) {
+  if (EUROPE_READY || !e || !e.topo) return;
+  const reg = topojson.feature(e.topo, e.topo.objects.regions), cou = topojson.feature(e.topo, e.topo.objects.counties);
+  reg.features = reg.features.filter((f) => f.geometry); cou.features = cou.features.filter((f) => f.geometry);
+  GEO.regions = { ...GEO.regions, features: [...GEO.regions.features, ...reg.features] };
+  GEO.counties = { ...GEO.counties, features: [...GEO.counties.features, ...cou.features] };
+  REGIONS.push(...prep(reg)); COUNTIES.push(...prep(cou));
+  Object.assign(COUNTRY_NAMES, e.names || {});
+  const have = new Set((GEO.countries || []).map((c) => c[0]));
+  GEO.countries = [...(GEO.countries || [["United Kingdom", -3.4, 52.75]]), ...(e.countries || []).filter((c) => !have.has(c[0])).map((c) => [c[0], c[1], c[2]])];
+  SHADOWS = makeShadows(); shadowCache.clear(); outlineCache.clear();
+  lookupCache.clear(); EUROPE_READY = true; geoVersion++;
+  fixAreas(state.data);
+  crumbSig = ""; render();
+}
+function fetchEurope() {
+  if (europeAsked || EUROPE_READY || typeof topojson === "undefined" || !/^https?:/.test(location.protocol)) return;
+  europeAsked = true;
+  fetch("europe.json").then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).then(europeArrived).catch((e) => { europeAsked = false; console.warn("Europe shapes didn't load:", e && e.message); });
 }
 const fkey = (f) => f.properties.key || f.properties.name;
 const WARD_ZOOM = 8;           // closer than this, hover and click pick local wards instead of counties
@@ -1832,6 +1870,7 @@ function toRecords(text) {
       lat, lng, date: isoDate(get(r, "Date")), time: get(r, "Time") || "", sub: get(r, "Submission ID"),
       county: c ? c.name : (get(r, "County") || "Outside the UK"),
       region: c ? c.region : "Outside the UK",
+      country: areaCountry(c),
       ward: (wardFor(lng, lat) || { name: WARD_HINTS[lng.toFixed(5) + "," + lat.toFixed(5)] || "Outside ward data" }).name,
       family: familyOf(get(r, "Scientific Name"), get(r, "Common Name")),
     });
@@ -2134,6 +2173,21 @@ function handleView(v) {
 /* ---------- breadcrumb: jump back out to place, ward, county, region or the whole UK ---------- */
 const LEVEL_ZOOM = { uk: 0, region: 6.3, county: 7.4, ward: 9.8, place: 13.5 };
 function levelAt(z) { return z >= LEVEL_ZOOM.place ? "place" : z >= LEVEL_ZOOM.ward ? "ward" : z >= LEVEL_ZOOM.county ? "county" : z >= LEVEL_ZOOM.region ? "region" : "uk"; }
+function wardsHere() {
+  const c = countyFor(viewState.longitude, viewState.latitude);
+  if (c) return areaCountry(c) === "GB";
+  return viewState.longitude > -8.7 && viewState.longitude < 2.2 && viewState.latitude > 49.8 && viewState.latitude < 61;
+}
+const EUROPE_VIEW = () => (innerWidth < 760 ? { longitude: 8, latitude: 47, zoom: 3.15 } : { longitude: 9, latitude: 48.2, zoom: 3.65 });
+function countryBox(cc) {
+  const list = COUNTIES.filter((c) => areaCountry(c) === cc);
+  if (!list.length) return null;
+  /* the mainland: skip far-flung islands (the Azores, say) so the country fills the screen */
+  const big = list.slice().sort((a, b) => (b.bbox[2] - b.bbox[0]) * (b.bbox[3] - b.bbox[1]) - (a.bbox[2] - a.bbox[0]) * (a.bbox[3] - a.bbox[1]));
+  const mx = big.reduce((s, c) => s + c.cx, 0) / big.length, my = big.reduce((s, c) => s + c.cy, 0) / big.length;
+  const near = list.filter((c) => Math.abs(c.cx - mx) < 14 && Math.abs(c.cy - my) < 11);
+  return near.reduce((b, c) => [Math.min(b[0], c.bbox[0]), Math.min(b[1], c.bbox[1]), Math.max(b[2], c.bbox[2]), Math.max(b[3], c.bbox[3])], [180, 90, -180, -90]);
+}
 function flyToBox(b, minZ, maxZ) {
   const el = $("map");
   const vp = new deck.WebMercatorViewport({ width: el.clientWidth || 900, height: el.clientHeight || 700 });
@@ -2157,8 +2211,9 @@ function updateCrumbs() {
   const region = county ? REGIONS.find((r) => r.name === county.region) : null;
   const ward = depth >= 3 ? wardFor(x, y) : null;
   const place = depth >= 4 ? nearestPlace(x, y) : null;
-  const inIE = !!(county && county.f.properties.country === "IE");
-  const items = [{ k: "uk", label: inIE ? "Ireland" : "UK", name: inIE ? "Ireland" : "UK" }];
+  const cc = z < 4.7 ? "" : areaCountry(county);
+  const items = [{ k: "europe", label: "Europe", name: "Europe" }];
+  if (cc) items.push({ k: "uk", label: COUNTRY_NAMES[cc] || cc, name: cc });
   if (depth >= 1 && region) items.push({ k: "region", label: region.name, name: region.name });
   if (depth >= 2 && county) items.push({ k: "county", label: county.name, name: county.name });
   if (depth >= 3 && ward) items.push({ k: "ward", label: ward.f.properties.name, name: ward.name });
@@ -2166,16 +2221,18 @@ function updateCrumbs() {
   const sig = items.map((i) => i.k + i.name).join("|");
   if (sig === crumbSig) return;
   crumbSig = sig;
-  const lvlName = { uk: "Country", region: "Region", county: "County", ward: "Ward", place: "Place" };
-  $("crumbs").innerHTML = items.length < 2 ? "" : items.map((it, i) => (i ? `<span class="sep" aria-hidden="true">›</span>` : "") +
+  const lvlName = { europe: "Map", uk: "Country", region: "Region", county: "County", ward: "Ward", place: "Place" };
+  $("crumbs").innerHTML = items.length < 2 && !(EUROPE_READY && z < 4.7) ? "" : items.map((it, i) => (i ? `<span class="sep" aria-hidden="true">›</span>` : "") +
     `<button type="button" data-crumb="${it.k}" data-name="${esc(it.name)}" ${i === items.length - 1 ? 'aria-current="location"' : ""} title="Go to ${esc(lvlName[it.k].toLowerCase())} view">${i === 0 ? `<span class="lvl">${lvlName[it.k]}</span>` : ""}${esc(it.label)}</button>`).join("");
 }
 function queueCrumbs() { if (!crumbsQueued) { crumbsQueued = true; requestAnimationFrame(updateCrumbs); } }
 $("crumbs").addEventListener("click", (e) => {
   const b = e.target.closest("[data-crumb]"); if (!b) return;
   const k = b.dataset.crumb, name = b.dataset.name;
-  if (k === "uk" && name === "Ireland") { const b = IE_BOX(); return flyToBox(b, LEVEL_ZOOM.region - 0.3, LEVEL_ZOOM.region + 0.4); }
-  if (k === "uk") return flyTo({ ...HOME, pitch: state.tilt ? HOME.pitch : 0, bearing: state.tilt ? HOME.bearing : 0 });
+  if (k === "europe") return flyTo({ ...EUROPE_VIEW(), pitch: state.tilt ? 38 : 0, bearing: 0 });
+  if (k === "uk" && (name === "IE" || name === "Ireland")) { const b = IE_BOX(); return flyToBox(b, LEVEL_ZOOM.region - 0.3, LEVEL_ZOOM.region + 0.4); }
+  if (k === "uk" && (name === "GB" || name === "UK")) return flyTo({ ...HOME, pitch: state.tilt ? HOME.pitch : 0, bearing: state.tilt ? HOME.bearing : 0 });
+  if (k === "uk") { const b = countryBox(name); if (b) flyToBox(b, 4.6, LEVEL_ZOOM.region + 0.2); return; }
   if (k === "region") { const r = REGIONS.find((x) => x.name === name); if (r) flyToBox(r.bbox, LEVEL_ZOOM.region + 0.05, LEVEL_ZOOM.county - 0.05); return; }
   if (k === "county") { const c = COUNTIES.find((x) => x.name === name); if (c) flyToBox(c.bbox, PLACE_ZOOM + 0.6, LEVEL_ZOOM.ward - 0.1); return; }
   if (k === "ward") { const w = WARDS.find((x) => x.name === name); if (w) flyToBox(w.bbox, LEVEL_ZOOM.ward + 1.2, LEVEL_ZOOM.place - 0.1); return; }
@@ -3447,7 +3504,8 @@ function shiftedFC(fc, dx, dy) {
     coordinates: f.geometry.type === "Polygon" ? f.geometry.coordinates.map(mv) : f.geometry.coordinates.map((p) => p.map(mv)),
   } })) };
 }
-const SHADOWS = [[0.10, -0.05, 26], [0.22, -0.11, 18], [0.36, -0.18, 12], [0.52, -0.26, 7]].map(([dx, dy, a]) => ({ fc: shiftedFC(GEO.regions, dx, dy), a }));
+const makeShadows = () => [[0.10, -0.05, 26], [0.22, -0.11, 18], [0.36, -0.18, 12], [0.52, -0.26, 7]].map(([dx, dy, a]) => ({ fc: shiftedFC(GEO.regions, dx, dy), a }));
+let SHADOWS = makeShadows();
 const shadowCache = new Map();
 function shadowsAt(zq) {
   if (shadowCache.has(zq)) return shadowCache.get(zq);
@@ -3505,7 +3563,8 @@ function layers() {
   const sculpt = zone !== "model";
   const S = SCULPT[themeName === "night" ? "night" : "day"];
   const fade = Math.max(0, Math.min(1, (MODEL_ZOOM - viewState.zoom) / (MODEL_ZOOM - SCULPT_FADE_START)));
-  const sculptMax = state.level === "region" ? 95000 : 62000;
+  /* close up on a country without wards, provinces stay on show but grow less tall, so they don't tower over the view */
+  const sculptMax = (state.level === "region" ? 95000 : 62000) * (zone === "ward" && !wardsHere() ? Math.max(0.12, 0.5 ** (z - PLACE_ZOOM + 2.2)) : 1);
   const wardLevel = state.level === "ward";
   const slabHeight = (f) => {
     const a = wardLevel ? null : agg.get(fkey(f));
@@ -3516,7 +3575,8 @@ function layers() {
     if (fkey(f) === state.area) return [201, 90, 36];
     return a ? ramp(maxN === 1 ? 0.6 : (a.n - 1) / (maxN - 1)) : f.properties && f.properties.country === "IE" ? S.slabIE : S.slab;
   };
-  const wardZone = zone === "ward";
+  /* wards only exist for Great Britain: close up anywhere else in Europe, the provinces stay on show */
+  const wardZone = zone === "ward" && wardsHere();
   const slabFC = wardZone ? wardsInView() : GEO[state.level === "region" ? "regions" : "counties"];
   const slabLevel = wardZone ? "ward" : wardLevel ? "county" : state.level;
   // Wards view from afar: a hexagonal pillar for every ward you've birded in, never smaller than a few pixels
@@ -3556,7 +3616,7 @@ function layers() {
   const townLabels = wardZone ? GEO.towns.filter((p) => wardWindow && p[1] >= wardWindow[0] && p[1] <= wardWindow[2] && p[2] >= wardWindow[1] && p[2] <= wardWindow[3]).slice(0, 220) : [];
   return [
     sculpt && new deck.SolidPolygonLayer({
-      id: "studio-ground", data: [{ polygon: [[-30, 38], [25, 38], [25, 68], [-30, 68]] }],
+      id: "studio-ground", data: [{ polygon: [[-32, 28], [48, 28], [48, 73], [-32, 73]] }],
       getPolygon: (d) => d.polygon, getFillColor: [...S.ground, Math.round(255 * fade)], extruded: false,
       updateTriggers: { getFillColor: [themeName, fade] },
     }),
@@ -3721,7 +3781,7 @@ function initMap() {
     parent: $("map"),
     views: new deck.MapView({ repeat: false }),
     initialViewState: viewState,
-    controller: { dragRotate: true, touchRotate: true, inertia: 250, minZoom: 4.3, maxZoom: 12, maxPitch: 65 },
+    controller: { dragRotate: true, touchRotate: true, inertia: 250, minZoom: 3.1, maxZoom: 12, maxPitch: 65 },
     onViewStateChange: ({ viewState: v }) => { handleView(v); return v; },
     getTooltip: tooltip, useDevicePixels: LITE ? 1 : true,
     effects: !LITE && makeLighting() ? [lighting] : [],
@@ -3731,9 +3791,13 @@ function initMap() {
 }
 function fit() {
   if ((!deckgl && !mlmap) || !current.groups.length) return flyTo(HOME);
-  /* frame the UK and Ireland birds; a sighting abroad (a holiday in Spain, say) shouldn't pull the map right out */
-  const home = current.groups.filter((g) => g.lng > -11 && g.lng < 2.5 && g.lat > 49.4 && g.lat < 61.5);
-  const use = home.length ? home : current.groups;
+  /* frame where most of the birds are, wherever in Europe that is: a few far-off sightings (a holiday abroad,
+     a friend's trip) shouldn't pull the map right out. Weighted by sightings, centred on the busiest area. */
+  const G = current.groups, wt = (g) => (g.items && g.items.length) || 1;
+  const km = (a, b) => Math.hypot((a.lng - b.lng) * 111 * Math.cos(((a.lat + b.lat) / 2) * Math.PI / 180), (a.lat - b.lat) * 111);
+  let hub = G[0], best = -1;
+  for (const g of G) { let s = 0; for (const h of G) if (km(g, h) < 400) s += wt(h); if (s > best) { best = s; hub = g; } }
+  const use = G.filter((g) => km(g, hub) < 650);
   const lngs = use.map((g) => g.lng), lats = use.map((g) => g.lat);
   const el = $("map");
   const vp = new deck.WebMercatorViewport({ width: el.clientWidth || 800, height: el.clientHeight || 600 });
@@ -3903,6 +3967,7 @@ $("places").addEventListener("click", (e) => {
   flyTo({ longitude: p.lng, latitude: p.lat, zoom: 15, pitch: state.tilt ? 55 : LITE ? 45 : 0, bearing: state.tilt ? -14 : 0 });
 });
 function render() {
+  if (!EUROPE_READY && !europeAsked) setTimeout(fetchEurope, 1200);
   const rows = filtered();
   renderStats(rows);
   renderSpecies();
@@ -4192,7 +4257,7 @@ const Badges = (() => {
       if (s.days[s.days.length - 1] !== d.date) s.days.push(d.date);
       if (!byDay.has(d.date)) byDay.set(d.date, new Set());
       byDay.get(d.date).add(k);
-      if (d.region && d.region !== "Outside the UK") {
+      if (d.region && d.region !== "Outside the UK" && (!d.country || UKIE(d.country))) {
         if (!county.has(d.county)) county.set(d.county, d.date);
         if (!region.has(d.region)) region.set(d.region, d.date);
         if (d.region === "Greater London" && !county.has("__london")) county.set("__london", d.date);
@@ -6474,7 +6539,7 @@ const Acct = (() => {
 
   /* whose birds are on screen */
   async function getRecs(u) {
-    if (cache.has(u)) return cache.get(u);
+    if (cache.has(u)) return fixAreas(cache.get(u));
     const r = await call("birds?u=" + encodeURIComponent(u));
     if (!r.ok) throw new Error(r.error);
     const recs = toRecords(r.data); recs.forEach((d) => (d.by = u));
@@ -6956,14 +7021,14 @@ const Acct = (() => {
       ${sec("Who runs BIRB", `BIRB is a free app ${lee} runs as a hobby, with no adverts and no money involved. ${lee} decides what the app keeps and is responsible for looking after it.`)}
       ${sec("What's kept", "Your username, display name and birb, your privacy setting, your friends list and friend requests, your notifications and reactions, the badges you earn, any feedback you send, and your eBird sightings. From your eBird file only the columns the map needs are kept: the bird, the place, the date and time, and the count. Your passcode and recovery phrase are scrambled before they're saved, so nobody can read them, " + lee + " included.")}
       ${sec("Why it's kept", "Only so BIRB can do what you joined it for: show your birds on the map, in Habitat world and in your Collection, and share them with the people you choose. It isn't used for anything else.")}
-      ${sec("Home spots", "Any place in your file that looks like a home, such as a street address or a name like \"Back garden\" or \"Balcony\", is renamed to the nearest town (like \"Near Hindley\"), moved to about a kilometre away, and has its eBird checklist link removed, before anything is saved.")}
+      ${sec("Home spots", "Any place in your file that looks like a home, such as a street address (in the UK or elsewhere in Europe) or a name like \"Back garden\", \"Balcony\" or \"Mi jardín\", is renamed to the nearest town (like \"Near Hindley\"), moved to about a kilometre away, and has its eBird checklist link removed, before anything is saved.")}
       ${sec("Who sees your birds", "You choose in Your profile: only your friends (the default), anyone with your link, or only you. Friends of your friends can't see them. Birds you hide don't show to anyone. When you upload new birds or earn a badge, your friends get a note in their notifications.")}
       ${sec("Birders to meet", "If you say yes to being suggested, other members can see your name, birb, species count and the county where most of your sightings are, plus how many birds you have in common. They can send you a friend request, which you can accept or ignore. Your sightings stay private until you're friends. New members are asked when they join and existing members are asked once. You can change your answer in Settings. " + lee + " can also introduce two members to each other, which sends each a suggestion and nothing more.")}
       ${sec(`What ${lee} can see`, `As the person running BIRB, ${lee} sees a list of members with each name, username, birb, species count, join date and privacy setting, plus any feedback you send. He sees your actual birds only if you share them with him, like any friend. He also runs a check that looks through everyone's account and bird file for problems, such as a friendship that only works one way, and fixes them. That check reports counts, not your sightings.`)}
       ${sec("Where it's stored", "BIRB is hosted by Netlify, a US company, which stores the data on its servers in the United States. Netlify's data protection terms cover data sent there from the UK.")}
       ${sec("How long it's kept", "Everything stays until you delete your account. Notifications keep your 60 most recent. Problem reports are cleared after 14 days.")}
       ${sec("What BIRB doesn't do", "No adverts, no selling data, no tracking cookies. Your phone remembers a few settings for BIRB, like staying signed in, night mode and lite mode, in its own storage.")}
-      ${sec("Other services", "Map tiles come from OpenFreeMap, bird photos from iNaturalist and Wikipedia, bird sounds from xeno-canto, and fonts from Google Fonts. Like any website, they see your device's internet address when they send these, but none of them get your account or your birds.")}
+      ${sec("Other services", "Map tiles come from OpenFreeMap, bird photos from iNaturalist and Wikipedia, bird sounds from xeno-canto, and fonts from Google Fonts. Like any website, they see your device's internet address when they send these, but none of them get your account or your birds. Europe's region and province shapes are © EuroGeographics for the administrative boundaries (Eurostat GISCO), and European town names come from GeoNames (CC BY 4.0).")}
       ${sec("Problem reports", `If something goes wrong in the app, it sends ${lee} an anonymous note: the error, the type of phone and browser, and its graphics chip. No name, birds or places.`)}
       ${sec("Your controls and rights", `Download your data or delete your account at any time from Your profile. Deleting removes your birds, profile, notifications and friendships straight away. You can also ask ${lee} for a copy of your data, to correct something, or to delete it.`)}
       ${sec("Questions or worries", `Use "Ideas or problems?" in Your profile and pick Other, or ask the friend who invited you to pass a message on. If you're unhappy with how your data is handled, tell ${lee} first. You can also complain to the Information Commissioner's Office at ico.org.uk.`)}

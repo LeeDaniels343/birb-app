@@ -2,7 +2,9 @@
 // Passcodes are salted and hashed with scrypt; sessions are signed tokens; uploads are cleaned of home addresses.
 import { getStore } from "@netlify/blobs";
 import crypto from "node:crypto";
-import towns from "./towns.mjs";
+import ukTowns from "./towns.mjs";
+import euTowns from "./eutowns.mjs";
+const towns = [...ukTowns, ...euTowns];
 import RARE from "./rare.mjs";
 import WORDS from "./words.mjs";
 
@@ -267,7 +269,10 @@ const KEEP = ["Submission ID", "Common Name", "Scientific Name", "Taxonomic Orde
 const ROAD = /^\s*\d+[a-z]?\s|\b(road|street|lane|avenue|close|drive|crescent|terrace|gardens|grove|court|cottages?|farm|house|mews|place|row|walk|way|home)\b/i;
 /* names people give their own garden: "Back garden", "My yard", "Balcony", "Our flat" */
 const HOME = /\b(my|our|back|front|rear|side)\s+(garden|yard|patch)\b|\b(back ?yard|balcony|flat|apartment)\b/i;
-const looksHome = (loc) => ROAD.test(loc || "") || HOME.test(loc || "");
+/* elsewhere in Europe: a street name with a house number ("Calle Mayor 12", "Rue de la Paix 4"), or words for home */
+const EU_STREET = /\b(calle|c\/|avda\.?|avenida|carrer|rua|rue|via|viale|strasse|straße|str\.|gasse|ulica|ul\.|straat|laan|vej|gatan|gata)\b[^,]*\d/i;
+const EU_HOME = /\b(casa|mi jard[ií]n|jard[ií]n de casa|huerto de casa|mi terraza|garten|zuhause|zu hause|tuin|thuis|maison|chez moi|jardin de la maison|giardino di casa|hjemme|hemma)\b/i;
+const looksHome = (loc) => ROAD.test(loc || "") || HOME.test(loc || "") || EU_STREET.test(loc || "") || EU_HOME.test(loc || "");
 const PRIVATE_ID = /^P[0-9a-f]{8}$/;
 /* the stand-in for a private place: an area name, a ~1 km position and a fixed id */
 function privateSpot(priv, loc, lat, lng) {
