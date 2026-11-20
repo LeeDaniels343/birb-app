@@ -1832,7 +1832,10 @@ function europeArrived(e) {
     const lbl = new Map((e.countries || []).map((c) => [c[3], c]));
     for (const [cc, geoms] of byCC) {
       const l = lbl.get(cc);
-      cs.features.push({ type: "Feature", properties: { name: (e.names || {})[cc] || cc, code: cc, cx: l ? l[1] : undefined, cy: l ? l[2] : undefined }, geometry: topojson.merge(e.topo, geoms) });
+      /* a whole country has no holes: drop any left where its provinces' edges don't quite meet */
+      const m = topojson.merge(e.topo, geoms);
+      const solid = m.type === "Polygon" ? { type: "Polygon", coordinates: [m.coordinates[0]] } : { type: "MultiPolygon", coordinates: m.coordinates.map((p) => [p[0]]) };
+      cs.features.push({ type: "Feature", properties: { name: (e.names || {})[cc] || cc, code: cc, cx: l ? l[1] : undefined, cy: l ? l[2] : undefined }, geometry: solid });
     }
     /* the UK is shown as "UK" everywhere else in the app, so its country shape carries that name too */
     for (const f of cs.features) if (f.properties.code === "GB") f.properties.name = "UK";
@@ -4127,6 +4130,7 @@ $("places").addEventListener("click", (e) => {
 });
 function render() {
   if (!EUROPE_READY && !europeAsked) setTimeout(fetchEurope, 1200);
+  if (EUROPE_READY) fixAreas(state.data);
   const rows = filtered();
   renderStats(rows);
   renderSpecies();
@@ -4935,6 +4939,8 @@ document.addEventListener("click", (e) => {
 function setStatus(msg, isError = false) { const s = $("status"); s.innerHTML = msg; s.classList.toggle("error", isError); }
 function useText(text, source, fileName, opts = {}) { useRecords(toRecords(text), source, fileName, { ...opts, text }); }
 function useRecords(recs, source, fileName, { save = false, text = "" } = {}) {
+  /* sightings read while Europe's shapes were still loading get their country now (one friend's birds can arrive before them, another's after) */
+  if (EUROPE_READY) fixAreas(recs);
   Object.assign(state, { data: recs, source, fileName, area: null });
   assignColours();
   setTimeout(setupReplay, 0);
