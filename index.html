@@ -1757,7 +1757,9 @@ function fetchWards() {
 const COUNTRY_NAMES = { GB: "UK", IE: "Ireland" };
 const areaCountry = (c) => (c ? c.f.properties.country || "GB" : "");
 const UKIE = (cc) => cc === "GB" || cc === "IE";
-let EUROPE_READY = false, europeAsked = false, geoVersion = 0;
+let EUROPE_READY = false, europeAsked = false, geoVersion = 0, COUNTRY_AREAS = [], lastWardsHere = null;
+const COUNTRY_CODE = { "United Kingdom": "GB", UK: "GB", Ireland: "IE" };
+const COUNTRY_Z = 4.9;   // further out than this, the map groups everything by country
 function fixAreas(recs) {
   /* sightings read before Europe arrived: give the ones outside the UK and Ireland their region and province */
   if (!recs || recs._geo === geoVersion) return recs;
@@ -1777,6 +1779,15 @@ function europeArrived(e) {
   GEO.counties = { ...GEO.counties, features: [...GEO.counties.features, ...cou.features] };
   REGIONS.push(...prep(reg)); COUNTIES.push(...prep(cou));
   Object.assign(COUNTRY_NAMES, e.names || {});
+  for (const [k, v] of Object.entries(e.names || {})) COUNTRY_CODE[v] = k;
+  if (e.ctopo) {
+    const cs = topojson.feature(e.ctopo, e.ctopo.objects.countries);
+    cs.features = cs.features.filter((f) => f.geometry);
+    /* the UK is shown as "UK" everywhere else in the app, so its country shape carries that name too */
+    for (const f of cs.features) if (f.properties.code === "GB") f.properties.name = "UK";
+    GEO.countryShapes = cs;
+    COUNTRY_AREAS = prep(cs).map((c) => ({ ...c, cx: c.cx != null ? c.cx : (c.bbox[0] + c.bbox[2]) / 2, cy: c.cy != null ? c.cy : (c.bbox[1] + c.bbox[3]) / 2 }));
+  }
   const have = new Set((GEO.countries || []).map((c) => c[0]));
   GEO.countries = [...(GEO.countries || [["United Kingdom", -3.4, 52.75]]), ...(e.countries || []).filter((c) => !have.has(c[0])).map((c) => [c[0], c[1], c[2]])];
   SHADOWS = makeShadows(); shadowCache.clear(); outlineCache.clear();
@@ -2161,8 +2172,10 @@ function pushLayers() {
 let labelView = null;   // set when county labels are close together, so they are spaced again as the view changes
 function handleView(v) {
   const lv = labelView, relabel = lv && v.zoom < PLACE_ZOOM && (Math.abs(v.zoom - lv.z) > 0.1 || Math.abs((v.bearing || 0) - lv.b) > 3 || Math.abs((v.pitch || 0) - lv.p) > 3);
-  const crossed = (v.zoom >= PLACE_ZOOM) !== (viewState.zoom >= PLACE_ZOOM) || (v.zoom >= WARD_ZOOM) !== (viewState.zoom >= WARD_ZOOM);
+  let crossed = (v.zoom >= PLACE_ZOOM) !== (viewState.zoom >= PLACE_ZOOM) || (v.zoom >= WARD_ZOOM) !== (viewState.zoom >= WARD_ZOOM) || (v.zoom < COUNTRY_Z) !== (viewState.zoom < COUNTRY_Z);
   viewState = { ...viewState, longitude: v.longitude, latitude: v.latitude, zoom: v.zoom, pitch: v.pitch, bearing: v.bearing };
+  /* panning close up between Great Britain (wards) and the rest of Europe (spot pillars) swaps how the map is drawn */
+  if (EUROPE_READY && v.zoom >= PLACE_ZOOM && v.zoom < MODEL_ZOOM) { const wh = wardsHere(); if (wh !== lastWardsHere) { lastWardsHere = wh; crossed = true; } }
   if (v.zoom >= WARD_ZOOM - 1.5) fetchWards();
   queueCrumbs();
   if ((crossed || relabel || (v.zoom >= PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.12) || (v.zoom >= WARD_ZOOM && wardWindowStale()) || (v.zoom > SCULPT_FADE_START - 0.3 && v.zoom < MODEL_ZOOM + 0.1 && Math.abs(v.zoom - layoutZoom) > 0.06) || ((v.zoom >= MODEL_ZOOM) !== (viewState.zoom >= MODEL_ZOOM)) || (state.level === "ward" && v.zoom < PLACE_ZOOM && Math.abs(v.zoom - layoutZoom) > 0.15)) && !relayoutQueued) {
@@ -2442,7 +2455,8 @@ function wardsInView() {
 function aggregate(rows, key = areaKey()) {
   const m = new Map();
   for (const d of rows) {
-    const k = d[key];
+    const k = typeof key === "function" ? key(d) : d[key];
+    if (k == null) continue;
     if (!m.has(k)) m.set(k, { sp: new Map(), dates: new Set(), first: new Map(), last: "" });
     const a = m.get(k); a.dates.add(d.date); if (d.date > a.last) a.last = d.date;
     const f0 = a.first.get(d.name); if (!f0 || d.date < f0.date) a.first.set(d.name, { date: d.date, sci: d.sci, fam: d.family });
@@ -2524,6 +2538,10 @@ function plainCard(title, col, sub, body, foot) {
 const tipPlaces = (places) => { const T = tipTheme(); const p = places.slice(0, 3); return `<div style="font-size:12px;color:${T.muted}">📍 ${p.map(esc).join(", ")}${places.length > 3 ? ` and ${places.length - 3} more` : ""}</div>`; };
 function tooltip({ object, layer }) {
   if (!object || !layer) return null;
+  if (layer.id === "areas-sculpt-country") {
+    const a = current.aggBy.country.get(fkey(object));
+    return a ? areaCard(fkey(object), "Country · tap to zoom in", a, false) : null;
+  }
   if (layer.id.startsWith("areas") || layer.id === "bars") {
     const pillar = layer.id === "areas-ward-pillars";
     const lvl = layer.id === "bars" ? state.level : pillar ? "ward" : layer.id.startsWith("areas-sculpt-") && state.level === "ward" && viewState.zoom < PLACE_ZOOM ? "county" : hoverLevel();
@@ -2533,7 +2551,10 @@ function tooltip({ object, layer }) {
     const district = pillar ? (name.match(/, (.*)$/) || [])[1] : object.properties && object.properties.district;
     const props = (object && object.properties) || (pillar ? ((WARDS.find((w) => w.name === name) || {}).f || {}).properties : null) || {};
     const isIE = props.country === "IE" || (lvl === "county" && (COUNTIES.find((c) => c.name === name) || { f: { properties: {} } }).f.properties.country === "IE");
-    const where = lvl === "ward" && district ? (isIE ? `Electoral division in ${esc(district)}, Ireland` : `Ward in ${esc(district)}, UK`)
+    const lvlProps = props.country ? props : lvl === "county" ? ((COUNTIES.find((c) => c.name === name) || { f: { properties: {} } }).f.properties) : lvl === "region" ? ((REGIONS.find((c) => c.name === name) || { f: { properties: {} } }).f.properties) : props;
+    const cn = lvlProps.country && !UKIE(lvlProps.country) ? COUNTRY_NAMES[lvlProps.country] || lvlProps.country : null;
+    const where = cn ? (lvl === "county" ? `${lvlProps.region2 && lvlProps.region2 !== name ? `In ${esc(lvlProps.region2)}, ` : ""}${esc(cn)}` : `Part of ${esc(cn)}`)
+      : lvl === "ward" && district ? (isIE ? `Electoral division in ${esc(district)}, Ireland` : `Ward in ${esc(district)}, UK`)
       : lvl === "county" ? (isIE ? `County in ${esc(props.region2 || "")}, Ireland` : `${props.region2 ? `In ${esc(props.region2)}, ` : ""}UK`)
       : lvl === "region" ? (isIE ? "Province of Ireland" : "Part of the UK") : "";
     if (!a) return null;
@@ -2572,7 +2593,8 @@ function tooltip({ object, layer }) {
       : `Heard on ${object.n} ${object.n === 1 ? "day" : "days"} · first ${esc(fmtDate(object.first))}`;
     return plainCard(esc(object.label), `rgb(${object.colour.join(",")})`, sub, (isFam ? speciesLines(object.species, 6) : "") + `<div style="font-size:12px;margin-top:6px">${where}</div>`, object.clusterPlaces > 1 ? "Zoom in to split these spots apart" : "");
   }
-  if (layer.id === "spots") {
+  if (layer.id === "spot-pillars") object = object.g;
+  if (layer.id === "spots" || layer.id === "spot-pillars") {
     const sets = new Map(); object.items.forEach((d) => { if (!sets.has(d.name)) sets.set(d.name, new Set()); sets.get(d.name).add(d.date); });
     const m = new Map([...sets].map(([n, s]) => [n, s.size]));
     const dates = [...new Set(object.items.map((d) => d.date).filter(Boolean))].sort();
@@ -2581,6 +2603,14 @@ function tooltip({ object, layer }) {
   return null;
 }
 function pickArea(name, level) {
+  if (level === "country") {
+    /* tapping a country zooms into it */
+    const cc = COUNTRY_CODE[name];
+    if (cc === "GB") return flyTo({ ...HOME, pitch: state.tilt ? HOME.pitch : 0, bearing: state.tilt ? HOME.bearing : 0 });
+    if (cc === "IE") return flyToBox(IE_BOX(), LEVEL_ZOOM.region - 0.3, LEVEL_ZOOM.region + 0.4);
+    const b = cc && countryBox(cc); if (b) flyToBox(b, 5.0, LEVEL_ZOOM.region + 0.2);
+    return;
+  }
   if (state.area === name && state.areaLevel === level) state.area = null;
   else { state.area = name; state.areaLevel = level; }
   render();
@@ -3537,8 +3567,11 @@ function topOutlines(fc, heightOf, sig) {
 }
 
 function layers() {
-  const areas = state.level === "county" ? COUNTIES : state.level === "ward" ? WARDS : REGIONS;
-  const { agg, maxN, groups } = current;
+  /* zoomed right out across Europe: one shape and one number per country */
+  const countryZone = EUROPE_READY && COUNTRY_AREAS.length && viewState.zoom < COUNTRY_Z;
+  let areas = state.level === "county" ? COUNTIES : state.level === "ward" ? WARDS : REGIONS;
+  let { agg, maxN, groups } = current;
+  if (countryZone) { agg = current.aggBy.country; maxN = Math.max(1, ...[...agg.values()].map((a) => a.n)); areas = COUNTRY_AREAS; }
   const bars = areas.filter((a) => agg.has(a.name)).map((a) => ({ name: a.name, cx: a.cx, cy: a.cy, n: agg.get(a.name).n }));
   const elevScale = (state.level === "county" ? 70000 : 110000) / maxN;
   const radius = state.level === "county" ? 6500 : 16000;
@@ -3571,8 +3604,8 @@ function layers() {
   const S = SCULPT[themeName === "night" ? "night" : "day"];
   const fade = Math.max(0, Math.min(1, (MODEL_ZOOM - viewState.zoom) / (MODEL_ZOOM - SCULPT_FADE_START)));
   /* close up on a country without wards, provinces stay on show but grow less tall, so they don't tower over the view */
-  const sculptMax = (state.level === "region" ? 95000 : 62000) * (zone === "ward" && !wardsHere() ? Math.max(0.12, 0.5 ** (z - PLACE_ZOOM + 2.2)) : 1);
-  const wardLevel = state.level === "ward";
+  const sculptMax = countryZone ? 110000 : state.level === "region" ? 95000 : 62000;
+  const wardLevel = state.level === "ward" && !countryZone;
   const slabHeight = (f) => {
     const a = wardLevel ? null : agg.get(fkey(f));
     return tilted ? SCULPT_BASE + (a ? (a.n / maxN) * sculptMax : 0) : 0;
@@ -3584,8 +3617,10 @@ function layers() {
   };
   /* wards only exist for Great Britain: close up anywhere else in Europe, the provinces stay on show */
   const wardZone = zone === "ward" && wardsHere();
-  const slabFC = wardZone ? wardsInView() : GEO[state.level === "region" ? "regions" : "counties"];
-  const slabLevel = wardZone ? "ward" : wardLevel ? "county" : state.level;
+  /* close up anywhere in Europe without wards: provinces become a low base, and each of your spots rises as a pillar */
+  const euClose = zone === "ward" && !wardZone;
+  const slabFC = countryZone ? GEO.countryShapes : wardZone ? wardsInView() : GEO[state.level === "region" && !euClose ? "regions" : "counties"];
+  const slabLevel = countryZone ? "country" : wardZone ? "ward" : wardLevel || euClose ? "county" : state.level;
   // Wards view from afar: a hexagonal pillar for every ward you've birded in, never smaller than a few pixels
   const wardPillars = zone === "county" && wardLevel ? bars.map((b) => {
     const w = WARDS.find((x) => x.name === b.name);
@@ -3593,10 +3628,17 @@ function layers() {
     return { ...b, r: Math.max(trueR, mpp * 9) };
   }) : [];
   const sculptSig = [sig, themeName, tilted, zone, wardZone ? Math.round(z * 8) : 0, wardZone ? slabFC.features.length + ":" + (wardWindow ? wardWindow[0].toFixed(3) : "") : ""].join("/");
-  const slabH = wardZone ? (f) => wardSlabH(fkey(f)) : slabHeight;
-  const slabCol = wardZone
+  const aggC = current.aggBy.county || new Map(), maxC = Math.max(1, ...[...aggC.values()].map((a) => a.n));
+  const slabH = wardZone ? (f) => wardSlabH(fkey(f)) : euClose ? () => (tilted ? mpp * 4 : 0) : slabHeight;
+  const slabCol = euClose
+    ? () => S.slab
+    : wardZone
     ? (f) => { const a = aggW.get(fkey(f)); if (fkey(f) === state.area) return [201, 90, 36]; return a ? ramp(maxW === 1 ? 0.6 : (a.n - 1) / (maxW - 1)) : f.properties && f.properties.country === "IE" ? S.slabIE : S.slab; }
     : slabColour;
+  /* each of your spots as a pillar, as tall as the number of different birds heard there */
+  const spotBars = euClose ? (groups || []).map((g) => ({ g, n: new Set(g.items.map((d) => d.name)).size, x: g.lng, y: g.lat })) : [];
+  const maxSp = Math.max(1, ...spotBars.map((b) => b.n));
+  const spotH = (b) => (tilted ? mpp * (10 + (b.n / maxSp) * 52) : 0);
   const shadowScale = wardZone ? 2 ** (6 - z) : 1;
   const shadowSets = wardZone ? shadowsAt(Math.round(z * 4) / 4) : SHADOWS;
   const lblOff = new Map();
@@ -3649,6 +3691,23 @@ function layers() {
       onHover: () => {},
       transitions: { getElevation: 600 },
       updateTriggers: { getElevation: sculptSig, getFillColor: sculptSig },
+    }),
+    spotBars.length && new deck.ColumnLayer({
+      id: "spot-pillars", data: spotBars, diskResolution: 6, extruded: true, pickable: true,
+      radius: mpp * 13, radiusUnits: "meters", autoHighlight: true, highlightColor: [255, 255, 255, 110],
+      getPosition: (b) => [b.x, b.y, tilted ? mpp * 4 : 0], getElevation: spotH,
+      getFillColor: (b) => ramp(maxSp === 1 ? 0.6 : (b.n - 1) / (maxSp - 1)),
+      material: { ambient: 0.6, diffuse: 0.55, shininess: 16, specularColor: [30, 34, 38] }, opacity: fade,
+      onClick: ({ object }) => object && flyTo({ longitude: object.x, latitude: object.y, zoom: MODEL_ZOOM + 0.7, pitch: state.tilt || LITE ? (state.tilt ? 55 : 45) : 0 }),
+      updateTriggers: { getElevation: [sig, tilted, Math.round(z * 8)], getFillColor: sig, getPosition: [tilted, Math.round(z * 8)] },
+    }),
+    spotBars.length && new deck.TextLayer({
+      id: "spot-labels", parameters: { depthCompare: "always", depthWriteEnabled: false, depthTest: false }, data: spotBars,
+      getPosition: (b) => [b.x, b.y, (tilted ? mpp * 4 : 0) + spotH(b) + mpp * 3], getText: (b) => String(b.n),
+      getSize: 13, getColor: [27, 42, 47], fontFamily: "'IBM Plex Mono', Menlo, monospace", fontWeight: 600, characterSet: "0123456789",
+      background: true, getBackgroundColor: [255, 255, 255, 235], backgroundPadding: [5, 2, 5, 2], getBorderColor: [184, 194, 196], getBorderWidth: 1,
+      getTextAnchor: "middle", getAlignmentBaseline: "bottom", getPixelOffset: [0, -6], billboard: true, opacity: fade,
+      updateTriggers: { getPosition: [sig, tilted, Math.round(z * 8)] },
     }),
     wardPillars.length && new deck.ColumnLayer({
       id: "areas-ward-pillars", data: wardPillars, diskResolution: 6, extruded: true, pickable: true,
@@ -3981,7 +4040,7 @@ function render() {
   renderPlaces();
   const mapRows = filtered({ ignoreArea: true });
   const agg = aggregate(mapRows);
-  const aggBy = { county: aggregate(mapRows, "county"), region: aggregate(mapRows, "region"), ward: aggregate(mapRows, "ward") };
+  const aggBy = { county: aggregate(mapRows, "county"), region: aggregate(mapRows, "region"), ward: aggregate(mapRows, "ward"), country: EUROPE_READY ? aggregate(mapRows, (d) => COUNTRY_NAMES[d.country] || null) : new Map() };
   current = { agg, aggBy, maxN: Math.max(1, ...[...agg.values()].map((a) => a.n)), groups: groupPlaces(mapRows) };
   if (!deckgl) updateLegend(false, null);
   $("reset").hidden = state.source !== "file";
