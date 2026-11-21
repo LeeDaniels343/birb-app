@@ -379,7 +379,7 @@ body.night .nt .tx .acts .primary { color: #0f191d; }
   .pv2-inv { gap: 8px; }
 }
 .pv2-tier .more { color: var(--accent); font-weight: 600; }
-.jy { max-width: 580px; margin: 0 auto; padding-bottom: 12px; }
+.jy { max-width: 680px; margin: 0; padding-bottom: 12px; }
 .jy-hero { position: relative; overflow: hidden; isolation: isolate; border-radius: 22px; padding: 22px 22px 20px; margin: 8px 0 30px;
   background: linear-gradient(160deg, color-mix(in srgb, var(--c) 16%, var(--surface)), var(--surface) 62%); border: 1px solid color-mix(in srgb, var(--c) 30%, var(--line));
   box-shadow: 0 18px 40px -24px color-mix(in srgb, var(--c) 55%, transparent), 0 1px 0 color-mix(in srgb, #fff 6%, transparent) inset; }
@@ -412,6 +412,7 @@ body.night .nt .tx .acts .primary { color: #0f191d; }
 .jy-st b { font-size: 15.5px; font-weight: 600; }
 .jy-st.cur b { font-size: 17px; }
 .jy-st small { font-size: 12px; color: var(--muted); }
+.bd-more { display: block; margin: 6px 0 0; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--accent); font-weight: 600; font-size: 13px; box-shadow: none; }
 .jy-st .stp { display: inline-grid; place-items: center; min-width: 22px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 6px; font: 600 10.5px/1 var(--font-mono); vertical-align: 2px; color: var(--muted); border: 1px solid var(--line); }
 .jy-st .stp.on { color: var(--ink); background: color-mix(in srgb, var(--c) 22%, transparent); border-color: color-mix(in srgb, var(--c) 45%, transparent); }
 .jy-st .stp.nx { border-style: dashed; border-color: var(--c); color: var(--ink); }
@@ -852,7 +853,8 @@ body.coll-on #crumbs, body.coll-on #map-tools, body.coll-on #legend, body.coll-o
 .crare > button { background: transparent; border: 1px dashed var(--line); color: var(--muted); font-size: 12px; padding: 5px 12px; border-radius: 999px; }
 .crare > button:hover { color: var(--ink); border-color: var(--muted); }
 .crare .cgrid { margin-top: 14px; }
-.coll-regs { margin-top: 16px; width: max-content; max-width: 100%; overflow-x: auto; }
+.coll-chips { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.coll-chips .seg { flex: none; }
 .coll-note { margin-top: 30px; font-size: 12px; color: var(--muted); max-width: 640px; }
 .coll-pop { position: sticky; bottom: 16px; margin: 0 auto; width: min(420px, calc(100% - 32px)); background: var(--surface); border: 2px solid var(--bird, var(--line)); border-radius: 14px; box-shadow: 0 8px 26px rgba(0,0,0,.22); padding: 12px 14px; display: grid; gap: 4px; z-index: 3; }
 .coll-pop[hidden] { display: none; }
@@ -869,6 +871,13 @@ body.coll-on #crumbs, body.coll-on #map-tools, body.coll-on #legend, body.coll-o
   .cgrid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 12px 4px; }
   .cb-c { width: 56px; height: 56px; }
   .coll-bar input { max-width: none; }
+  .coll-bar { gap: 8px; margin-top: 12px; }
+  .coll-chips { flex-wrap: nowrap; overflow-x: auto; width: calc(100% + 28px); margin: 0 -14px; padding: 0 14px; scrollbar-width: none; }
+  .coll-chips::-webkit-scrollbar { display: none; }
+  .coll-bar .coll-key { display: none; }
+  .coll-head { gap: 12px; }
+  .coll-head .coll-ring { width: 56px; height: 56px; }
+  .coll-title h2 { font-size: 24px; }
 }
 
 /* ---------- latest bird ---------- */
@@ -1721,18 +1730,20 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
           <button type="button" data-view="collection" aria-pressed="true">Birds</button>
         </div>
       </div>
-      <div class="seg coll-regs" role="group" aria-label="Which country's list">
+      <div class="coll-bar">
+        <div class="coll-chips">
+          <div class="seg coll-regs" role="group" aria-label="Which country's list">
         <button type="button" data-creg="UK" aria-pressed="true">UK</button>
         <button type="button" data-creg="ES" aria-pressed="false">Spain</button>
         <button type="button" data-creg="GR" aria-pressed="false">Greece</button>
         <button type="button" data-creg="EU" aria-pressed="false">All Europe</button>
       </div>
-      <div class="coll-bar">
-        <div class="seg" role="group" aria-label="Show">
-          <button type="button" data-cf="all" aria-pressed="true">All</button>
-          <button type="button" data-cf="got" aria-pressed="false">Collected</button>
-          <button type="button" data-cf="miss" aria-pressed="false">Still to find</button>
-          <button type="button" data-cf="rare" aria-pressed="false">Rare</button>
+          <div class="seg" role="group" aria-label="Show">
+            <button type="button" data-cf="all" aria-pressed="true">All</button>
+            <button type="button" data-cf="got" aria-pressed="false">Collected</button>
+            <button type="button" data-cf="miss" aria-pressed="false">Still to find</button>
+            <button type="button" data-cf="rare" aria-pressed="false">Rare</button>
+          </div>
         </div>
         <input type="search" id="coll-q" placeholder="Find a bird" aria-label="Find a bird in the collection">
         <span class="coll-key"><i></i>Rarer visitor</span>
@@ -1788,7 +1799,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
       <div class="legend-sub" id="world-sum"></div>
       <div class="wl" id="world-hab-list"></div>
       <div class="world-level" id="world-level"></div>
-      <div class="hint">The island grows bigger with each level, and every step adds a little more, like lamps, benches, reeds and rows in the field. Birds sing more often the more days you've heard them. Click one for its story, drag to look around, scroll to zoom.</div>
+      <div class="hint">Birds sing more the more days you've heard them. Tap one for its story.</div>
     </div>
     <div class="world-tip" id="world-tip" hidden></div>
     <div class="world-msg" id="world-msg" hidden>The 3D scene couldn't load. Check your internet connection, then reload the page.</div>
@@ -4875,12 +4886,7 @@ const Badges = (() => {
     const lt0 = () => [...S].sort((a, b) => (a.date < b.date ? -1 : 1));
     const out = [];
     const add = (fam, id, name, ask, have, need, date, x = {}) => out.push({ fam, id, name, ask, have: Math.min(have, need), need, date: date || null, got: !!date, ...x });
-    /* species */
-    add("species", "sp-1", "First bird", "Hear your first bird", spDates.length, 1, reach(spDates, 1), { ic: "bird" });
-    [[10, "bronze"], [25, "bronze"], [50, "silver"], [75, "silver"], [100, "silver"], [150, "gold"], [200, "gold"], [250, "gold"], [300, "gold"], [400, "gold"], [600, "gold"], [1000, "gold"]].forEach(([n, tier]) => {
-      const T = TIERS.find((x) => x.n === n);
-      add("species", "sp-" + n, `${n} species`, `Hear ${n} different species, anywhere in the world${T ? `. That's the ${T.name} level` : ""}`, spDates.length, n, reach(spDates, n), { t: String(n), tier });
-    });
+    /* species counts live in the Journey badges now (the old sp- ids still hold your level) */
     /* the journey: a badge for every step of every level */
     STEPS.forEach((st) => add("journey", "lv-" + st.n, st.name, `Hear ${st.n.toLocaleString("en-GB")} ${st.n === 1 ? "species" : "different species"}, anywhere in the world`, spDates.length, st.n, reach(spDates, st.n),
       st.short ? { t: st.short, col: st.t.c, tier: st.ti >= 6 ? "gold" : st.ti >= 3 ? "silver" : null } : { ic: "star", col: st.t.c, tier: "gold" }));
@@ -5096,6 +5102,7 @@ const Badges = (() => {
   }
   /* ---------- whose badges are on show ---------- */
   let mode = "wall", flockCtx = null, flockFor = "", sel = null, last = null;
+  const openFams = new Set();
   function source() {
     const me = Acct.me, v = Acct.viewing;
     if (state.source === "flock") {
@@ -5226,10 +5233,16 @@ const Badges = (() => {
       ${close.length ? `<div class="bd-next"><span class="lab">Closest</span>${close.map((b) => `<button type="button" class="bd-nx" data-bd="${esc(b.id)}"><b>${esc(b.name)}</b><small>${esc(nextLine(b))}</small><span class="bar"><i style="width:${Math.round((b.have / b.need) * 100)}%;background:${b.col || FAM.get(b.fam).col}"></i></span></button>`).join("")}</div>` : ""}
     </div>`;
     for (const f of FAMS) {
-      const items = all.filter((b) => b.fam === f.id); if (!items.length) continue;
-      const g = items.filter((b) => b.got).length;
+      const items0 = all.filter((b) => b.fam === f.id); if (!items0.length) continue;
+      const g = items0.filter((b) => b.got).length;
+      /* long groups show what you've earned and the next three; the rest are a tap away */
+      const open = openFams.has(f.id) || items0.length <= 8 || f.id === "secret";
+      const next3 = new Set(items0.filter((b) => !b.got && !b.secret).sort((a, b) => b.have / b.need - a.have / a.need || a.need - b.need).slice(0, 3).map((b) => b.id));
+      const items = open ? items0 : items0.filter((b) => b.got || next3.has(b.id));
+      const more = items0.length - items.length;
       html += `<section class="bd-fam"><div class="cfam-h"><span class="swatch" style="background:${f.col}"></span><h3>${esc(f.name)}</h3><span class="k">${g} / ${items.length}</span><span class="bar"><i style="width:${Math.max(g ? 2 : 0, Math.round((g / items.length) * 100))}%;background:${f.col}"></i></span></div>
-        <div class="bd-grid">${items.map((b) => tile(b, fresh.has(b.id), pins.has(b.id))).join("")}</div></section>`;
+        <div class="bd-grid">${items.map((b) => tile(b, fresh.has(b.id), pins.has(b.id))).join("")}</div>
+        ${more > 0 ? `<button type="button" class="bd-more" data-bd-fam="${f.id}">Show all ${items0.length}</button>` : openFams.has(f.id) && items0.length > 8 ? `<button type="button" class="bd-more" data-bd-fam="${f.id}">Show fewer</button>` : ""}</section>`;
     }
     html += `<p class="coll-note">Badges come from the birds in ${src.mine ? "your" : "the"} eBird export, so they're the same on every device. Each one shows the date of the sighting that earned it.${src.mine ? " Tap one you've earned to pin it to your profile, where your friends can see it." : ""}</p>`;
     box.innerHTML = html;
@@ -5307,6 +5320,7 @@ const Badges = (() => {
     if (e.target.closest("[data-bd-x]")) { $("bd-pop").hidden = true; sel = null; document.querySelectorAll("#badges .bd.sel").forEach((x) => x.classList.remove("sel")); return; }
     const p = e.target.closest("[data-bd-pin]"); if (p) { p.disabled = true; togglePin(p.dataset.bdPin); return; }
     const sb = e.target.closest("[data-share-badges]"); if (sb) { $("bd-pop").hidden = true; $("toast").hidden = true; Acct.shareBadges(sb.dataset.shareBadges.split(",")); return; }
+    const fm = e.target.closest("[data-bd-fam]"); if (fm) { const k = fm.dataset.bdFam; openFams.has(k) ? openFams.delete(k) : openFams.add(k); render(); return; }
     const b = e.target.closest("#badges [data-bd]"); if (b) pop(b.dataset.bd);
   });
 
@@ -7747,7 +7761,7 @@ const Acct = (() => {
     } else if (view === "profile" && me) {
       const b = me.birds, A = Avatar.norm(me.avatar);
       const since = me.joined ? new Date(me.joined).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "";
-      const nB = Object.keys(me.badges || {}).length;
+      const nB = Object.keys(me.badges || {}).filter((id) => Badges.def(id)).length;
       let shelf = (me.pins || []).map((id) => Badges.def(id)).filter(Boolean);
       if (!shelf.length) shelf = Object.entries(me.badges || {}).sort((x, y) => (x[1] < y[1] ? 1 : -1)).slice(0, 3).map(([id]) => Badges.def(id)).filter(Boolean);
       const link = me.invite ? `${location.origin}/?invite=${encodeURIComponent(me.invite)}` : "";
