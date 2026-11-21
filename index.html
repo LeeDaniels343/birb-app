@@ -480,6 +480,26 @@ body.night .fr-row .btns .primary { color: #0f191d; }
 .share-kind button { padding: 6px 12px; font-size: 13px; }
 .share-prev.tall img { width: min(230px, 70%); }
 .share-day-btn { display: block; margin-top: 10px; }
+.nd-card { position: relative; margin: 14px 0 12px; padding: 18px 18px 16px; border-radius: 16px; text-align: center; color: #fff;
+  background: radial-gradient(120% 90% at 50% 0%, #1f5566 0%, #0f2c36 70%); border: 1px solid rgba(90,184,216,.35); overflow: hidden; }
+.nd-pile { display: flex; justify-content: center; height: 74px; margin: 2px 0 10px; }
+.nd-ph { position: relative; width: 66px; height: 66px; margin: 0 -9px; border-radius: 12px; padding: 3px; background: #f6f2ea; box-shadow: 0 6px 14px rgba(0,0,0,.35);
+  transform: rotate(var(--r)); animation: ndDrop .5s cubic-bezier(.2,1.4,.4,1) both; animation-delay: calc(var(--i) * 110ms + 120ms); }
+.nd-ph .ph { width: 100%; height: 100%; border-radius: 9px; }
+.nd-more { display: grid; place-items: center; background: #5ab8d8; color: #0e2830; font: 700 20px/1 var(--display, inherit); }
+.nd-rare { position: absolute; top: -6px; left: -4px; background: #a982e8; color: #fff; font-size: 9.5px; padding: 1px 6px; border-radius: 8px; letter-spacing: .03em; }
+@keyframes ndDrop { from { opacity: 0; transform: translateY(-28px) rotate(calc(var(--r) * 2.5)) scale(.85); } to { opacity: 1; transform: rotate(var(--r)); } }
+.nd-kick { font-size: 13px; color: #9fd0de; letter-spacing: .02em; }
+.nd-h { font-size: 26px; font-weight: 700; margin: 2px 0 2px; }
+.nd-h b { color: #5ab8d8; font-size: 34px; }
+.nd-sub { font-size: 13px; color: #b9d4dc; }
+.nd-names { font-size: 12.5px; color: #8fb3be; margin: 8px 0 14px; }
+.nd-share { display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 13px 16px; border: 0; border-radius: 12px;
+  font-size: 16px; font-weight: 700; color: #fff; background: linear-gradient(100deg, #e07a3a, #d4537e 55%, #8f5ad8); box-shadow: 0 6px 18px rgba(212,83,126,.35); cursor: pointer; }
+.nd-share:hover { filter: brightness(1.06); }
+.nd-share:active { transform: scale(.98); }
+.ok.nd-small { font-size: 12.5px; opacity: .85; margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .nd-ph { animation: none; } }
 .day-opts { margin: 4px 0 8px; }
 .day-sec { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 6px; }
 .day-sec small { font-weight: 400; }
@@ -7051,7 +7071,7 @@ const Acct = (() => {
   function close() {
     closeMember();
     if (live) { live.destroy(); live = null; }
-    $("acct").hidden = true; view = ""; notice = ""; firstUp = false;
+    $("acct").hidden = true; view = ""; notice = ""; firstUp = false; newDayCard = null;
   }
   const tabs = () => me ? `<nav class="acct-tabs" aria-label="Account">${[["profile", "Overview"], ["settings", "Settings"], ["flock", "Flock"], ...(me.admin ? [["admin", "Admin"]] : [])].map(([k, l]) => `<button type="button" data-acct="${k}" aria-current="${view === k ? "page" : "false"}">${l}${k === "flock" && requests.in.length ? `<span class="tab-n" aria-label="${requests.in.length} new">${requests.in.length}</span>` : ""}</button>`).join("")}</nav>` : "";
   const X = `<button type="button" class="acct-x" data-acct-close aria-label="Close">×</button>`;
@@ -7189,7 +7209,8 @@ const Acct = (() => {
       h = `${X}${tabs()}<div class="pv2-band" style="--band:${esc(A.cBody || A.bg)}"></div>
         <div class="pv2-head">${Avatar.html(me.avatar)}<div><h2 id="acct-h">${esc(nameOf(me))}</h2><p class="sub">@${esc(me.u)}${me.admin ? '<span class="tag-owner">admin</span>' : ""}${since ? ` · since ${esc(since)}` : ""}</p></div></div>
         ${nB ? `<div class="pv2-shelf">${shelf.map((x) => `<span title="${esc(x.name)}">${Badges.medal(x, 44)}</span>`).join("")}<button type="button" class="linkish" data-acct-badges>${nB} ${nB === 1 ? "badge" : "badges"} ›</button></div>` : ""}
-        ${notice ? `<p class="ok" role="status">${notice}</p>` : ""}
+        ${newDayCard ? newDayHTML() : ""}
+        ${notice ? `<p class="ok${newDayCard ? " nd-small" : ""}" role="status">${notice}</p>` : ""}
         ${firstUp ? `<button type="button" class="primary see-birds" data-acct-close>See my birds on the map</button>` : ""}
         <div class="pv2-acts">${b ? `<button type="button" class="primary" data-show-me>Show my birds</button>` : ""}<button type="button" data-acct="avatar" aria-label="Edit my birb" title="Edit my birb">${ICO.edit}${b ? "" : " Edit my birb"}</button>${b ? `<button type="button" data-acct="share" aria-label="Share my birds" title="Share my birds">${ICO.share}</button>` : ""}</div>
         ${!me.hasRecovery ? `<div class="pv2-warn">${ICO.key}<span>Add a recovery phrase, so you can reset your passcode yourself</span><button type="button" data-acct="phrase-new">Set up</button></div>` : ""}
@@ -7439,7 +7460,7 @@ const Acct = (() => {
   }
   /* ---------- "I found today": a story card of the species heard for the first time on one day ---------- */
   let dayDate = "";   // the day the "New birds" card is about (set after an upload with new species, or the latest such day)
-  let dayPlace = "", dayPick = null, dayInfo = null;   // which place to show ("" = all), the birds picked to feature (null = automatic), and the last info drawn
+  let dayPlace = "", dayPick = null, dayInfo = null, newDayCard = null;   // newDayCard: the celebration shown on your profile after an upload with new species   // which place to show ("" = all), the birds picked to feature (null = automatic), and the last info drawn
   const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   /* the latest day on which any of these species (or any species at all) was heard for the first time */
   async function latestNewDay(names) {
@@ -7468,6 +7489,22 @@ const Acct = (() => {
     const places = [...placeN.entries()].sort((a, b) => b[1] - a[1]), tot = places.reduce((s, p) => s + p[1], 0);
     const place = !places.length ? "" : places.length === 1 ? places[0][0] : places.length === 2 ? `${places[0][0]} and ${places[1][0]}` : `across ${places.length} places`;
     return { date, list, place, total: first.size, visited: [...visited.entries()].map(([name, v]) => ({ name, n: v.size })).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name)) };
+  }
+  /* the moment after an upload with new species: their photos, the count, and a big button to share them */
+  function newDayHTML() {
+    const I = newDayCard.info, L = I.list, n = L.length || newDayCard.nn, show = L.slice(0, 5), more = L.length - show.length;
+    const today = isoLocal(new Date()), yest = isoLocal(new Date(Date.now() - 864e5));
+    const [yy, mm, dd] = I.date.split("-").map(Number);
+    const when = I.date === today ? "Found today" : I.date === yest ? "Found yesterday" : `Found on ${new Date(Date.UTC(yy, mm - 1, dd)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })}`;
+    const names = L.map((x) => x.name.replace(/^(Eurasian|European|Common|Greater|Lesser) (?=\S+ \S)/, ""));
+    return `<div class="nd-card" role="status">
+      <div class="nd-pile" aria-hidden="true">${show.map((x, i) => `<span class="nd-ph" style="--i:${i};--r:${[-8, 6, -3, 9, -6][i]}deg">${Photos.slot(x.sci, "ph-thumb", PLUMAGE[sci2(x.sci)] || famColour(x.fam))}${x.rare ? '<b class="nd-rare">rare</b>' : ""}</span>`).join("")}${more > 0 ? `<span class="nd-ph nd-more" style="--i:${show.length};--r:-4deg">+${more}</span>` : ""}</div>
+      <div class="nd-kick">${when}</div>
+      <div class="nd-h"><b>${n}</b> new species</div>
+      <div class="nd-sub">${I.place ? `${esc(I.place)} · ` : ""}you're now on ${newDayCard.species}</div>
+      <p class="nd-names">${esc(names.slice(0, 6).join(", "))}${names.length > 6 ? ` and ${names.length - 6} more` : ""}</p>
+      <button type="button" class="nd-share" data-share-day><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg>Share to your story</button>
+    </div>`;
   }
   /* the choices under the "New birds" card: which place, and which birds get a photo */
   function dayOptsHTML() {
@@ -7894,7 +7931,13 @@ const Acct = (() => {
       : !s.added ? `You're up to date. Nothing new in that file, so your ${s.species} species are unchanged.`
       : `Added ${s.added} new ${s.added === 1 ? "sighting" : "sightings"}${nn ? `, including ${nn} new ${nn === 1 ? "species" : "species"}: ${esc(s.newSpecies.slice(0, 4).join(", "))}${nn > 4 ? " and more" : ""}` : ""}. You're now on ${s.species} species.`;
     if (s.rare && s.rare.length) notice += ` ${andList(s.rare)} ${s.rare.length === 1 ? "is a rare find" : "are rare finds"}, so ${s.rare.length === 1 ? "it's" : "they're"} in lilac on your Collection wall. Your friends will see a special note.`;
-    if (nn && !s.replaced) { dayPlace = ""; dayPick = null; dayInfo = null; try { dayDate = await latestNewDay(s.newSpecies); } catch (e) { dayDate = ""; } if (dayDate) notice += ` <button type="button" class="primary share-day-btn" data-share-day>Share your new ${nn === 1 ? "bird" : "birds"} to your story</button>`; }
+    newDayCard = null;
+    if (nn && !s.replaced) {
+      dayPlace = ""; dayPick = null; dayInfo = null;
+      try { dayDate = await latestNewDay(s.newSpecies); if (dayDate) newDayCard = { info: await newDayInfo(dayDate), nn, added: s.added, species: s.species }; } catch (e) { dayDate = ""; }
+      /* the celebration says the headline; the plain notice keeps only the extra details */
+      if (newDayCard) notice = `Added ${s.added} new ${s.added === 1 ? "sighting" : "sightings"}.${s.rare && s.rare.length ? ` ${andList(s.rare)} ${s.rare.length === 1 ? "is a rare find" : "are rare finds"}, so ${s.rare.length === 1 ? "it's" : "they're"} in lilac on your Collection wall. Your friends will see a special note.` : ""}`;
+    }
     if (scope === "flock") await showFlock(); else await show(me.u);
     joinStep = 1; view = "profile"; render(); paintChrome();
     setTimeout(maybeNightNote, 1500);
