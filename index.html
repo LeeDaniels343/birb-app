@@ -480,6 +480,15 @@ body.night .fr-row .btns .primary { color: #0f191d; }
 .share-kind button { padding: 6px 12px; font-size: 13px; }
 .share-prev.tall img { width: min(230px, 70%); }
 .share-day-btn { display: block; margin-top: 10px; }
+.day-opts { margin: 4px 0 8px; }
+.day-sec { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 6px; }
+.day-sec small { font-weight: 400; }
+.day-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.day-chips button { padding: 5px 10px; font-size: 12.5px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.day-chips button[aria-pressed="true"] { background: #5ab8d8; border-color: #5ab8d8; color: #0e2830; }
+.day-chips button:disabled { opacity: .45; }
+.day-chips small { opacity: .75; margin-left: 2px; }
+.day-chips small.rare { color: var(--lilac, #a982e8); opacity: 1; font-weight: 600; }
 .story-steps { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 .story-steps b { color: var(--ink); }
 
@@ -7152,6 +7161,7 @@ const Acct = (() => {
       h = `${X}${tabs()}<h2 id="acct-h">Share</h2><p class="sub">${SUB[shareKind]}</p>
         ${me.birds ? `<div class="seg share-kind" role="group" aria-label="Which card"><button type="button" data-share-kind="post" aria-pressed="${shareKind === "post"}">My birds</button><button type="button" data-share-kind="story" aria-pressed="${shareKind === "story"}">Birds story</button>${dayDate ? `<button type="button" data-share-kind="day" aria-pressed="${shareKind === "day"}">New birds</button>` : ""}<button type="button" data-share-kind="invite" aria-pressed="${shareKind === "invite"}">Invite story</button></div>` : ""}
         <div class="share-prev${story ? " tall" : ""}" id="share-prev">${shareUrl ? `<img src="${shareUrl}" alt="Your BIRB share card">` : `<p class="hint">Drawing your card…</p>`}</div>
+        ${shareKind === "day" && dayInfo ? dayOptsHTML() : ""}
         ${story ? `<ol class="story-steps">
           <li>Tap <b>Share</b> and pick Instagram, then Story. On a computer, save the image and send it to your phone.</li>
           <li>In Instagram, tap the sticker button, choose <b>Link</b> and paste your invite link. Tapping Share copies it for you.</li>
@@ -7429,6 +7439,7 @@ const Acct = (() => {
   }
   /* ---------- "I found today": a story card of the species heard for the first time on one day ---------- */
   let dayDate = "";   // the day the "New birds" card is about (set after an upload with new species, or the latest such day)
+  let dayPlace = "", dayPick = null, dayInfo = null;   // which place to show ("" = all), the birds picked to feature (null = automatic), and the last info drawn
   const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   /* the latest day on which any of these species (or any species at all) was heard for the first time */
   async function latestNewDay(names) {
@@ -7439,25 +7450,41 @@ const Acct = (() => {
     return best;
   }
   /* which birds, in which order: rare ones first if there are any, then the most-heard */
-  async function newDayInfo(date) {
+  async function newDayInfo(date, onlyPlace = "") {
     const recs = await getRecs(me.u), first = new Map();
     for (const d of recs) if (d.date && (!first.has(d.name) || d.date < first.get(d.name))) first.set(d.name, d.date);
     const wallSci = new Map(WALL.map((w) => [sci2(w[1]), w[3]]));
-    const by = new Map(), placeN = new Map();
+    const by = new Map(), placeN = new Map(), visited = new Map();
+    /* every place visited that day, and how many new species each had */
+    for (const d of recs) { if (d.date !== date || !d.loc) continue; const v = visited.get(d.loc) || new Set(); if (first.get(d.name) === date) v.add(d.name); visited.set(d.loc, v); }
     for (const d of recs) {
       if (d.date !== date || first.get(d.name) !== date) continue;
+      if (onlyPlace && d.loc !== onlyPlace) continue;
       const x = by.get(d.name) || { name: d.name, sci: d.sci, fam: d.family, n: 0, rare: wallSci.get(sci2(d.sci)) === 2 };
       x.n++; by.set(d.name, x);
       const pl = d.loc || ""; if (pl) placeN.set(pl, (placeN.get(pl) || 0) + 1);
     }
     const list = [...by.values()].sort((a, b) => (b.rare - a.rare) || (b.n - a.n) || a.name.localeCompare(b.name));
     const places = [...placeN.entries()].sort((a, b) => b[1] - a[1]), tot = places.reduce((s, p) => s + p[1], 0);
-    const place = !places.length ? "" : places.length === 1 || places[0][1] / tot >= 0.6 ? places[0][0] : `across ${places.length} places`;
-    return { date, list, place, total: first.size };
+    const place = !places.length ? "" : places.length === 1 ? places[0][0] : places.length === 2 ? `${places[0][0]} and ${places[1][0]}` : `across ${places.length} places`;
+    return { date, list, place, total: first.size, visited: [...visited.entries()].map(([name, v]) => ({ name, n: v.size })).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name)) };
+  }
+  /* the choices under the "New birds" card: which place, and which birds get a photo */
+  function dayOptsHTML() {
+    const I = dayInfo, places = I.visited || [];
+    const placeBtns = places.length > 1 ? `<div class="day-sec">Place</div><div class="day-chips">
+      <button type="button" data-day-place="" aria-pressed="${!dayPlace}">All places</button>
+      ${places.map((p) => `<button type="button" data-day-place="${esc(p.name)}" aria-pressed="${dayPlace === p.name}" ${p.n ? "" : "disabled"}>${esc(p.name)} <small>${p.n ? `${p.n} new` : "no new species"}</small></button>`).join("")}</div>` : "";
+    const L = I.list, on = new Set(dayPick ? L.filter((x) => dayPick.includes(x.name)).slice(0, 6).map((x) => x.name) : L.slice(0, 6).map((x) => x.name));
+    const birdBtns = L.length > 1 ? `<div class="day-sec">Birds with a photo <small>${on.size} of ${Math.min(6, L.length)}${L.length > 6 ? `, the rest go in "+ more"` : ""}</small></div><div class="day-chips">
+      ${L.map((x) => `<button type="button" data-day-bird="${esc(x.name)}" aria-pressed="${on.has(x.name)}">${esc(x.name)}${x.rare ? ` <small class="rare">rare</small>` : x.n > 1 ? ` <small>${x.n}×</small>` : ""}</button>`).join("")}</div>
+      ${dayPick ? `<button type="button" class="linkish" data-day-auto>Back to automatic (rare first, then most heard)</button>` : `<p class="hint" style="margin:4px 0 0">Tap a bird to swap it in or out.</p>`}` : "";
+    return `<div class="day-opts">${placeBtns}${birdBtns}</div>`;
   }
   async function makeDayCard() {
     if (!dayDate) dayDate = await latestNewDay();
-    const info = await newDayInfo(dayDate), L = info.list, n = L.length;
+    const info = await newDayInfo(dayDate, dayPlace), L = info.list, n = L.length;
+    dayInfo = info;
     const W = 1080, H = 1920, c = document.createElement("canvas"); c.width = W; c.height = H;
     const g = c.getContext("2d");
     await (document.fonts ? document.fonts.ready : Promise.resolve());
@@ -7480,14 +7507,17 @@ const Acct = (() => {
     if (n === 1) text("a new species", W / 2, 420, `700 84px ${DISP}`, "#ffffff");
     else { text(String(n), W / 2, 505, `700 200px ${DISP}`, "#5ab8d8"); text("new species", W / 2, 585, `700 66px ${DISP}`, "#ffffff"); }
     if (info.place) {
-      const py = n === 1 ? 480 : 645, pf = `500 34px ${BODY}`, pt = fit(info.place, W - 260, pf); g.font = pf; const pw = g.measureText(pt).width, px = W / 2 - pw / 2 + 18;
+      const py = n === 1 ? 480 : 645, pf = `500 34px ${BODY}`; g.font = pf;
+      const pt = / and /.test(info.place) && g.measureText(info.place).width > W - 260 && !dayPlace ? "across 2 places" : fit(info.place, W - 260, pf); g.font = pf; const pw = g.measureText(pt).width, px = W / 2 - pw / 2 + 18;
       g.fillStyle = "#8fc3d3"; g.beginPath(); g.arc(px - 30, py - 20, 11, Math.PI * 0.9, Math.PI * 2.1); g.lineTo(px - 30, py + 2); g.closePath(); g.fill();
       g.fillStyle = "#14343f"; g.beginPath(); g.arc(px - 30, py - 20, 4.5, 0, Math.PI * 2); g.fill();
       text(pt, px, py, pf, "#8fc3d3", "left");
     }
 
     /* the cards: tilted photo prints, dropped in a loose pile. Six at most, then "+N more" */
-    const SHOW = n > 6 ? 6 : n, shown = L.slice(0, SHOW), rest = L.slice(SHOW);
+    /* the birds picked to feature (in the usual order), or the first six; everything else goes in "+N more" */
+    const picked = dayPick ? L.filter((x) => dayPick.includes(x.name)).slice(0, 6) : [];
+    const shown = picked.length ? picked : L.slice(0, 6), rest = L.filter((x) => !shown.includes(x)), SHOW = shown.length;
     const LAYOUTS = {
       1: [[290, 560, -3, 500]],
       2: [[100, 720, -6, 420], [560, 760, 5, 420]],
@@ -7522,13 +7552,15 @@ const Acct = (() => {
     };
     shown.forEach((x, i) => card(x, photos[i], spots[i]));
     if (rest.length) {
-      const w = 236, h = 204, cx = 690, cy = 1366;
+      const w = 236, h = 226, cx = 690, cy = 1356;
       g.save(); g.translate(cx + w / 2, cy + h / 2); g.rotate((-9 * Math.PI) / 180); g.translate(-w / 2, -h / 2);
       g.shadowColor = "rgba(0,0,0,.38)"; g.shadowBlur = 30; g.shadowOffsetY = 12;
       g.fillStyle = "#5ab8d8"; g.beginPath(); g.roundRect(0, 0, w, h, 16); g.fill(); g.shadowColor = "transparent";
       g.fillStyle = "#0e2830"; g.beginPath(); g.roundRect(12, 12, w - 24, 106, 10); g.fill();
       text(`+${rest.length}`, w / 2, 76, `700 62px ${DISP}`, "#5ab8d8"); text("more", w / 2, 106, `500 22px ${BODY}`, "#cfe3e8");
-      const short = rest.map((x) => x.name.split(" ").pop()).join(", "), sl = wrap2(short, w - 28, `500 20px ${BODY}`);
+      const sf = `500 20px ${BODY}`; g.font = sf; const sl = [""];
+      for (const word of rest.map((x) => x.name.split(" ").pop()).join(", ").split(" ")) { const nx = sl[sl.length - 1] ? sl[sl.length - 1] + " " + word : word; if (g.measureText(nx).width <= w - 28 || !sl[sl.length - 1]) sl[sl.length - 1] = nx; else sl.push(word); }
+      if (sl.length > 3) { sl.length = 3; sl[2] = fit(sl[2] + " …", w - 28, sf); }
       sl.forEach((l, i) => text(l, w / 2, 148 + i * 24, `500 20px ${BODY}`, "#0e2830"));
       g.restore();
     }
@@ -7860,7 +7892,7 @@ const Acct = (() => {
       : !s.added ? `You're up to date. Nothing new in that file, so your ${s.species} species are unchanged.`
       : `Added ${s.added} new ${s.added === 1 ? "sighting" : "sightings"}${nn ? `, including ${nn} new ${nn === 1 ? "species" : "species"}: ${esc(s.newSpecies.slice(0, 4).join(", "))}${nn > 4 ? " and more" : ""}` : ""}. You're now on ${s.species} species.`;
     if (s.rare && s.rare.length) notice += ` ${andList(s.rare)} ${s.rare.length === 1 ? "is a rare find" : "are rare finds"}, so ${s.rare.length === 1 ? "it's" : "they're"} in lilac on your Collection wall. Your friends will see a special note.`;
-    if (nn && !s.replaced) { try { dayDate = await latestNewDay(s.newSpecies); } catch (e) { dayDate = ""; } if (dayDate) notice += ` <button type="button" class="primary share-day-btn" data-share-day>Share your new ${nn === 1 ? "bird" : "birds"} to your story</button>`; }
+    if (nn && !s.replaced) { dayPlace = ""; dayPick = null; dayInfo = null; try { dayDate = await latestNewDay(s.newSpecies); } catch (e) { dayDate = ""; } if (dayDate) notice += ` <button type="button" class="primary share-day-btn" data-share-day>Share your new ${nn === 1 ? "bird" : "birds"} to your story</button>`; }
     if (scope === "flock") await showFlock(); else await show(me.u);
     joinStep = 1; view = "profile"; render(); paintChrome();
     setTimeout(maybeNightNote, 1500);
@@ -7944,7 +7976,16 @@ const Acct = (() => {
     if (t.closest("[data-share-send]")) { await sendShare(false); return; }
     if (t.closest("[data-share-save]")) { await sendShare(true); return; }
     if (t.closest("[data-invite-card]")) { shareKind = "invite"; await openShare(); return; }
-    if (t.closest("[data-share-day]")) { shareKind = "day"; await openShare(); return; }
+    if (t.closest("[data-share-day]")) { shareKind = "day"; dayPlace = ""; dayPick = null; await openShare(); return; }
+    const dp = t.closest("[data-day-place]"); if (dp) { if (dp.disabled) return; dayPlace = dp.dataset.dayPlace; dayPick = null; await openShare(); return; }
+    if (t.closest("[data-day-auto]")) { dayPick = null; await openShare(); return; }
+    const db = t.closest("[data-day-bird]"); if (db && dayInfo) {
+      const L = dayInfo.list, name = db.dataset.dayBird;
+      const cur = dayPick ? L.filter((x) => dayPick.includes(x.name)).slice(0, 6).map((x) => x.name) : L.slice(0, 6).map((x) => x.name);
+      if (cur.includes(name)) { if (cur.length === 1) { err("Keep at least one bird with a photo."); return; } dayPick = cur.filter((n) => n !== name); }
+      else { if (cur.length >= 6) { err("Six birds can have a photo. Tap one to take it out first."); return; } dayPick = [...cur, name]; }
+      await openShare(); return;
+    }
     const sh = t.closest('[data-acct="share"]'); if (sh) { if (!me.birds) shareKind = "invite"; else if (!dayDate) { try { dayDate = await latestNewDay(); } catch (e) {} } await openShare(); return; }
     const fs = t.closest("[data-fl-sort]"); if (fs) { flSort = fs.dataset.flSort; render(); return; }
     if (t.closest("[data-fl-invite]")) { flInvite = !flInvite; render(); return; }
