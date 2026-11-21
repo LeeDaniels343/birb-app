@@ -7526,7 +7526,9 @@ const Acct = (() => {
       5: [[70, 690, -7, 300], [710, 675, 6, 300], [390, 880, -2, 300], [60, 1080, 8, 300], [720, 1070, -6, 300]],
       6: [[70, 690, -7, 290], [720, 675, 6, 290], [395, 868, -2, 290], [60, 1058, 7, 290], [730, 1036, -6, 290], [300, 1212, 4, 290]],
     };
-    const spots = LAYOUTS[SHOW] || [];
+    const spots = (LAYOUTS[SHOW] || []).map((p) => p.slice());
+    /* the bottom row: the last photo centred on its own, or paired with the "+ more" card either side of the middle */
+    if (SHOW === 6) spots[5] = rest.length ? [262, 1268, 4, 290] : [395, 1226, 2, 290];
     const photos = await Promise.all(shown.map((x) => photoImg(x.sci)));
     const col = (x) => PLUMAGE[sci2(x.sci)] || famColour(x.fam);
     const card = (x, im, [cx, cy, rot, w]) => {
@@ -7552,7 +7554,7 @@ const Acct = (() => {
     };
     shown.forEach((x, i) => card(x, photos[i], spots[i]));
     if (rest.length) {
-      const w = 236, h = 226, cx = 690, cy = 1356;
+      const w = 236, h = 226, cx = 590, cy = 1372;
       g.save(); g.translate(cx + w / 2, cy + h / 2); g.rotate((-9 * Math.PI) / 180); g.translate(-w / 2, -h / 2);
       g.shadowColor = "rgba(0,0,0,.38)"; g.shadowBlur = 30; g.shadowOffsetY = 12;
       g.fillStyle = "#5ab8d8"; g.beginPath(); g.roundRect(0, 0, w, h, 16); g.fill(); g.shadowColor = "transparent";
