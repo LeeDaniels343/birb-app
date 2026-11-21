@@ -479,6 +479,42 @@ body.night .fr-row .btns .primary { color: #0f191d; }
 .share-kind { width: fit-content; margin: 2px auto 0; }
 .share-kind button { padding: 6px 12px; font-size: 13px; }
 .share-prev.tall img { width: min(230px, 70%); }
+.share-day-btn { display: block; margin-top: 10px; }
+.seg.share-kind { flex-wrap: wrap; justify-content: center; }
+.nd-card { position: relative; margin: 14px 0 12px; padding: 18px 18px 16px; border-radius: 16px; text-align: center; color: #fff;
+  background: radial-gradient(120% 90% at 50% 0%, #1f5566 0%, #0f2c36 70%); border: 1px solid rgba(90,184,216,.35); overflow: hidden; }
+.nd-pile { display: flex; justify-content: center; height: 74px; margin: 2px 0 10px; }
+.nd-ph { position: relative; width: 66px; height: 66px; margin: 0 -9px; border-radius: 12px; padding: 3px; background: #f6f2ea; box-shadow: 0 6px 14px rgba(0,0,0,.35);
+  transform: rotate(var(--r)); animation: ndDrop .5s cubic-bezier(.2,1.4,.4,1) both; animation-delay: calc(var(--i) * 110ms + 120ms); }
+.nd-ph .ph { width: 100%; height: 100%; border-radius: 9px; }
+.nd-more { display: grid; place-items: center; background: #5ab8d8; color: #0e2830; font: 700 20px/1 var(--display, inherit); }
+.nd-rare { position: absolute; top: -6px; left: -4px; background: #a982e8; color: #fff; font-size: 9.5px; padding: 1px 6px; border-radius: 8px; letter-spacing: .03em; }
+@keyframes ndDrop { from { opacity: 0; transform: translateY(-28px) rotate(calc(var(--r) * 2.5)) scale(.85); } to { opacity: 1; transform: rotate(var(--r)); } }
+.nd-kick { font-size: 13px; color: #9fd0de; letter-spacing: .02em; }
+.nd-h { font-size: 26px; font-weight: 700; margin: 2px 0 2px; }
+.nd-h b { color: #5ab8d8; font-size: 34px; }
+.nd-sub { font-size: 13px; color: #b9d4dc; }
+.nd-names { font-size: 12.5px; color: #8fb3be; margin: 8px 0 14px; }
+.nd-share { display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 13px 16px; border: 0; border-radius: 12px;
+  font-size: 16px; font-weight: 700; color: #fff; background: linear-gradient(100deg, #e07a3a, #d4537e 55%, #8f5ad8); box-shadow: 0 6px 18px rgba(212,83,126,.35); cursor: pointer; }
+.nd-share:hover { filter: brightness(1.06); }
+.nd-share:disabled { opacity: .55; box-shadow: none; cursor: default; }
+.nd-share.rare { background: linear-gradient(100deg, #8f5ad8, #a982e8 55%, #d4537e); box-shadow: 0 6px 18px rgba(143,90,216,.35); }
+.nd-share.slim { padding: 10px 14px; font-size: 14.5px; margin-top: 8px; }
+.acct .nd-share + .acts { margin-top: 10px; }
+.nd-share:active { transform: scale(.98); }
+.nd-rareline { display: inline-block; margin: -4px 0 12px; padding: 4px 12px; border-radius: 999px; background: rgba(169,130,232,.22); color: #d9c8f7; font-size: 12.5px; font-weight: 600; }
+.ok.nd-small { font-size: 12.5px; opacity: .85; margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .nd-ph { animation: none; } }
+.day-opts { margin: 4px 0 8px; }
+.day-sec { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 6px; }
+.day-sec small { font-weight: 400; }
+.day-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.day-chips button { padding: 5px 10px; font-size: 12.5px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.day-chips button[aria-pressed="true"] { background: #5ab8d8; border-color: #5ab8d8; color: #0e2830; }
+.day-chips button:disabled { opacity: .45; }
+.day-chips small { opacity: .75; margin-left: 2px; }
+.day-chips small.rare { color: var(--lilac, #a982e8); opacity: 1; font-weight: 600; }
 .story-steps { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 .story-steps b { color: var(--ink); }
 
@@ -495,6 +531,8 @@ body.night .fr-row .btns .primary { color: #0f191d; }
 .shr-card h2 { margin: 0 0 4px; padding-right: 36px; font-family: var(--font-display); font-size: 21px; font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--ink); }
 .shr-card .sub { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
 .shr-card .share-prev img { width: min(300px, 100%); }
+.shr-card .share-prev.tall img { width: min(220px, 64%); }
+.shr-card .nd-share { margin-top: 6px; }
 .shr-card .acts { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .shr-card .acts .primary { background: var(--accent); color: #fff; border-radius: 999px; padding: 8px 16px; }
 body.night .shr-card .acts .primary { color: #0f191d; }
@@ -4069,6 +4107,108 @@ const Coll = (() => {
 
 /* ---------- badges: worked out from the records themselves, so they match on every device ----------
    Each badge knows how far along you are and the date of the record that earned it. */
+/* ---------- CardKit: the shared look of every share card (dark teal, tilted photo prints, a link-sticker footer) ---------- */
+const CardKit = (() => {
+  const DISP = "'Bricolage Grotesque', 'IBM Plex Sans', sans-serif", BODY = "'IBM Plex Sans', Helvetica, Arial, sans-serif", MONO = "'IBM Plex Mono', Menlo, monospace";
+  const LILAC = "#a982e8", ORANGE = "#e07a3a", BLUE = "#5ab8d8";
+  function make(W, H) { const c = document.createElement("canvas"); c.width = W; c.height = H; return { c, g: c.getContext("2d"), W, H }; }
+  async function fonts() {
+    try { await Promise.all([document.fonts.load(`700 60px ${DISP}`), document.fonts.load(`500 30px ${BODY}`), document.fonts.load(`600 30px ${BODY}`), document.fonts.load(`700 30px ${BODY}`), document.fonts.load(`500 24px ${MONO}`)]); } catch (e) {}
+    try { await document.fonts.ready; } catch (e) {}
+  }
+  function bg(g, W, H) {
+    const b = g.createLinearGradient(0, 0, W, H); b.addColorStop(0, "#14343f"); b.addColorStop(1, "#0b1d24"); g.fillStyle = b; g.fillRect(0, 0, W, H);
+    g.save(); g.globalAlpha = 0.07; g.strokeStyle = "#ffffff"; g.lineWidth = 2;
+    for (let i = 0; i < Math.ceil(H / 140); i++) { g.beginPath(); for (let x = -20; x <= W + 20; x += 20) { const y = 140 + i * 140 + Math.sin(x / 90 + i) * 18; x === -20 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); }
+    g.restore();
+  }
+  function tools(g) {
+    const text = (t, x, y, font, col, align = "center") => { g.font = font; g.fillStyle = col; g.textAlign = align; g.fillText(t, x, y); };
+    const fit = (t, max, font) => { g.font = font; if (g.measureText(t).width <= max) return t; while (t.length > 3 && g.measureText(t + "…").width > max) t = t.slice(0, -1); return t + "…"; };
+    const wrap = (t, max, font, lines = 2) => {
+      g.font = font; const out = [""];
+      for (const w of String(t).split(" ")) { const cur = out[out.length - 1], nx = cur ? cur + " " + w : w; if (g.measureText(nx).width <= max || !cur) out[out.length - 1] = nx; else out.push(w); }
+      if (out.length > lines) { out.length = lines; out[lines - 1] = fit(out[lines - 1] + " …", max, font); }
+      return out;
+    };
+    const fitSize = (t, max, weight, size, fam, min = 36) => { let sz = size; g.font = `${weight} ${sz}px ${fam}`; while (sz > min && g.measureText(t).width > max) { sz -= 3; g.font = `${weight} ${sz}px ${fam}`; } return `${weight} ${sz}px ${fam}`; };
+    const pill = (t, x, y, h, fill, col, font, align = "left") => { g.font = font; const w = g.measureText(t).width + h * 0.9; const x0 = align === "center" ? x - w / 2 : align === "right" ? x - w : x; g.fillStyle = fill; g.beginPath(); g.roundRect(x0, y, w, h, h / 2); g.fill(); text(t, x0 + w / 2, y + h * 0.7, font, col); return w; };
+    return { text, fit, wrap, fitSize, pill };
+  }
+  /* a bird photo that the canvas may draw (proxied so it isn't blocked) */
+  async function photo(sci) {
+    try {
+      const v = await Photos.get(sci); if (!v) return null;
+      let u = v.md || v.sq;
+      if (location.protocol.startsWith("http")) u = u.replace(/^https:\/\/inaturalist-open-data\.s3\.amazonaws\.com\//, "/inat-open/").replace(/^https:\/\/static\.inaturalist\.org\//, "/inat-static/");
+      return await new Promise((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.onerror = () => res(null); im.src = u; setTimeout(() => res(null), 7000); });
+    } catch (e) { return null; }
+  }
+  const img = (src) => new Promise((res) => { if (!src) return res(null); const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; setTimeout(() => res(null), 5000); });
+  const col = (x) => PLUMAGE[sci2(x.sci)] || famColour(x.fam);
+  /* the header row: BIRB on the left, a small label on the right, below Instagram's name bar */
+  function header(g, W, right, y = 232) {
+    const t = tools(g);
+    t.text("BIRB", 90, y, `700 46px ${DISP}`, "#ffffff", "left");
+    if (right) t.text(t.fit(right, W / 2 - 60, `500 28px ${MONO}`), W - 90, y - 4, `500 28px ${MONO}`, "#8fc3d3", "right");
+  }
+  /* a tilted photo print: the photo, a NEW / RARE / other tag, an optional pill ("heard 3×"), and the name underneath */
+  function print(g, x, im, [cx, cy, rot, w], o = {}) {
+    const t = tools(g);
+    const pad = Math.round(w * 0.045), ph = Math.round(w * (o.tall || 0.74)), nf = `600 ${Math.round(w * (o.nameScale || 0.085))}px ${BODY}`, lines = t.wrap(x.name, w - pad * 2, nf, 2);
+    const lh = Math.round(w * (o.nameScale || 0.085) * 1.18), h = pad + ph + Math.round(w * 0.05) + lh * 2 + pad;
+    g.save(); g.translate(cx + w / 2, cy + h / 2); g.rotate((rot * Math.PI) / 180); g.translate(-w / 2, -h / 2);
+    g.shadowColor = "rgba(0,0,0,.38)"; g.shadowBlur = 30; g.shadowOffsetY = 12;
+    g.fillStyle = "#f6f2ea"; g.beginPath(); g.roundRect(0, 0, w, h, 16); g.fill();
+    g.shadowColor = "transparent";
+    g.save(); g.beginPath(); g.roundRect(pad, pad, w - pad * 2, ph, 10); g.clip();
+    g.fillStyle = col(x); g.fillRect(pad, pad, w - pad * 2, ph);
+    if (im) { const bw = w - pad * 2, s = Math.max(bw / im.width, ph / im.height); g.drawImage(im, pad + (bw - im.width * s) / 2, pad + (ph - im.height * s) / 2, im.width * s, im.height * s); }
+    else t.text(x.name.slice(0, 1), w / 2, pad + ph / 2 + w * 0.08, `700 ${Math.round(w * 0.22)}px ${DISP}`, "rgba(255,255,255,.75)");
+    g.restore();
+    if (o.tag) { const tf = `700 ${Math.round(w * 0.06)}px ${BODY}`; t.pill(o.tag, pad + 10, pad + 10, w * 0.1, o.tagCol || ORANGE, "#ffffff", tf); }
+    if (o.pill) { const hf = `500 ${Math.round(w * 0.055)}px ${BODY}`; g.font = hf; const hw = g.measureText(o.pill).width + w * 0.06; t.pill(o.pill, w - pad - 10 - hw, pad + ph - 10 - w * 0.09, w * 0.09, "rgba(14,40,48,.78)", "#ffffff", hf); }
+    lines.forEach((l, i) => t.text(l, o.centerName ? w / 2 : pad + 2, pad + ph + Math.round(w * 0.05) + lh * (i + 0.8), nf, "#22313a", o.centerName ? "center" : "left"));
+    g.restore();
+    return h;
+  }
+  /* the "+N more" card, listing the rest by their last word */
+  function more(g, rest, [cx, cy, rot, w, h]) {
+    const t = tools(g);
+    g.save(); g.translate(cx + w / 2, cy + h / 2); g.rotate((rot * Math.PI) / 180); g.translate(-w / 2, -h / 2);
+    g.shadowColor = "rgba(0,0,0,.38)"; g.shadowBlur = 30; g.shadowOffsetY = 12;
+    g.fillStyle = BLUE; g.beginPath(); g.roundRect(0, 0, w, h, 16); g.fill(); g.shadowColor = "transparent";
+    g.fillStyle = "#0e2830"; g.beginPath(); g.roundRect(12, 12, w - 24, 106, 10); g.fill();
+    t.text(`+${rest.length}`, w / 2, 76, `700 62px ${DISP}`, BLUE); t.text("more", w / 2, 106, `500 22px ${BODY}`, "#cfe3e8");
+    t.wrap(rest.map((x) => x.name.split(" ").pop()).join(", "), w - 28, `500 20px ${BODY}`, 3).forEach((l, i) => t.text(l, w / 2, 148 + i * 24, `500 20px ${BODY}`, "#0e2830"));
+    g.restore();
+  }
+  /* a place line with a little map pin */
+  function place(g, W, label, y) {
+    const t = tools(g), pf = `500 34px ${BODY}`, pt = t.fit(label, W - 260, pf); g.font = pf; const pw = g.measureText(pt).width, px = W / 2 - pw / 2 + 18;
+    g.fillStyle = "#8fc3d3"; g.beginPath(); g.arc(px - 30, y - 20, 11, Math.PI * 0.9, Math.PI * 2.1); g.lineTo(px - 30, y + 2); g.closePath(); g.fill();
+    g.fillStyle = "#14343f"; g.beginPath(); g.arc(px - 30, y - 20, 4.5, 0, Math.PI * 2); g.fill();
+    t.text(pt, px, y, pf, "#8fc3d3", "left");
+  }
+  /* the bottom: one line about you, then an arrow and "tap the link" above the space for Instagram's link sticker */
+  function footer(g, W, line, { y = 1678, cta = "Join my flock · tap the link" } = {}) {
+    const t = tools(g);
+    if (line) t.text(t.fit(line, W - 160, `500 34px ${BODY}`), W / 2, y, `500 34px ${BODY}`, "#cfe3e8");
+    if (!cta) return;
+    g.strokeStyle = BLUE; g.lineWidth = 4; g.lineCap = "round"; g.lineJoin = "round";
+    g.beginPath(); g.moveTo(W / 2, y + 22); g.lineTo(W / 2, y + 44); g.moveTo(W / 2 - 12, y + 33); g.lineTo(W / 2, y + 46); g.lineTo(W / 2 + 12, y + 33); g.stroke();
+    t.text(cta, W / 2, y + 80, `600 26px ${BODY}`, BLUE);
+  }
+  /* the big Instagram-style button used under every card */
+  const IG = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg>`;
+  const UP = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>`;
+  const shareBtn = (story, attrs, disabled, label) => `<button type="button" class="nd-share" ${attrs}${disabled ? " disabled" : ""}>${story ? IG : UP}${label || (story ? "Share to your story" : "Share")}</button>`;
+  const blob = (c) => new Promise((res) => c.toBlob((b) => res(b), "image/png"));
+  const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const dayLabel = (iso) => { const [yy, mm, dd] = iso.split("-").map(Number); return new Date(Date.UTC(yy, mm - 1, dd)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }); };
+  return { DISP, BODY, MONO, LILAC, ORANGE, BLUE, make, fonts, bg, tools, photo, img, col, header, print, more, place, footer, shareBtn, blob, isoLocal, dayLabel, IG };
+})();
+
 const Badges = (() => {
   const DAY = 864e5;
   const toN = (iso) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / DAY;
@@ -4548,6 +4688,7 @@ const Badges = (() => {
       ${b.note && !hide ? `<div class="bd-line"><span>Counties</span><b>${esc(b.note)}</b></div>` : ""}
       ${b.list ? `<div class="bd-list">${b.list.map((x) => `<span class="${x.got ? "got" : ""}">${x.got ? "✓ " : ""}${esc(x.name)}</span>`).join("")}</div>` : ""}
       ${b.got && tier ? `<div class="bd-line"><span>Next</span><b>${esc(tier.name)} · ${esc(nextLine(tier))}</b></div>` : ""}
+      ${mine && b.got ? CardKit.shareBtn(true, `data-share-badges="${esc(id)}"`, false, "Share this badge to your story").replace('class="nd-share"', 'class="nd-share slim"') : ""}
       ${mine && b.got ? `<button type="button" class="bd-pinbtn${pinned ? " on" : ""}" data-bd-pin="${esc(id)}">${svgIc("pin")}${pinned ? "Unpin from your profile" : pins.length >= 3 ? "Pin to your profile (replaces your oldest pin)" : "Pin to your profile"}</button>` : ""}`;
     el.hidden = false;
     Photos.fill(el);
@@ -4576,6 +4717,7 @@ const Badges = (() => {
     if (e.target.closest("[data-go-badges]")) { $("toast").hidden = true; setView("collection"); setMode("badges"); return; }
     if (e.target.closest("[data-bd-x]")) { $("bd-pop").hidden = true; sel = null; document.querySelectorAll("#badges .bd.sel").forEach((x) => x.classList.remove("sel")); return; }
     const p = e.target.closest("[data-bd-pin]"); if (p) { p.disabled = true; togglePin(p.dataset.bdPin); return; }
+    const sb = e.target.closest("[data-share-badges]"); if (sb) { $("bd-pop").hidden = true; $("toast").hidden = true; Acct.shareBadges(sb.dataset.shareBadges.split(",")); return; }
     const b = e.target.closest("#badges [data-bd]"); if (b) pop(b.dataset.bd);
   });
 
@@ -4602,7 +4744,8 @@ const Badges = (() => {
   /* every badge's look and name, for notifications about a friend's badges */
   let cat = null;
   const def = (id) => { if (!cat) cat = new Map(compute([], { invited: [], first: null, same: null, union: [], loaded: false }).map((b) => [b.id, b])); const b = cat.get(id); return b ? { ...b, got: true, secret: false } : null; };
-  return { render, setMode, check, medal, compute, ids, get mode() { return mode; }, def, colour: (id) => { const b = def(id); return b ? b.col || FAM.get(b.fam).col : null; }, forRecs: (recs, who) => keep(compute(recs, null), keptOf(who)), when, paintDot };
+  return { render, setMode, check, medal, compute, ids, get mode() { return mode; }, def, colour: (id) => { const b = def(id); return b ? b.col || FAM.get(b.fam).col : null; }, forRecs: (recs, who) => keep(compute(recs, null), keptOf(who)), when, paintDot,
+    icon: (k) => IC[k] || IC.bird, rim: RIM, famName: (id) => (FAM.get(id) || {}).name || "", famCol: (id) => (FAM.get(id) || {}).col || "#5ab8d8" };
 })();
 
 /* ---------- latest bird card on the map ---------- */
@@ -6626,7 +6769,7 @@ const Acct = (() => {
   }
   function badgeNote(list, intro, total) {
     const n = list.length;
-    if (notesShown) { toast(`<span>You earned ${n === 1 ? `the ${esc(list[0].name)} badge` : `${n} badges`}.</span><span class="acts"><button type="button" data-go-badges>See them</button></span>`, $("me-btn")); return; }
+    if (notesShown) { toast(`<span>You earned ${n === 1 ? `the ${esc(list[0].name)} badge` : `${n} badges`}.</span><span class="acts"><button type="button" data-go-badges>See them</button><button type="button" data-share-badges="${esc(list.slice(0, 3).map((b) => b.id).join(","))}">Share</button></span>`, $("me-btn")); return; }
     welNote = true; notesShown++;
     const c = $("wel-card"), top = list.slice(0, 3);
     const fresh = intro && me && me.joined && Date.now() - Date.parse(me.joined) < 3 * 864e5;
@@ -6638,7 +6781,7 @@ const Acct = (() => {
       <div class="mem-body bd-note-body">
         <h2 id="wel-h">${fresh ? "Your first badges" : intro ? "Badges are here" : n === 1 ? `New badge: ${esc(list[0].name)}` : `${n} new badges`}</h2>
         <p class="lede">${fresh ? `Your birds have already earned you ${total}, including ${esc(said)}. There are lots more to collect, from bird sets to big days.` : intro ? `You've already earned ${total} from the birds you've logged, including ${esc(said)}. There are plenty more to find.` : n === 1 ? esc(list[0].ask) + "." : esc(said) + "."}</p>
-        <div class="wel-acts"><button type="button" class="primary" data-wel="badges">See your badges</button></div>
+        <div class="wel-acts">${CardKit.shareBtn(true, `data-share-badges="${esc(top.map((b) => b.id).join(","))}"`, false, n === 1 ? "Share your badge to your story" : "Share your badges to your story")}<div class="row"><button type="button" class="ghost" data-wel="badges">See your badges</button></div></div>
       </div>`;
     $("wel-pop").hidden = false;
     Photos.fill(c);
@@ -6756,7 +6899,7 @@ const Acct = (() => {
   function close() {
     closeMember();
     if (live) { live.destroy(); live = null; }
-    $("acct").hidden = true; view = ""; notice = ""; firstUp = false;
+    $("acct").hidden = true; view = ""; notice = ""; firstUp = false; newDayCard = null;
   }
   const tabs = () => me ? `<nav class="acct-tabs" aria-label="Account">${[["profile", "Overview"], ["settings", "Settings"], ["flock", "Flock"], ...(me.admin ? [["admin", "Admin"]] : [])].map(([k, l]) => `<button type="button" data-acct="${k}" aria-current="${view === k ? "page" : "false"}">${l}${k === "flock" && requests.in.length ? `<span class="tab-n" aria-label="${requests.in.length} new">${requests.in.length}</span>` : ""}</button>`).join("")}</nav>` : "";
   const X = `<button type="button" class="acct-x" data-acct-close aria-label="Close">×</button>`;
@@ -6861,17 +7004,22 @@ const Acct = (() => {
         post: "A picture of your birds to send in a chat or post anywhere. It shows your birb, your counts and a few birds, but not where you heard them.",
         story: "Your birds as a tall card for your Instagram story, inviting people to join BIRB as your friend. It doesn't show where you heard them.",
         invite: "A tall invite card for your Instagram story: just BIRB and a nudge to come and join your flock, with no counts or birds of yours on it.",
+        day: "The species you heard for the first time on your latest new-bird day, as a tall card for your Instagram story. Rare finds go first. It names the place you heard most of them.",
+        badge: "Your new badge as a tall card for your Instagram story. It doesn't show where you heard anything.",
+        rare: "Your latest rare find as a tall card for your Instagram story, with the place you heard it.",
       };
       h = `${X}${tabs()}<h2 id="acct-h">Share</h2><p class="sub">${SUB[shareKind]}</p>
-        ${me.birds ? `<div class="seg share-kind" role="group" aria-label="Which card"><button type="button" data-share-kind="post" aria-pressed="${shareKind === "post"}">My birds</button><button type="button" data-share-kind="story" aria-pressed="${shareKind === "story"}">Birds story</button><button type="button" data-share-kind="invite" aria-pressed="${shareKind === "invite"}">Invite story</button></div>` : ""}
+        ${me.birds ? `<div class="seg share-kind" role="group" aria-label="Which card"><button type="button" data-share-kind="post" aria-pressed="${shareKind === "post"}">My birds</button><button type="button" data-share-kind="story" aria-pressed="${shareKind === "story"}">Birds story</button>${dayDate ? `<button type="button" data-share-kind="day" aria-pressed="${shareKind === "day"}">New birds</button>` : ""}${hasRare ? `<button type="button" data-share-kind="rare" aria-pressed="${shareKind === "rare"}">Rare find</button>` : ""}${badgeIds.length ? `<button type="button" data-share-kind="badge" aria-pressed="${shareKind === "badge"}">${badgeIds.length === 1 ? "Badge" : "Badges"}</button>` : ""}<button type="button" data-share-kind="invite" aria-pressed="${shareKind === "invite"}">Invite story</button></div>` : ""}
         <div class="share-prev${story ? " tall" : ""}" id="share-prev">${shareUrl ? `<img src="${shareUrl}" alt="Your BIRB share card">` : `<p class="hint">Drawing your card…</p>`}</div>
+        ${shareKind === "day" && dayInfo ? dayOptsHTML() : ""}
         ${story ? `<ol class="story-steps">
           <li>Tap <b>Share</b> and pick Instagram, then Story. On a computer, save the image and send it to your phone.</li>
           <li>In Instagram, tap the sticker button, choose <b>Link</b> and paste your invite link. Tapping Share copies it for you.</li>
           <li>Drop the sticker in the space under "Tap the link". You can change its words to something like "Join my flock".</li></ol>
           <div class="copybox"><code>${esc(inviteLink())}</code><button type="button" data-copy="${esc(inviteLink())}">Copy link</button></div>` : ""}
         <div class="err" id="acct-err" role="alert"></div>
-        <div class="acts"><button type="button" class="ghost" data-acct="profile">Back</button><span style="display:flex;gap:6px"><button type="button" data-share-save ${shareBlob ? "" : "disabled"}>Save image</button><button type="button" class="primary" data-share-send ${shareBlob ? "" : "disabled"}>Share</button></span></div>`;
+        ${CardKit.shareBtn(story, "data-share-send", !shareBlob)}
+        <div class="acts"><button type="button" class="ghost" data-acct="profile">Back</button><button type="button" data-share-save ${shareBlob ? "" : "disabled"}>Save image</button></div>`;
     } else if (view === "passcode") {
       h = `${X}${tabs()}<h2 id="acct-h">${me && me.mustChange ? "Choose a new passcode" : "Change your passcode"}</h2><p class="sub">${me && me.mustChange ? "Your passcode was reset. Pick a new one to keep using BIRB." : "You'll stay signed in on this device."}</p>
         <form id="f-pass" class="stack" novalidate>
@@ -6892,7 +7040,8 @@ const Acct = (() => {
       h = `${X}${tabs()}<div class="pv2-band" style="--band:${esc(A.cBody || A.bg)}"></div>
         <div class="pv2-head">${Avatar.html(me.avatar)}<div><h2 id="acct-h">${esc(nameOf(me))}</h2><p class="sub">@${esc(me.u)}${me.admin ? '<span class="tag-owner">admin</span>' : ""}${since ? ` · since ${esc(since)}` : ""}</p></div></div>
         ${nB ? `<div class="pv2-shelf">${shelf.map((x) => `<span title="${esc(x.name)}">${Badges.medal(x, 44)}</span>`).join("")}<button type="button" class="linkish" data-acct-badges>${nB} ${nB === 1 ? "badge" : "badges"} ›</button></div>` : ""}
-        ${notice ? `<p class="ok" role="status">${notice}</p>` : ""}
+        ${newDayCard ? newDayHTML() : ""}
+        ${notice ? `<p class="ok${newDayCard ? " nd-small" : ""}" role="status">${notice}</p>` : ""}
         ${firstUp ? `<button type="button" class="primary see-birds" data-acct-close>See my birds on the map</button>` : ""}
         <div class="pv2-acts">${b ? `<button type="button" class="primary" data-show-me>Show my birds</button>` : ""}<button type="button" data-acct="avatar" aria-label="Edit my birb" title="Edit my birb">${ICO.edit}${b ? "" : " Edit my birb"}</button>${b ? `<button type="button" data-acct="share" aria-label="Share my birds" title="Share my birds">${ICO.share}</button>` : ""}</div>
         ${!me.hasRecovery ? `<div class="pv2-warn">${ICO.key}<span>Add a recovery phrase, so you can reset your passcode yourself</span><button type="button" data-acct="phrase-new">Set up</button></div>` : ""}
@@ -6985,91 +7134,59 @@ const Acct = (() => {
     } catch (e) { return null; }
   }
   const loadImg = (src) => new Promise((res) => { if (!src) return res(null); const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  /* your birds as a card: your birb and name, your count, and your six most-heard birds as tilted photo prints */
   async function makeShareCard(story) {
     const recs = await getRecs(me.u);
     const by = new Map();
     for (const d of recs) { const x = by.get(d.name) || { name: d.name, sci: d.sci, fam: d.family, days: new Set(), last: "" }; x.days.add(d.date); const w = d.date + (d.time || ""); if (w > x.last) x.last = w; by.set(d.name, x); }
     const all = [...by.values()], days = new Set(recs.map((d) => d.date)).size, places = new Set(recs.map((d) => d.locId || d.loc)).size;
     const latest = all.slice().sort((a, b) => b.last.localeCompare(a.last))[0];
-    const top = all.slice().sort((a, b) => b.days.size - a.days.size || a.name.localeCompare(b.name)).filter((x) => x !== latest).slice(0, 3);
     const wallSci = new Map(WALL.map((w) => [sci2(w[1]), w[3]]));
     const inWall = all.filter((x) => wallSci.has(sci2(x.sci))), rare = inWall.filter((x) => wallSci.get(sci2(x.sci)) === 2);
-    const W = 1080, H = story ? 1920 : 1350, c = document.createElement("canvas"); c.width = W; c.height = H;
-    const g = c.getContext("2d");
-    await (document.fonts ? document.fonts.ready : Promise.resolve());
-    const DISP = "'Bricolage Grotesque', 'IBM Plex Sans', sans-serif", BODY = "'IBM Plex Sans', Helvetica, Arial, sans-serif", MONO = "'IBM Plex Mono', Menlo, monospace";
-    const A = Avatar.norm(me.avatar);
-    const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#14343f"); bg.addColorStop(1, "#0b1d24"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-    g.globalAlpha = 0.07; g.strokeStyle = "#ffffff"; g.lineWidth = 2;
-    for (let i = 0; i < (story ? 13 : 9); i++) { g.beginPath(); for (let x = -20; x <= W + 20; x += 20) { const y = 140 + i * 140 + Math.sin(x / 90 + i) * 18; x === -20 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); }
-    g.globalAlpha = 1;
-    const circleImg = (im, x, y, r, ring, fill) => { g.save(); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.closePath(); g.fillStyle = fill || "#24424d"; g.fill(); g.clip(); if (im) { const s = Math.max((2 * r) / im.width, (2 * r) / im.height); g.drawImage(im, x - (im.width * s) / 2, y - (im.height * s) / 2, im.width * s, im.height * s); } g.restore(); if (ring) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.lineWidth = 8; g.strokeStyle = ring; g.stroke(); } };
-    const text = (t, x, y, font, col, align = "left") => { g.font = font; g.fillStyle = col; g.textAlign = align; g.fillText(t, x, y); };
-    const fit = (t, max, font) => { g.font = font; if (g.measureText(t).width <= max) return t; while (t.length > 3 && g.measureText(t + "…").width > max) t = t.slice(0, -1); return t + "…"; };
-    if (story) return drawStory();
-    text("BIRB", 72, 108, `700 52px ${DISP}`, "#ffffff");
-    text("birb-app.netlify.app", W - 72, 104, `500 26px ${MONO}`, "#8fc3d3", "right");
-    const av = await loadImg(Avatar.snapshot(A));
-    circleImg(av, W / 2, 330, 150, A.cBody, A.bg);
-    text(`${nameOf(me)}'s birds`, W / 2, 545, `700 56px ${DISP}`, "#ffffff", "center");
-    text(String(all.length), W / 2, 700, `700 150px ${DISP}`, "#ffffff", "center");
-    text(all.length === 1 ? "species heard" : "species heard", W / 2, 750, `500 34px ${BODY}`, "#a9c9d3", "center");
-    text(`${places} ${places === 1 ? "place" : "places"} · ${days} ${days === 1 ? "day" : "days"} out listening`, W / 2, 800, `400 28px ${BODY}`, "#7fa6b2", "center");
-    const [li, ...ti] = await Promise.all([latest && photoImg(latest.sci), ...top.map((x) => photoImg(x.sci))]);
-    const col = (x) => PLUMAGE[sci2(x.sci)] || famColour(x.fam);
-    if (latest) {
-      g.fillStyle = "rgba(255,255,255,.07)"; g.beginPath(); g.roundRect(72, 850, W - 144, 170, 28); g.fill();
-      circleImg(li, 72 + 95, 935, 62, col(latest), col(latest));
-      text("LATEST BIRD", 72 + 185, 905, `500 22px ${MONO}`, "#8fc3d3");
-      text(fit(latest.name, W - 144 - 220, `700 44px ${DISP}`), 72 + 185, 955, `700 44px ${DISP}`, "#ffffff");
-      text(fmtDate(latest.last.slice(0, 10)), 72 + 185, 995, `400 26px ${BODY}`, "#a9c9d3");
+    const top = all.slice().sort((a, b) => b.days.size - a.days.size || a.name.localeCompare(b.name)).slice(0, 6);
+    const K = CardKit, { c, g, W, H } = K.make(1080, story ? 1920 : 1350), t = K.tools(g);
+    await K.fonts(); K.bg(g, W, H);
+    const A = Avatar.norm(me.avatar), av = await K.img(Avatar.snapshot(A));
+    const photos = await Promise.all(top.map((x) => K.photo(x.sci)));
+    const opt = (x) => ({ tag: wallSci.get(sci2(x.sci)) === 2 ? "RARE" : x === latest ? "LATEST" : "", tagCol: wallSci.get(sci2(x.sci)) === 2 ? K.LILAC : K.ORANGE, pill: `${x.days.size} ${x.days.size === 1 ? "day" : "days"}` });
+    /* who: a small birb and "Lee's birds" */
+    const who = (y, size) => {
+      const label = `${nameOf(me)}'s birds`, f = `600 ${Math.round(size * 0.62)}px ${K.BODY}`; g.font = f;
+      const tw = g.measureText(label).width, x0 = (W - (size + 16 + tw)) / 2;
+      g.save(); g.beginPath(); g.arc(x0 + size / 2, y - size * 0.32, size / 2, 0, Math.PI * 2); g.fillStyle = A.bg || "#24424d"; g.fill(); g.clip(); if (av) g.drawImage(av, x0, y - size * 0.82, size, size); g.restore();
+      g.strokeStyle = A.cBody || K.BLUE; g.lineWidth = 3; g.beginPath(); g.arc(x0 + size / 2, y - size * 0.32, size / 2, 0, Math.PI * 2); g.stroke();
+      t.text(label, x0 + size + 16, y, f, "#cfe3e8", "left");
+    };
+    const collection = (y) => {
+      const bw = W - 260, x0 = 130, frac = Math.min(1, inWall.length / WALL.length);
+      g.fillStyle = "rgba(255,255,255,.12)"; g.beginPath(); g.roundRect(x0, y, bw, 12, 6); g.fill();
+      g.fillStyle = K.BLUE; g.beginPath(); g.roundRect(x0, y, Math.max(12, bw * frac), 12, 6); g.fill();
+      t.text(`Collection ${inWall.length} of ${WALL.length} UK birds`, x0, y + 46, `500 26px ${K.BODY}`, "#a9c9d3", "left");
+      if (rare.length) t.text(`${rare.length} rare ${rare.length === 1 ? "find" : "finds"}`, x0 + bw, y + 46, `700 26px ${K.BODY}`, "#c4a6f2", "right");
+    };
+    if (story) {
+      K.header(g, W, "my birds");
+      who(330, 64);
+      t.text(String(all.length), W / 2, 505, `700 200px ${K.DISP}`, K.BLUE);
+      t.text("species logged", W / 2, 585, `700 66px ${K.DISP}`, "#ffffff");
+      t.text(`${places} ${places === 1 ? "place" : "places"} · ${days} ${days === 1 ? "day" : "days"} out listening`, W / 2, 645, `500 32px ${K.BODY}`, "#8fc3d3");
+      const spots = (DAY_LAYOUTS[top.length] || []).map((p) => p.slice()); if (top.length === 6) spots[5] = [395, 1226, 2, 290];
+      top.forEach((x, i) => K.print(g, x, photos[i], spots[i], opt(x)));
+      collection(1580);
+      K.footer(g, W, "", { y: 1650 });
+      return K.blob(c);
     }
-    top.forEach((x, i) => {
-      const cx = 72 + ((W - 144) / 6) * (i * 2 + 1);
-      circleImg(ti[i], cx, 1110, 52, col(x), col(x));
-      text(fit(x.name, 300, `500 25px ${BODY}`), cx, 1195, `500 25px ${BODY}`, "#e7eef3", "center");
-      text(`${x.days.size} ${x.days.size === 1 ? "day" : "days"}`, cx, 1228, `400 22px ${BODY}`, "#7fa6b2", "center");
-    });
-    const by0 = 1270, bw = W - 144, frac = Math.min(1, inWall.length / WALL.length);
-    g.fillStyle = "rgba(255,255,255,.12)"; g.beginPath(); g.roundRect(72, by0, bw, 14, 7); g.fill();
-    g.fillStyle = "#5ab8d8"; g.beginPath(); g.roundRect(72, by0, Math.max(14, bw * frac), 14, 7); g.fill();
-    text(`Collection ${inWall.length} of ${WALL.length} UK birds`, 72, by0 + 52, `500 24px ${BODY}`, "#a9c9d3");
-    if (rare.length) text(`${rare.length} rare ${rare.length === 1 ? "find" : "finds"}`, W - 72, by0 + 52, `700 24px ${BODY}`, "#c4a6f2", "right");
-    return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
-
-    /* the story card: 1080 by 1920, kept clear of Instagram's name bar at the top and reply box at the bottom */
-    async function drawStory() {
-      text("BIRB", W / 2, 255, `700 60px ${DISP}`, "#ffffff", "center");
-      text("the birds I hear, on a map", W / 2, 300, `500 28px ${BODY}`, "#8fc3d3", "center");
-      const av = await loadImg(Avatar.snapshot(A));
-      circleImg(av, W / 2, 470, 130, A.cBody, A.bg);
-      text(fit(`${nameOf(me)}'s birds`, W - 160, `700 58px ${DISP}`), W / 2, 670, `700 58px ${DISP}`, "#ffffff", "center");
-      text(String(all.length), W / 2, 815, `700 140px ${DISP}`, "#ffffff", "center");
-      text("species heard", W / 2, 862, `500 34px ${BODY}`, "#a9c9d3", "center");
-      text(`${places} ${places === 1 ? "place" : "places"} · ${days} ${days === 1 ? "day" : "days"} out listening`, W / 2, 906, `400 28px ${BODY}`, "#7fa6b2", "center");
-      const [li, ...ti] = await Promise.all([latest && photoImg(latest.sci), ...top.map((x) => photoImg(x.sci))]);
-      const col = (x) => PLUMAGE[sci2(x.sci)] || famColour(x.fam);
-      if (latest) {
-        g.fillStyle = "rgba(255,255,255,.07)"; g.beginPath(); g.roundRect(90, 945, W - 180, 146, 28); g.fill();
-        circleImg(li, 90 + 85, 1018, 50, col(latest), col(latest));
-        text("LATEST BIRD", 90 + 160, 990, `500 22px ${MONO}`, "#8fc3d3");
-        text(fit(latest.name, W - 180 - 190, `700 42px ${DISP}`), 90 + 160, 1036, `700 42px ${DISP}`, "#ffffff");
-        text(fmtDate(latest.last.slice(0, 10)), 90 + 160, 1072, `400 25px ${BODY}`, "#a9c9d3");
-      }
-      top.forEach((x, i) => {
-        const cx = 90 + ((W - 180) / 6) * (i * 2 + 1);
-        circleImg(ti[i], cx, 1170, 46, col(x), col(x));
-        text(fit(x.name, 280, `500 24px ${BODY}`), cx, 1248, `500 24px ${BODY}`, "#e7eef3", "center");
-      });
-      // the invitation, then an empty band where the link sticker goes
-      text("Hear birds with Merlin?", W / 2, 1335, `700 46px ${DISP}`, "#ffffff", "center");
-      text("Join my flock on BIRB", W / 2, 1383, `500 34px ${BODY}`, "#a9c9d3", "center");
-      g.strokeStyle = "#5ab8d8"; g.lineWidth = 4; g.lineCap = "round"; g.lineJoin = "round";
-      g.beginPath(); g.moveTo(W / 2, 1408); g.lineTo(W / 2, 1440); g.moveTo(W / 2 - 13, 1428); g.lineTo(W / 2, 1442); g.lineTo(W / 2 + 13, 1428); g.stroke();
-      text("Tap the link", W / 2, 1478, `600 26px ${BODY}`, "#5ab8d8", "center");
-      if (me.invite) text(`or use code ${me.invite} at ${location.host}`, W / 2, 1640, `500 24px ${MONO}`, "#7fa6b2", "center");
-      return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
-    }
+    /* the square-ish post: three prints across, two rows */
+    t.text("BIRB", 72, 108, `700 52px ${K.DISP}`, "#ffffff", "left");
+    t.text("birb-app.netlify.app", W - 72, 104, `500 26px ${K.MONO}`, "#8fc3d3", "right");
+    who(200, 56);
+    t.text(String(all.length), W / 2, 360, `700 150px ${K.DISP}`, K.BLUE);
+    t.text("species logged", W / 2, 420, `700 48px ${K.DISP}`, "#ffffff");
+    t.text(`${places} ${places === 1 ? "place" : "places"} · ${days} ${days === 1 ? "day" : "days"} out listening`, W / 2, 468, `500 28px ${K.BODY}`, "#8fc3d3");
+    const POST = [[70, 520, -6, 290], [395, 505, 3, 290], [720, 520, -4, 290], [80, 845, 5, 290], [400, 860, -3, 290], [715, 840, 6, 290]];
+    top.forEach((x, i) => K.print(g, x, photos[i], POST[i], opt(x)));
+    collection(1222);
+    return K.blob(c);
   }
   /* an invite card for an Instagram story: a few garden birds on a wire, "Come join the flock", and space for a link sticker */
   async function makeInviteCard() {
@@ -7078,15 +7195,12 @@ const Acct = (() => {
     await (document.fonts ? document.fonts.ready : Promise.resolve());
     const DISP = "'Bricolage Grotesque', 'IBM Plex Sans', sans-serif", BODY = "'IBM Plex Sans', Helvetica, Arial, sans-serif", MONO = "'IBM Plex Mono', Menlo, monospace";
     const text = (t, x, y, font, col, align = "center") => { g.font = font; g.fillStyle = col; g.textAlign = align; g.fillText(t, x, y); };
-    const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#1b4655"); bg.addColorStop(0.55, "#12303a"); bg.addColorStop(1, "#0a1a20"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-    g.globalAlpha = 0.06; g.strokeStyle = "#ffffff"; g.lineWidth = 2;
-    for (let i = 0; i < 13; i++) { g.beginPath(); for (let x = -20; x <= W + 20; x += 20) { const y = 140 + i * 140 + Math.sin(x / 90 + i) * 18; x === -20 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); }
-    g.globalAlpha = 1;
+    await CardKit.fonts(); CardKit.bg(g, W, H);
     // a few birds flying past
     g.strokeStyle = "rgba(233,242,245,.55)"; g.lineWidth = 5; g.lineCap = "round"; g.lineJoin = "round";
     [[180, 380, 1], [262, 334, 0.75], [880, 420, 0.9], [820, 370, 0.6]].forEach(([x, y, k]) => { g.beginPath(); g.moveTo(x - 28 * k, y - 8 * k); g.quadraticCurveTo(x - 12 * k, y - 22 * k, x, y); g.quadraticCurveTo(x + 12 * k, y - 22 * k, x + 28 * k, y - 8 * k); g.stroke(); });
-    text("BIRB", W / 2, 255, `700 60px ${DISP}`, "#ffffff");
-    text("the birds you hear, on a map", W / 2, 300, `500 28px ${BODY}`, "#8fc3d3");
+    CardKit.header(g, W, "an invite");
+    text("the birds you hear, on a map", W / 2, 330, `500 34px ${BODY}`, "#8fc3d3");
 
     /* the wire, with five garden birds sitting on it */
     const wy = (x) => 690 + 34 * Math.sin((Math.PI * x) / W);
@@ -7133,17 +7247,203 @@ const Acct = (() => {
     g.save(); g.beginPath(); g.arc(fx + 28, 1340, 28, 0, Math.PI * 2); g.fillStyle = A.bg || "#24424d"; g.fill(); g.clip(); if (av) g.drawImage(av, fx, 1312, 56, 56); g.restore();
     g.strokeStyle = A.cBody || "#5ab8d8"; g.lineWidth = 3; g.beginPath(); g.arc(fx + 28, 1340, 28, 0, Math.PI * 2); g.stroke();
     text(from, fx + 72, 1351, `600 30px ${BODY}`, "#ffffff", "left");
-    g.strokeStyle = "#5ab8d8"; g.lineWidth = 4; g.lineCap = "round"; g.lineJoin = "round";
-    g.beginPath(); g.moveTo(W / 2, 1408); g.lineTo(W / 2, 1440); g.moveTo(W / 2 - 13, 1428); g.lineTo(W / 2, 1442); g.lineTo(W / 2 + 13, 1428); g.stroke();
-    text("Tap the link", W / 2, 1478, `600 26px ${BODY}`, "#5ab8d8");
+    CardKit.footer(g, W, "", { y: 1400, cta: "Join my flock · tap the link" });
     if (me.invite) text(`or use code ${me.invite} at ${location.host}`, W / 2, 1640, `500 24px ${MONO}`, "#7fa6b2");
     text("Free · works with Merlin Sound ID and eBird", W / 2, 1685, `400 22px ${BODY}`, "#5f8794");
     return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
   }
+  /* ---------- "I found today": a story card of the species heard for the first time on one day ---------- */
+  let dayDate = "";   // the day the "New birds" card is about (set after an upload with new species, or the latest such day)
+  let dayPlace = "", dayPick = null, dayInfo = null, newDayCard = null;
+  let badgeIds = [];   // the badges on the badge card
+  let hasRare = false;   // whether you've logged any rare bird, so the Share panel offers the "Rare find" card   // newDayCard: the celebration shown on your profile after an upload with new species   // which place to show ("" = all), the birds picked to feature (null = automatic), and the last info drawn
+  const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  /* the latest day on which any of these species (or any species at all) was heard for the first time */
+  async function latestNewDay(names) {
+    const recs = await getRecs(me.u), first = new Map();
+    for (const d of recs) if (d.date && (!first.has(d.name) || d.date < first.get(d.name))) first.set(d.name, d.date);
+    let best = "";
+    for (const [n, dt] of first) if ((!names || names.includes(n)) && dt > best) best = dt;
+    return best;
+  }
+  /* which birds, in which order: rare ones first if there are any, then the most-heard */
+  async function newDayInfo(date, onlyPlace = "") {
+    const recs = await getRecs(me.u), first = new Map();
+    for (const d of recs) if (d.date && (!first.has(d.name) || d.date < first.get(d.name))) first.set(d.name, d.date);
+    const wallSci = new Map(WALL.map((w) => [sci2(w[1]), w[3]]));
+    const by = new Map(), placeN = new Map(), visited = new Map();
+    /* every place visited that day, and how many new species each had */
+    for (const d of recs) { if (d.date !== date || !d.loc) continue; const v = visited.get(d.loc) || new Set(); if (first.get(d.name) === date) v.add(d.name); visited.set(d.loc, v); }
+    for (const d of recs) {
+      if (d.date !== date || first.get(d.name) !== date) continue;
+      if (onlyPlace && d.loc !== onlyPlace) continue;
+      const x = by.get(d.name) || { name: d.name, sci: d.sci, fam: d.family, n: 0, rare: wallSci.get(sci2(d.sci)) === 2 };
+      x.n++; by.set(d.name, x);
+      const pl = d.loc || ""; if (pl) placeN.set(pl, (placeN.get(pl) || 0) + 1);
+    }
+    const list = [...by.values()].sort((a, b) => (b.rare - a.rare) || (b.n - a.n) || a.name.localeCompare(b.name));
+    const places = [...placeN.entries()].sort((a, b) => b[1] - a[1]), tot = places.reduce((s, p) => s + p[1], 0);
+    const place = !places.length ? "" : places.length === 1 ? places[0][0] : places.length === 2 ? `${places[0][0]} and ${places[1][0]}` : `across ${places.length} places`;
+    return { date, list, place, total: first.size, visited: [...visited.entries()].map(([name, v]) => ({ name, n: v.size })).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name)) };
+  }
+  /* the moment after an upload with new species: their photos, the count, and a big button to share them */
+  function newDayHTML() {
+    const I = newDayCard.info, L = I.list, n = L.length || newDayCard.nn, show = L.slice(0, 5), more = L.length - show.length;
+    const today = isoLocal(new Date()), yest = isoLocal(new Date(Date.now() - 864e5));
+    const [yy, mm, dd] = I.date.split("-").map(Number);
+    const when = I.date === today ? "Found today" : I.date === yest ? "Found yesterday" : `Found on ${new Date(Date.UTC(yy, mm - 1, dd)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })}`;
+    const names = L.map((x) => x.name.replace(/^(Eurasian|European|Common|Greater|Lesser) (?=\S+ \S)/, ""));
+    return `<div class="nd-card" role="status">
+      <div class="nd-pile" aria-hidden="true">${show.map((x, i) => `<span class="nd-ph" style="--i:${i};--r:${[-8, 6, -3, 9, -6][i]}deg">${Photos.slot(x.sci, "ph-thumb", PLUMAGE[sci2(x.sci)] || famColour(x.fam))}${x.rare ? '<b class="nd-rare">rare</b>' : ""}</span>`).join("")}${more > 0 ? `<span class="nd-ph nd-more" style="--i:${show.length};--r:-4deg">+${more}</span>` : ""}</div>
+      <div class="nd-kick">${when}</div>
+      <div class="nd-h"><b>${n}</b> new species</div>
+      <div class="nd-sub">${I.place ? `${esc(I.place)} · ` : ""}you're now on ${newDayCard.species}</div>
+      <p class="nd-names">${esc(names.slice(0, 6).join(", "))}${names.length > 6 ? ` and ${names.length - 6} more` : ""}</p>
+      ${L.some((x) => x.rare) ? `<div class="nd-rareline">Including ${L.filter((x) => x.rare).length === 1 ? "a rare find" : `${L.filter((x) => x.rare).length} rare finds`}: ${esc(L.filter((x) => x.rare).map((x) => x.name).join(", "))}</div>` : ""}
+      <button type="button" class="nd-share" data-share-day><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg>Share to your story</button>
+      ${L.some((x) => x.rare) ? CardKit.shareBtn(true, "data-share-rare", false, "Share your rare find").replace('class="nd-share"', 'class="nd-share rare slim"') : ""}
+    </div>`;
+  }
+  /* the choices under the "New birds" card: which place, and which birds get a photo */
+  function dayOptsHTML() {
+    const I = dayInfo, places = I.visited || [];
+    const placeBtns = places.length > 1 ? `<div class="day-sec">Place</div><div class="day-chips">
+      <button type="button" data-day-place="" aria-pressed="${!dayPlace}">All places</button>
+      ${places.map((p) => `<button type="button" data-day-place="${esc(p.name)}" aria-pressed="${dayPlace === p.name}" ${p.n ? "" : "disabled"}>${esc(p.name)} <small>${p.n ? `${p.n} new` : "no new species"}</small></button>`).join("")}</div>` : "";
+    const L = I.list, on = new Set(dayPick ? L.filter((x) => dayPick.includes(x.name)).slice(0, 6).map((x) => x.name) : L.slice(0, 6).map((x) => x.name));
+    const birdBtns = L.length > 1 ? `<div class="day-sec">Birds with a photo <small>${on.size} of ${Math.min(6, L.length)}${L.length > 6 ? `, the rest go in "+ more"` : ""}</small></div><div class="day-chips">
+      ${L.map((x) => `<button type="button" data-day-bird="${esc(x.name)}" aria-pressed="${on.has(x.name)}">${esc(x.name)}${x.rare ? ` <small class="rare">rare</small>` : x.n > 1 ? ` <small>${x.n}×</small>` : ""}</button>`).join("")}</div>
+      ${dayPick ? `<button type="button" class="linkish" data-day-auto>Back to automatic (rare first, then most heard)</button>` : `<p class="hint" style="margin:4px 0 0">Tap a bird to swap it in or out.</p>`}` : "";
+    return `<div class="day-opts">${placeBtns}${birdBtns}</div>`;
+  }
+  async function makeDayCard() {
+    if (!dayDate) dayDate = await latestNewDay();
+    const info = await newDayInfo(dayDate, dayPlace), L = info.list, n = L.length;
+    dayInfo = info;
+    const K = CardKit, { c, g, W, H } = K.make(1080, 1920), t = K.tools(g);
+    await K.fonts(); K.bg(g, W, H);
+    const today = K.isoLocal(new Date()), yest = K.isoLocal(new Date(Date.now() - 864e5)), dayName = K.dayLabel(info.date);
+    K.header(g, W, dayName);
+    t.text(info.date === today ? "Found today" : info.date === yest ? "Found yesterday" : `Found on ${dayName}`, W / 2, 330, `500 44px ${K.BODY}`, "#cfe3e8");
+    if (n === 1) t.text("a new species", W / 2, 420, `700 84px ${K.DISP}`, "#ffffff");
+    else { t.text(String(n), W / 2, 505, `700 200px ${K.DISP}`, K.BLUE); t.text("new species", W / 2, 585, `700 66px ${K.DISP}`, "#ffffff"); }
+    if (info.place) { g.font = `500 34px ${K.BODY}`; K.place(g, W, / and /.test(info.place) && g.measureText(info.place).width > W - 260 && !dayPlace ? "across 2 places" : info.place, n === 1 ? 480 : 645); }
+    /* the birds picked to feature (in the usual order), or the first six; everything else goes in "+N more" */
+    const picked = dayPick ? L.filter((x) => dayPick.includes(x.name)).slice(0, 6) : [];
+    const shown = picked.length ? picked : L.slice(0, 6), rest = L.filter((x) => !shown.includes(x)), SHOW = shown.length;
+    const spots = (DAY_LAYOUTS[SHOW] || []).map((p) => p.slice());
+    /* the bottom row: the last photo centred on its own, or paired with the "+ more" card either side of the middle */
+    if (SHOW === 6) spots[5] = rest.length ? [262, 1268, 4, 290] : [395, 1226, 2, 290];
+    const photos = await Promise.all(shown.map((x) => K.photo(x.sci)));
+    shown.forEach((x, i) => K.print(g, x, photos[i], spots[i], { tag: x.rare ? "RARE" : "NEW", tagCol: x.rare ? K.LILAC : K.ORANGE, pill: x.n > 1 ? `heard ${x.n}×` : "" }));
+    if (rest.length) K.more(g, rest, [590, 1372, -9, 236, 226]);
+    K.footer(g, W, `That's ${info.total} species logged on BIRB`);
+    return K.blob(c);
+  }
+  /* ---------- rare finds: your latest rare bird (or the rare birds from that day) as a story card ---------- */
+  async function rareInfo() {
+    const recs = await getRecs(me.u), wallSci = new Map(WALL.map((w) => [sci2(w[1]), w[3]])), first = new Map();
+    for (const d of recs) if (wallSci.get(sci2(d.sci)) === 2 && d.date && (!first.has(d.name) || d.date < first.get(d.name).date)) first.set(d.name, d);
+    if (!first.size) return null;
+    const date = [...first.values()].map((d) => d.date).sort().pop();
+    const names = [...first.values()].filter((d) => d.date === date).map((d) => d.name);
+    const list = names.map((n) => { const ds = recs.filter((d) => d.name === n && d.date === date); return { name: n, sci: ds[0].sci, fam: ds[0].family, n: ds.length, rare: true }; });
+    const pl = new Map(); for (const d of recs) if (d.date === date && names.includes(d.name) && d.loc) pl.set(d.loc, (pl.get(d.loc) || 0) + 1);
+    const place = [...pl.entries()].sort((a, b) => b[1] - a[1]).map((x) => x[0])[0] || "";
+    return { date, list: list.slice(0, 3), place, total: first.size };
+  }
+  async function makeRareCard() {
+    const info = await rareInfo(); if (!info) throw new Error("No rare finds yet");
+    const K = CardKit, { c, g, W, H } = K.make(1080, 1920), t = K.tools(g), L = info.list;
+    await K.fonts(); K.bg(g, W, H);
+    K.header(g, W, K.dayLabel(info.date));
+    t.pill(L.length === 1 ? "RARE FIND" : `${L.length} RARE FINDS`, W / 2, 280, 66, K.LILAC, "#ffffff", `700 32px ${K.BODY}`, "center");
+    const photos = await Promise.all(L.map((x) => K.photo(x.sci)));
+    const o = (x) => ({ tag: "RARE", tagCol: K.LILAC, pill: x.n > 1 ? `heard ${x.n}×` : "" });
+    let y;
+    if (L.length === 1) {
+      const pw = 760, h = K.print(g, L[0], photos[0], [(W - pw) / 2, 395, -3, pw], { ...o(L[0]), nameScale: 0.072, centerName: true });
+      y = 395 + h + 76;
+      t.text(t.fit(`${L[0].sci} · ${famName(L[0].fam)}`, W - 200, `italic 400 30px ${K.BODY}`), W / 2, y, `italic 400 30px ${K.BODY}`, "#a9c9d3");
+    } else {
+      const spots = L.length === 2 ? [[90, 400, -6, 440], [550, 470, 5, 440]] : [[70, 390, -6, 360], [650, 380, 6, 360], [360, 720, -2, 360]];
+      L.forEach((x, i) => K.print(g, x, photos[i], spots[i], o(x)));
+      y = L.length === 2 ? 1060 : 1170;
+    }
+    t.text(L.length === 1 ? "One of the rarer visitors to the UK" : "Some of the rarer visitors to the UK", W / 2, y + 62, `500 36px ${K.BODY}`, "#cfe3e8");
+    if (info.place) K.place(g, W, info.place, y + 126);
+    K.footer(g, W, info.total > L.length ? `That's ${info.total} rare finds on BIRB` : "Logged on BIRB");
+    return K.blob(c);
+  }
+  /* ---------- badge cards: one big medal (or two or three) for your story ---------- */
+  async function shareBadges(ids) {
+    if (!me) return;
+    badgeIds = ids.filter(Boolean).slice(0, 3); shareKind = "badge";
+    closeWel(); $("acct").hidden = false;
+    await openShare();
+  }
+  /* a medal drawn on the card: a rim in its tier's colour, the family colour inside, and its photo, shape, icon or letters */
+  async function drawMedal(g, b, cx, cy, r) {
+    const K = CardKit, t = K.tools(g), col = b.col || Badges.famCol(b.fam), rim = b.tier ? Badges.rim[b.tier] : "#f6f2ea";
+    g.save(); g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = r * 0.18; g.shadowOffsetY = r * 0.07;
+    g.fillStyle = rim; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.restore();
+    g.fillStyle = col; g.beginPath(); g.arc(cx, cy, r * 0.86, 0, Math.PI * 2); g.fill();
+    const svgImg = (inner, size) => K.img("data:image/svg+xml;charset=utf-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="#ffffff">${inner}</svg>`));
+    if (b.photo) {
+      const im = await K.photo(b.photo);
+      g.save(); g.beginPath(); g.arc(cx, cy, r * 0.78, 0, Math.PI * 2); g.clip();
+      if (im) { const s = Math.max((r * 1.56) / im.width, (r * 1.56) / im.height); g.drawImage(im, cx - (im.width * s) / 2, cy - (im.height * s) / 2, im.width * s, im.height * s); }
+      g.restore();
+    } else {
+      const both = b.ic && b.t, sz = r * (both ? 0.62 : b.t ? 0 : 0.95);
+      const inner = b.shape ? `<path d="${b.shape}"/>` : b.ic ? Badges.icon(b.ic) : "";
+      if (inner && sz) { const im = await svgImg(inner, Math.round(sz * 2)); if (im) g.drawImage(im, cx - sz / 2, cy - sz / 2 - (both ? r * 0.2 : 0), sz, sz); }
+      if (b.t) { const f = t.fitSize(b.t, r * 1.3, 700, Math.round(r * (both ? 0.42 : b.t.length > 3 ? 0.5 : 0.66)), K.DISP, 20); g.textBaseline = "middle"; t.text(b.t, cx, cy + (both ? r * 0.32 : r * 0.03), f, "#ffffff"); g.textBaseline = "alphabetic"; }
+    }
+    g.save(); g.globalAlpha = 0.16; const gl = g.createLinearGradient(cx, cy - r, cx, cy); gl.addColorStop(0, "#ffffff"); gl.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gl; g.beginPath(); g.arc(cx, cy, r * 0.86, Math.PI, 0); g.fill(); g.restore();
+  }
+  async function makeBadgeCard() {
+    const recs = await getRecs(me.u), earned = Badges.forRecs(recs, me).filter((b) => b.got);
+    const list = badgeIds.map((id) => earned.find((b) => b.id === id)).filter(Boolean).slice(0, 3);
+    if (!list.length) throw new Error("No badge to share");
+    const K = CardKit, { c, g, W, H } = K.make(1080, 1920), t = K.tools(g);
+    await K.fonts(); K.bg(g, W, H);
+    const last = list.map((b) => b.date).filter(Boolean).sort().pop();
+    K.header(g, W, last ? K.dayLabel(last) : "");
+    t.text(list.length === 1 ? "New badge" : `${list.length} new badges`, W / 2, 330, `500 44px ${K.BODY}`, "#cfe3e8");
+    if (list.length === 1) {
+      const b = list[0];
+      await drawMedal(g, b, W / 2, 700, 260);
+      t.text(b.name, W / 2, 1080, t.fitSize(b.name, W - 160, 700, 90, K.DISP), "#ffffff");
+      t.wrap(`${b.ask}.`, W - 220, `500 38px ${K.BODY}`, 2).forEach((l, i) => t.text(l, W / 2, 1150 + i * 50, `500 38px ${K.BODY}`, "#a9c9d3"));
+      const fam = Badges.famName(b.fam); if (fam) t.pill(fam, W / 2, 1250, 52, b.col || Badges.famCol(b.fam), "#ffffff", `700 26px ${K.BODY}`, "center");
+      if (b.date) t.text(`Earned ${fmtDate(b.date)}`, W / 2, 1370, `500 28px ${K.MONO}`, "#8fc3d3");
+    } else {
+      const spots = list.length === 2 ? [[540, 610], [540, 1110]] : [[290, 640], [790, 640], [540, 1090]], r = list.length === 2 ? 190 : 175;
+      for (let i = 0; i < list.length; i++) {
+        const b = list[i], [x, y] = spots[i];
+        await drawMedal(g, b, x, y, r);
+        t.wrap(b.name, r * 2 + 40, `700 34px ${K.BODY}`, 2).forEach((l, k) => t.text(l, x, y + r + 60 + k * 40, `700 34px ${K.BODY}`, "#ffffff"));
+      }
+    }
+    K.footer(g, W, `That's ${earned.length} ${earned.length === 1 ? "badge" : "badges"} on BIRB`);
+    return K.blob(c);
+  }
+  /* where the prints go for 1 to 6 birds: x, y, tilt, width */
+  const DAY_LAYOUTS = {
+    1: [[290, 560, -3, 500]],
+    2: [[100, 720, -6, 420], [560, 760, 5, 420]],
+    3: [[70, 700, -6, 340], [670, 690, 6, 340], [370, 980, -2, 340]],
+    4: [[80, 700, -6, 340], [660, 690, 6, 340], [90, 1080, 5, 340], [650, 1070, -5, 340]],
+    5: [[70, 690, -7, 300], [710, 675, 6, 300], [390, 880, -2, 300], [60, 1080, 8, 300], [720, 1070, -6, 300]],
+    6: [[70, 690, -7, 290], [720, 675, 6, 290], [395, 868, -2, 290], [60, 1058, 7, 290], [730, 1036, -6, 290], [300, 1212, 4, 290]],
+  };
   async function openShare() {
+    if (me && me.birds && !hasRare) { try { hasRare = !!(await rareInfo()); } catch (e) {} }
     shareBlob = null; if (shareUrl) { URL.revokeObjectURL(shareUrl); shareUrl = ""; }
     view = "share"; render();
-    try { shareBlob = await (shareKind === "invite" ? makeInviteCard() : makeShareCard(shareKind === "story")); shareUrl = URL.createObjectURL(shareBlob); } catch (e) { console.warn(e); }
+    try { shareBlob = await (shareKind === "invite" ? makeInviteCard() : shareKind === "day" ? makeDayCard() : shareKind === "badge" ? makeBadgeCard() : shareKind === "rare" ? makeRareCard() : makeShareCard(shareKind === "story")); shareUrl = URL.createObjectURL(shareBlob); } catch (e) { console.warn(e); }
     if (view === "share") { render(); if (!shareBlob) err("Couldn't draw your card. Try again in a moment."); }
   }
   async function sendShare(saveOnly) {
@@ -7460,6 +7760,13 @@ const Acct = (() => {
       : !s.added ? `You're up to date. Nothing new in that file, so your ${s.species} species are unchanged.`
       : `Added ${s.added} new ${s.added === 1 ? "sighting" : "sightings"}${nn ? `, including ${nn} new ${nn === 1 ? "species" : "species"}: ${esc(s.newSpecies.slice(0, 4).join(", "))}${nn > 4 ? " and more" : ""}` : ""}. You're now on ${s.species} species.`;
     if (s.rare && s.rare.length) notice += ` ${andList(s.rare)} ${s.rare.length === 1 ? "is a rare find" : "are rare finds"}, so ${s.rare.length === 1 ? "it's" : "they're"} in lilac on your Collection wall. Your friends will see a special note.`;
+    newDayCard = null;
+    if (nn && !s.replaced) {
+      dayPlace = ""; dayPick = null; dayInfo = null;
+      try { dayDate = await latestNewDay(s.newSpecies); if (dayDate) newDayCard = { info: await newDayInfo(dayDate), nn, added: s.added, species: s.species }; } catch (e) { dayDate = ""; }
+      /* the celebration says the headline; the plain notice keeps only the extra details */
+      if (newDayCard) notice = `Added ${s.added} new ${s.added === 1 ? "sighting" : "sightings"}.${s.rare && s.rare.length ? ` ${andList(s.rare)} ${s.rare.length === 1 ? "is a rare find" : "are rare finds"}, so ${s.rare.length === 1 ? "it's" : "they're"} in lilac on your Collection wall. Your friends will see a special note.` : ""}`;
+    }
     if (scope === "flock") await showFlock(); else await show(me.u);
     joinStep = 1; view = "profile"; render(); paintChrome();
     setTimeout(maybeNightNote, 1500);
@@ -7543,7 +7850,18 @@ const Acct = (() => {
     if (t.closest("[data-share-send]")) { await sendShare(false); return; }
     if (t.closest("[data-share-save]")) { await sendShare(true); return; }
     if (t.closest("[data-invite-card]")) { shareKind = "invite"; await openShare(); return; }
-    const sh = t.closest('[data-acct="share"]'); if (sh) { if (!me.birds) shareKind = "invite"; await openShare(); return; }
+    if (t.closest("[data-share-rare]")) { hasRare = true; shareKind = "rare"; await openShare(); return; }
+    if (t.closest("[data-share-day]")) { shareKind = "day"; dayPlace = ""; dayPick = null; await openShare(); return; }
+    const dp = t.closest("[data-day-place]"); if (dp) { if (dp.disabled) return; dayPlace = dp.dataset.dayPlace; dayPick = null; await openShare(); return; }
+    if (t.closest("[data-day-auto]")) { dayPick = null; await openShare(); return; }
+    const db = t.closest("[data-day-bird]"); if (db && dayInfo) {
+      const L = dayInfo.list, name = db.dataset.dayBird;
+      const cur = dayPick ? L.filter((x) => dayPick.includes(x.name)).slice(0, 6).map((x) => x.name) : L.slice(0, 6).map((x) => x.name);
+      if (cur.includes(name)) { if (cur.length === 1) { err("Keep at least one bird with a photo."); return; } dayPick = cur.filter((n) => n !== name); }
+      else { if (cur.length >= 6) { err("Six birds can have a photo. Tap one to take it out first."); return; } dayPick = [...cur, name]; }
+      await openShare(); return;
+    }
+    const sh = t.closest('[data-acct="share"]'); if (sh) { if (!me.birds) shareKind = "invite"; else if (!dayDate) { try { dayDate = await latestNewDay(); } catch (e) {} } await openShare(); return; }
     const fs = t.closest("[data-fl-sort]"); if (fs) { flSort = fs.dataset.flSort; render(); return; }
     if (t.closest("[data-fl-invite]")) { flInvite = !flInvite; render(); return; }
     if (t.closest("[data-fl-map]")) { close(); await showFlock(); return; }
@@ -7742,7 +8060,7 @@ const Acct = (() => {
     return true;
   }
   const busy = () => document.body.classList.contains("welcoming") || !$("acct").hidden || !!document.querySelector(".mem-pop:not([hidden])") || !$("help").hidden || !$("wel-pop").hidden;
-  return { boot, flock: showFlock, open, member, saveFavourite, savePins, saveBadges, badgeNote, busy, hideBird, recs: getRecs, cached: (u) => cache.get(u) || null, get members() { return members; }, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
+  return { boot, flock: showFlock, open, member, saveFavourite, savePins, saveBadges, badgeNote, shareBadges, busy, hideBird, recs: getRecs, cached: (u) => cache.get(u) || null, get members() { return members; }, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
 })();
 
 /* ---------- reading an eBird export: the .csv, or the .zip eBird emails (opened right here in the browser) ---------- */
@@ -7774,7 +8092,7 @@ async function fileText(file) {
 /* ---------- share one bird: a picture card with its photo, how often and when you heard it (never where) ---------- */
 const BirdShare = (() => {
   let blob = null, url = "", fileName = "bird.png";
-  const W = 1080, H = 1350;
+  const W = 1080, H = 1920;
   /* lift the pop-up to the top of the page, so it shows above the bird panel on phones */
   document.body.appendChild($("shr-pop"));
   const DISP = "'Bricolage Grotesque', 'IBM Plex Sans', sans-serif", BODY = "'IBM Plex Sans', Helvetica, Arial, sans-serif", MONO = "'IBM Plex Mono', Menlo, monospace";
@@ -7804,58 +8122,40 @@ const BirdShare = (() => {
     const tier = (WALL.find((w) => sci2(w[1]) === sci2(s0.sci)) || [])[3];
     const col = PLUMAGE[sci2(s0.sci)] || famColour(s0.family);
     const who = whose();
-    const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
-    try { await Promise.all([document.fonts.load(`700 60px ${DISP}`), document.fonts.load(`400 30px ${BODY}`), document.fonts.load(`500 24px ${MONO}`)]); } catch (e) {}
-    const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#14343f"); bg.addColorStop(1, "#0b1d24"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-    const text = (t, x, y, font, colr, align = "left") => { g.font = font; g.fillStyle = colr; g.textAlign = align; g.fillText(t, x, y); };
-    const fit = (t, max, font) => { g.font = font; if (g.measureText(t).width <= max) return t; while (t.length > 3 && g.measureText(t + "…").width > max) t = t.slice(0, -1); return t + "…"; };
-    const fitSize = (t, max, weight, size, fam) => { let sz = size; g.font = `${weight} ${sz}px ${fam}`; while (sz > 40 && g.measureText(t).width > max) { sz -= 4; g.font = `${weight} ${sz}px ${fam}`; } return `${weight} ${sz}px ${fam}`; };
-    /* the photo, big, framed in the bird's colour */
-    const ph = await photo(s0.sci);
-    const px = 72, py = 72, pw = W - 144, phh = 600;
-    g.save(); g.beginPath(); g.roundRect(px, py, pw, phh, 36); g.clip();
-    g.fillStyle = col; g.fillRect(px, py, pw, phh);
-    if (ph) { const sc = Math.max(pw / ph.width, phh / ph.height); g.drawImage(ph, px + (pw - ph.width * sc) / 2, py + (phh - ph.height * sc) / 2, ph.width * sc, ph.height * sc); }
-    else { g.fillStyle = "rgba(255,255,255,.25)"; g.font = `700 220px ${DISP}`; g.textAlign = "center"; g.fillText("?", W / 2, py + phh / 2 + 80); }
-    const shade = g.createLinearGradient(0, py + phh - 200, 0, py + phh); shade.addColorStop(0, "rgba(0,0,0,0)"); shade.addColorStop(1, "rgba(0,0,0,.55)"); g.fillStyle = shade; g.fillRect(px, py + phh - 200, pw, 200);
-    g.restore();
-    g.lineWidth = 10; g.strokeStyle = col; g.beginPath(); g.roundRect(px, py, pw, phh, 36); g.stroke();
-    text("BIRB", px + 30, py + 62, `700 40px ${DISP}`, "#ffffff");
-    if (tier === 2) { g.fillStyle = "#a982e8"; g.beginPath(); g.roundRect(px + pw - 230, py + 26, 200, 50, 25); g.fill(); text("RARE FIND", px + pw - 130, py + 60, `700 24px ${BODY}`, "#ffffff", "center"); }
-    const nf = fitSize(name, pw - 60, 700, 64, DISP);
-    text(name, px + 30, py + phh - 70, nf, "#ffffff");
-    text(fit(`${s0.sci} · ${famName(s0.family)}`, pw - 60, `italic 400 28px ${BODY}`), px + 30, py + phh - 28, `italic 400 28px ${BODY}`, "#e3edf0");
-    /* how often */
-    const y0 = 760;
-    text(String(days.length), 72, y0 + 110, `700 150px ${DISP}`, "#ffffff");
-    g.font = `700 150px ${DISP}`; const nw = g.measureText(String(days.length)).width;
-    text(days.length === 1 ? "day heard" : "days heard", 72 + nw + 24, y0 + 60, `600 36px ${BODY}`, "#ffffff");
-    text(`saved ${saves} ${saves === 1 ? "time" : "times"} in Merlin${places > 1 ? ` · at ${places} places` : ""}`, 72 + nw + 24, y0 + 106, `400 28px ${BODY}`, "#a9c9d3");
-    /* when: first and last, then a timeline with a dot for each day */
-    const y1 = y0 + 190;
-    const box = (x, label, val) => { g.fillStyle = "rgba(255,255,255,.07)"; g.beginPath(); g.roundRect(x, y1, (W - 144 - 24) / 2, 120, 22); g.fill(); text(label, x + 28, y1 + 44, `500 22px ${MONO}`, "#8fc3d3"); text(val, x + 28, y1 + 94, `700 38px ${DISP}`, "#ffffff"); };
-    box(72, "FIRST HEARD", fmtDate(first));
-    box(72 + (W - 144 + 24) / 2, days.length > 1 ? "LAST HEARD" : "HEARD ON", fmtDate(last));
-    const ty = y1 + 200, tx0 = 90, tx1 = W - 90, t0 = Date.parse(start), t1 = Math.max(Date.parse(end), t0 + 864e5);
+    /* a tall story card in the same look as the others: one big tilted photo print, then when and how often */
+    const K = CardKit, { c, g } = K.make(W, H), t = K.tools(g);
+    await K.fonts(); K.bg(g, W, H);
+    K.header(g, W, who.label);
+    const ph = await K.photo(s0.sci);
+    const kicker = tier === 2 ? "A rare find" : days.length === 1 ? "Heard once" : `Heard on ${days.length} days`;
+    if (tier === 2) t.pill("RARE FIND", W / 2, 290, 52, K.LILAC, "#ffffff", `700 26px ${K.BODY}`, "center");
+    else t.text(kicker, W / 2, 330, `500 44px ${K.BODY}`, "#cfe3e8");
+    const pw = 700, ch = K.print(g, { name, sci: s0.sci, fam: s0.family }, ph, [(W - pw) / 2, 392, -3, pw], { tag: tier === 2 ? "RARE" : "", tagCol: K.LILAC, pill: saves > 1 ? `saved ${saves}×` : "", nameScale: 0.075, centerName: true });
+    const yS = 392 + ch + 64;
+    t.text(t.fit(`${s0.sci} · ${famName(s0.family)}`, W - 200, `italic 400 30px ${K.BODY}`), W / 2, yS, `italic 400 30px ${K.BODY}`, "#a9c9d3");
+    /* first and last heard */
+    const y1 = yS + 46, bw = (W - 180 - 24) / 2;
+    const box = (x, label, val) => { g.fillStyle = "rgba(255,255,255,.07)"; g.beginPath(); g.roundRect(x, y1, bw, 120, 22); g.fill(); t.text(label, x + 28, y1 + 44, `500 22px ${K.MONO}`, "#8fc3d3", "left"); t.text(val, x + 28, y1 + 94, `700 38px ${K.DISP}`, "#ffffff", "left"); };
+    box(90, "FIRST HEARD", fmtDate(first));
+    box(90 + bw + 24, days.length > 1 ? "LAST HEARD" : "HEARD ON", fmtDate(last));
+    /* a timeline with a dot for each day */
+    const ty = y1 + 190, tx0 = 110, tx1 = W - 110, t0 = Date.parse(start), t1 = Math.max(Date.parse(end), t0 + 864e5);
     g.strokeStyle = "rgba(255,255,255,.18)"; g.lineWidth = 4; g.beginPath(); g.moveTo(tx0, ty); g.lineTo(tx1, ty); g.stroke();
-    for (const d of days) { const x = tx0 + ((Date.parse(d) - t0) / (t1 - t0)) * (tx1 - tx0); g.beginPath(); g.arc(x, ty, 13, 0, Math.PI * 2); g.fillStyle = col; g.fill(); g.lineWidth = 4; g.strokeStyle = "#0f262e"; g.stroke(); }
-    text(fmtDate(start).replace(/ \d{4}$/, ""), tx0, ty + 46, `400 22px ${BODY}`, "#7fa6b2");
-    text(end === today ? "today" : fmtDate(end).replace(/ \d{4}$/, ""), tx1, ty + 46, `400 22px ${BODY}`, "#7fa6b2", "right");
-    /* footer: whose birds */
-    const fy = H - 70;
-    let fx = 72;
-    if (who.avatar) { const A = Avatar.norm(who.avatar); const av = await img(Avatar.snapshot(A)); g.save(); g.beginPath(); g.arc(fx + 34, fy - 10, 34, 0, Math.PI * 2); g.fillStyle = A.bg; g.fill(); g.clip(); if (av) g.drawImage(av, fx, fy - 44, 68, 68); g.restore(); fx += 84; }
-    text(who.label, fx, fy, `600 28px ${BODY}`, "#e7eef3");
-    text("birb-app.netlify.app", W - 72, fy, `500 24px ${MONO}`, "#8fc3d3", "right");
+    for (const d of days) { const x = tx0 + ((Date.parse(d) - t0) / (t1 - t0)) * (tx1 - tx0); g.beginPath(); g.arc(x, ty, 12, 0, Math.PI * 2); g.fillStyle = col; g.fill(); g.lineWidth = 4; g.strokeStyle = "#0f262e"; g.stroke(); }
+    t.text(fmtDate(start).replace(/ \d{4}$/, ""), tx0, ty + 44, `400 22px ${K.BODY}`, "#7fa6b2", "left");
+    t.text(end === today ? "today" : fmtDate(end).replace(/ \d{4}$/, ""), tx1, ty + 44, `400 22px ${K.BODY}`, "#7fa6b2", "right");
+    t.text(`${days.length} ${days.length === 1 ? "day" : "days"} heard${places > 1 ? ` · at ${places} places` : ""}`, W / 2, ty + 44, `500 24px ${K.BODY}`, "#a9c9d3");
+    K.footer(g, W, "", { y: 1650, cta: Acct.me && Acct.me.invite ? "Join my flock · tap the link" : "birb-app.netlify.app" });
     fileName = `birb-${name.toLowerCase().replace(/[^a-z]+/g, "-")}.png`;
-    return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
+    return K.blob(c);
   }
   function paint(name, msg) {
     const card = $("shr-card");
     card.innerHTML = `<button type="button" class="acct-x mem-x" data-shr-close aria-label="Close">×</button>
-      <h2 id="shr-h">Share ${esc(name)}</h2><p class="sub">A picture of this bird with when and how often it was heard. It doesn't show where.</p>
-      <div class="share-prev">${url ? `<img src="${url}" alt="Share card for ${esc(name)}">` : `<p class="hint">${msg || "Drawing the card…"}</p>`}</div>
-      <div class="acts"><button type="button" class="ghost" data-shr-close>Close</button><button type="button" data-shr-save ${blob ? "" : "disabled"}>Save image</button><button type="button" class="primary" data-shr-send ${blob ? "" : "disabled"}>Share</button></div>`;
+      <h2 id="shr-h">Share ${esc(name)}</h2><p class="sub">A tall card of this bird for your Instagram story, with when and how often it was heard. It doesn't show where.${Acct.me && Acct.me.invite ? " Sharing copies your invite link, ready for a link sticker." : ""}</p>
+      <div class="share-prev tall">${url ? `<img src="${url}" alt="Share card for ${esc(name)}">` : `<p class="hint">${msg || "Drawing the card…"}</p>`}</div>
+      ${CardKit.shareBtn(true, "data-shr-send", !blob)}
+      <div class="acts"><button type="button" class="ghost" data-shr-close>Close</button><button type="button" data-shr-save ${blob ? "" : "disabled"}>Save image</button></div>`;
   }
   async function open(name) {
     blob = null; if (url) { URL.revokeObjectURL(url); url = ""; }
@@ -7867,6 +8167,7 @@ const BirdShare = (() => {
   async function send(saveOnly) {
     if (!blob) return;
     const file = new File([blob], fileName, { type: "image/png" });
+    const me = Acct.me; if (!saveOnly && me && me.invite) { try { navigator.clipboard.writeText(`${location.origin}/?invite=${encodeURIComponent(me.invite)}`).catch(() => {}); } catch (e) {} }
     if (!saveOnly && navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file], title: "A bird on BIRB" }); return; } catch (e) { if (e && e.name === "AbortError") return; }
     }
