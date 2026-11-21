@@ -7503,7 +7503,7 @@ const Acct = (() => {
     const dayName = new Date(Date.UTC(yy, mm - 1, dd)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
     text("BIRB", 90, 232, `700 46px ${DISP}`, "#ffffff", "left");
     text(dayName, W - 90, 228, `500 28px ${MONO}`, "#8fc3d3", "right");
-    text(info.date === today ? "I found today" : info.date === yest ? "I found yesterday" : `On ${dayName} I found`, W / 2, 330, `500 44px ${BODY}`, "#cfe3e8");
+    text(info.date === today ? "Found today" : info.date === yest ? "Found yesterday" : `Found on ${dayName}`, W / 2, 330, `500 44px ${BODY}`, "#cfe3e8");
     if (n === 1) text("a new species", W / 2, 420, `700 84px ${DISP}`, "#ffffff");
     else { text(String(n), W / 2, 505, `700 200px ${DISP}`, "#5ab8d8"); text("new species", W / 2, 585, `700 66px ${DISP}`, "#ffffff"); }
     if (info.place) {
