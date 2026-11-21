@@ -479,6 +479,7 @@ body.night .fr-row .btns .primary { color: #0f191d; }
 .share-kind { width: fit-content; margin: 2px auto 0; }
 .share-kind button { padding: 6px 12px; font-size: 13px; }
 .share-prev.tall img { width: min(230px, 70%); }
+.share-day-btn { display: block; margin-top: 10px; }
 .story-steps { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 .story-steps b { color: var(--ink); }
 
@@ -1390,7 +1391,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
     <button type="button" class="close-panel" id="close-panel" aria-label="Close the bird panel" title="Close (Esc)">&times;</button>
     <h1>BIRB app</h1>
     <p class="sub">Where I've heard birds with Merlin Sound ID, from my eBird export</p>
-    <p class="updated">Last updated 20 Nov 2026</p>
+    <p class="updated">Last updated 21 Nov 2026</p>
     <div class="seg view-switch" role="group" aria-label="Choose a view">
       <button type="button" data-view="map" aria-pressed="true">Map</button>
       <button type="button" data-view="world" aria-pressed="false">Habitat world</button>
@@ -1694,7 +1695,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
 <div class="dropzone-overlay" id="overlay"><div>Drop your eBird CSV to update the map</div></div>
 
 <script type="text/plain" id="embedded-csv">Submission ID,Common Name,Scientific Name,Taxonomic Order,Count,State/Province,County,Location ID,Location,Latitude,Longitude,Date,Time,Protocol,Duration (Min),All Obs Reported,Distance Traveled (km),Area Covered (ha),Number of Observers,Breeding Code,Observation Details,Checklist Comments,ML Catalog Numbers</script>
-<script type="text/plain" id="embedded-meta">MyEBirdData.csv (20 Nov 2026)</script>
+<script type="text/plain" id="embedded-meta">MyEBirdData.csv (21 Nov 2026)</script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -7146,9 +7147,10 @@ const Acct = (() => {
         post: "A picture of your birds to send in a chat or post anywhere. It shows your birb, your counts and a few birds, but not where you heard them.",
         story: "Your birds as a tall card for your Instagram story, inviting people to join BIRB as your friend. It doesn't show where you heard them.",
         invite: "A tall invite card for your Instagram story: just BIRB and a nudge to come and join your flock, with no counts or birds of yours on it.",
+        day: "The species you heard for the first time on your latest new-bird day, as a tall card for your Instagram story. Rare finds go first. It names the place you heard most of them.",
       };
       h = `${X}${tabs()}<h2 id="acct-h">Share</h2><p class="sub">${SUB[shareKind]}</p>
-        ${me.birds ? `<div class="seg share-kind" role="group" aria-label="Which card"><button type="button" data-share-kind="post" aria-pressed="${shareKind === "post"}">My birds</button><button type="button" data-share-kind="story" aria-pressed="${shareKind === "story"}">Birds story</button><button type="button" data-share-kind="invite" aria-pressed="${shareKind === "invite"}">Invite story</button></div>` : ""}
+        ${me.birds ? `<div class="seg share-kind" role="group" aria-label="Which card"><button type="button" data-share-kind="post" aria-pressed="${shareKind === "post"}">My birds</button><button type="button" data-share-kind="story" aria-pressed="${shareKind === "story"}">Birds story</button>${dayDate ? `<button type="button" data-share-kind="day" aria-pressed="${shareKind === "day"}">New birds</button>` : ""}<button type="button" data-share-kind="invite" aria-pressed="${shareKind === "invite"}">Invite story</button></div>` : ""}
         <div class="share-prev${story ? " tall" : ""}" id="share-prev">${shareUrl ? `<img src="${shareUrl}" alt="Your BIRB share card">` : `<p class="hint">Drawing your card…</p>`}</div>
         ${story ? `<ol class="story-steps">
           <li>Tap <b>Share</b> and pick Instagram, then Story. On a computer, save the image and send it to your phone.</li>
@@ -7425,10 +7427,123 @@ const Acct = (() => {
     text("Free · works with Merlin Sound ID and eBird", W / 2, 1685, `400 22px ${BODY}`, "#5f8794");
     return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
   }
+  /* ---------- "I found today": a story card of the species heard for the first time on one day ---------- */
+  let dayDate = "";   // the day the "New birds" card is about (set after an upload with new species, or the latest such day)
+  const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  /* the latest day on which any of these species (or any species at all) was heard for the first time */
+  async function latestNewDay(names) {
+    const recs = await getRecs(me.u), first = new Map();
+    for (const d of recs) if (d.date && (!first.has(d.name) || d.date < first.get(d.name))) first.set(d.name, d.date);
+    let best = "";
+    for (const [n, dt] of first) if ((!names || names.includes(n)) && dt > best) best = dt;
+    return best;
+  }
+  /* which birds, in which order: rare ones first if there are any, then the most-heard */
+  async function newDayInfo(date) {
+    const recs = await getRecs(me.u), first = new Map();
+    for (const d of recs) if (d.date && (!first.has(d.name) || d.date < first.get(d.name))) first.set(d.name, d.date);
+    const wallSci = new Map(WALL.map((w) => [sci2(w[1]), w[3]]));
+    const by = new Map(), placeN = new Map();
+    for (const d of recs) {
+      if (d.date !== date || first.get(d.name) !== date) continue;
+      const x = by.get(d.name) || { name: d.name, sci: d.sci, fam: d.family, n: 0, rare: wallSci.get(sci2(d.sci)) === 2 };
+      x.n++; by.set(d.name, x);
+      const pl = d.loc || ""; if (pl) placeN.set(pl, (placeN.get(pl) || 0) + 1);
+    }
+    const list = [...by.values()].sort((a, b) => (b.rare - a.rare) || (b.n - a.n) || a.name.localeCompare(b.name));
+    const places = [...placeN.entries()].sort((a, b) => b[1] - a[1]), tot = places.reduce((s, p) => s + p[1], 0);
+    const place = !places.length ? "" : places.length === 1 || places[0][1] / tot >= 0.6 ? places[0][0] : `across ${places.length} places`;
+    return { date, list, place, total: first.size };
+  }
+  async function makeDayCard() {
+    if (!dayDate) dayDate = await latestNewDay();
+    const info = await newDayInfo(dayDate), L = info.list, n = L.length;
+    const W = 1080, H = 1920, c = document.createElement("canvas"); c.width = W; c.height = H;
+    const g = c.getContext("2d");
+    await (document.fonts ? document.fonts.ready : Promise.resolve());
+    const DISP = "'Bricolage Grotesque', 'IBM Plex Sans', sans-serif", BODY = "'IBM Plex Sans', Helvetica, Arial, sans-serif", MONO = "'IBM Plex Mono', Menlo, monospace";
+    const text = (t, x, y, font, col, align = "center") => { g.font = font; g.fillStyle = col; g.textAlign = align; g.fillText(t, x, y); };
+    const fit = (t, max, font) => { g.font = font; if (g.measureText(t).width <= max) return t; while (t.length > 3 && g.measureText(t + "…").width > max) t = t.slice(0, -1); return t + "…"; };
+    const wrap2 = (t, max, font) => { g.font = font; const w = t.split(" "), out = [""]; for (const x of w) { const cur = out[out.length - 1], nx = cur ? cur + " " + x : x; if (g.measureText(nx).width <= max || !cur) out[out.length - 1] = nx; else out.push(x); } return out.length <= 2 ? out : [out[0], fit(out.slice(1).join(" "), max, font)]; };
+    const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#14343f"); bg.addColorStop(1, "#0b1d24"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.globalAlpha = 0.07; g.strokeStyle = "#ffffff"; g.lineWidth = 2;
+    for (let i = 0; i < 13; i++) { g.beginPath(); for (let x = -20; x <= W + 20; x += 20) { const y = 140 + i * 140 + Math.sin(x / 90 + i) * 18; x === -20 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); }
+    g.globalAlpha = 1;
+
+    /* the heading, kept below Instagram's name bar */
+    const today = isoLocal(new Date()), yest = isoLocal(new Date(Date.now() - 864e5));
+    const [yy, mm, dd] = info.date.split("-").map(Number);
+    const dayName = new Date(Date.UTC(yy, mm - 1, dd)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+    text("BIRB", 90, 232, `700 46px ${DISP}`, "#ffffff", "left");
+    text(dayName, W - 90, 228, `500 28px ${MONO}`, "#8fc3d3", "right");
+    text(info.date === today ? "I found today" : info.date === yest ? "I found yesterday" : `On ${dayName} I found`, W / 2, 330, `500 44px ${BODY}`, "#cfe3e8");
+    if (n === 1) text("a new species", W / 2, 420, `700 84px ${DISP}`, "#ffffff");
+    else { text(String(n), W / 2, 505, `700 200px ${DISP}`, "#5ab8d8"); text("new species", W / 2, 585, `700 66px ${DISP}`, "#ffffff"); }
+    if (info.place) {
+      const py = n === 1 ? 480 : 645, pf = `500 34px ${BODY}`, pt = fit(info.place, W - 260, pf); g.font = pf; const pw = g.measureText(pt).width, px = W / 2 - pw / 2 + 18;
+      g.fillStyle = "#8fc3d3"; g.beginPath(); g.arc(px - 30, py - 20, 11, Math.PI * 0.9, Math.PI * 2.1); g.lineTo(px - 30, py + 2); g.closePath(); g.fill();
+      g.fillStyle = "#14343f"; g.beginPath(); g.arc(px - 30, py - 20, 4.5, 0, Math.PI * 2); g.fill();
+      text(pt, px, py, pf, "#8fc3d3", "left");
+    }
+
+    /* the cards: tilted photo prints, dropped in a loose pile. Six at most, then "+N more" */
+    const SHOW = n > 6 ? 6 : n, shown = L.slice(0, SHOW), rest = L.slice(SHOW);
+    const LAYOUTS = {
+      1: [[290, 560, -3, 500]],
+      2: [[100, 720, -6, 420], [560, 760, 5, 420]],
+      3: [[70, 700, -6, 340], [670, 690, 6, 340], [370, 980, -2, 340]],
+      4: [[80, 700, -6, 340], [660, 690, 6, 340], [90, 1080, 5, 340], [650, 1070, -5, 340]],
+      5: [[70, 690, -7, 300], [710, 675, 6, 300], [390, 880, -2, 300], [60, 1080, 8, 300], [720, 1070, -6, 300]],
+      6: [[70, 690, -7, 290], [720, 675, 6, 290], [395, 868, -2, 290], [60, 1058, 7, 290], [730, 1036, -6, 290], [300, 1212, 4, 290]],
+    };
+    const spots = LAYOUTS[SHOW] || [];
+    const photos = await Promise.all(shown.map((x) => photoImg(x.sci)));
+    const col = (x) => PLUMAGE[sci2(x.sci)] || famColour(x.fam);
+    const card = (x, im, [cx, cy, rot, w]) => {
+      const pad = Math.round(w * 0.045), ph = Math.round(w * 0.74), nf = `600 ${Math.round(w * 0.085)}px ${BODY}`, lines = wrap2(x.name, w - pad * 2, nf);
+      const lh = Math.round(w * 0.1), h = pad + ph + Math.round(w * 0.05) + lh * 2 + pad;
+      g.save(); g.translate(cx + w / 2, cy + h / 2); g.rotate((rot * Math.PI) / 180); g.translate(-w / 2, -h / 2);
+      g.shadowColor = "rgba(0,0,0,.38)"; g.shadowBlur = 30; g.shadowOffsetY = 12;
+      g.fillStyle = "#f6f2ea"; g.beginPath(); g.roundRect(0, 0, w, h, 16); g.fill();
+      g.shadowColor = "transparent";
+      g.save(); g.beginPath(); g.roundRect(pad, pad, w - pad * 2, ph, 10); g.clip();
+      g.fillStyle = col(x); g.fillRect(pad, pad, w - pad * 2, ph);
+      if (im) { const bw = w - pad * 2, s = Math.max(bw / im.width, ph / im.height); g.drawImage(im, pad + (bw - im.width * s) / 2, pad + (ph - im.height * s) / 2, im.width * s, im.height * s); }
+      else text(x.name.slice(0, 1), w / 2, pad + ph / 2 + w * 0.08, `700 ${Math.round(w * 0.22)}px ${DISP}`, "rgba(255,255,255,.75)");
+      g.restore();
+      const tf = `700 ${Math.round(w * 0.06)}px ${BODY}`, tag = x.rare ? "RARE" : "NEW"; g.font = tf; const tw = g.measureText(tag).width + w * 0.07;
+      g.fillStyle = x.rare ? "#a982e8" : "#e07a3a"; g.beginPath(); g.roundRect(pad + 10, pad + 10, tw, w * 0.1, w * 0.05); g.fill();
+      text(tag, pad + 10 + tw / 2, pad + 10 + w * 0.072, tf, "#ffffff");
+      if (x.n > 1) { const hf = `500 ${Math.round(w * 0.055)}px ${BODY}`, ht = `heard ${x.n}×`; g.font = hf; const hw = g.measureText(ht).width + w * 0.06;
+        g.fillStyle = "rgba(14,40,48,.78)"; g.beginPath(); g.roundRect(w - pad - 10 - hw, pad + ph - 10 - w * 0.09, hw, w * 0.09, w * 0.045); g.fill();
+        text(ht, w - pad - 10 - hw / 2, pad + ph - 10 - w * 0.027, hf, "#ffffff"); }
+      lines.forEach((l, i) => text(l, pad + 2, pad + ph + Math.round(w * 0.05) + lh * (i + 0.8), nf, "#22313a", "left"));
+      g.restore();
+    };
+    shown.forEach((x, i) => card(x, photos[i], spots[i]));
+    if (rest.length) {
+      const w = 236, h = 222, cx = 660, cy = 1392;
+      g.save(); g.translate(cx + w / 2, cy + h / 2); g.rotate((-9 * Math.PI) / 180); g.translate(-w / 2, -h / 2);
+      g.shadowColor = "rgba(0,0,0,.38)"; g.shadowBlur = 30; g.shadowOffsetY = 12;
+      g.fillStyle = "#5ab8d8"; g.beginPath(); g.roundRect(0, 0, w, h, 16); g.fill(); g.shadowColor = "transparent";
+      g.fillStyle = "#0e2830"; g.beginPath(); g.roundRect(12, 12, w - 24, 118, 10); g.fill();
+      text(`+${rest.length}`, w / 2, 84, `700 66px ${DISP}`, "#5ab8d8"); text("more", w / 2, 116, `500 24px ${BODY}`, "#cfe3e8");
+      const short = rest.map((x) => x.name.split(" ").pop()).join(", "), sl = wrap2(short, w - 28, `500 20px ${BODY}`);
+      sl.forEach((l, i) => text(l, w / 2, 162 + i * 25, `500 20px ${BODY}`, "#0e2830"));
+      g.restore();
+    }
+
+    /* the total, then space for Instagram's link sticker */
+    text(`That's ${info.total} species heard on BIRB`, W / 2, 1655, `500 34px ${BODY}`, "#cfe3e8");
+    g.strokeStyle = "#5ab8d8"; g.lineWidth = 4; g.lineCap = "round"; g.lineJoin = "round";
+    g.beginPath(); g.moveTo(W / 2, 1680); g.lineTo(W / 2, 1704); g.moveTo(W / 2 - 12, 1693); g.lineTo(W / 2, 1706); g.lineTo(W / 2 + 12, 1693); g.stroke();
+    text("Join my flock · tap the link", W / 2, 1742, `600 26px ${BODY}`, "#5ab8d8");
+    return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
+  }
   async function openShare() {
     shareBlob = null; if (shareUrl) { URL.revokeObjectURL(shareUrl); shareUrl = ""; }
     view = "share"; render();
-    try { shareBlob = await (shareKind === "invite" ? makeInviteCard() : makeShareCard(shareKind === "story")); shareUrl = URL.createObjectURL(shareBlob); } catch (e) { console.warn(e); }
+    try { shareBlob = await (shareKind === "invite" ? makeInviteCard() : shareKind === "day" ? makeDayCard() : makeShareCard(shareKind === "story")); shareUrl = URL.createObjectURL(shareBlob); } catch (e) { console.warn(e); }
     if (view === "share") { render(); if (!shareBlob) err("Couldn't draw your card. Try again in a moment."); }
   }
   async function sendShare(saveOnly) {
@@ -7745,6 +7860,7 @@ const Acct = (() => {
       : !s.added ? `You're up to date. Nothing new in that file, so your ${s.species} species are unchanged.`
       : `Added ${s.added} new ${s.added === 1 ? "sighting" : "sightings"}${nn ? `, including ${nn} new ${nn === 1 ? "species" : "species"}: ${esc(s.newSpecies.slice(0, 4).join(", "))}${nn > 4 ? " and more" : ""}` : ""}. You're now on ${s.species} species.`;
     if (s.rare && s.rare.length) notice += ` ${andList(s.rare)} ${s.rare.length === 1 ? "is a rare find" : "are rare finds"}, so ${s.rare.length === 1 ? "it's" : "they're"} in lilac on your Collection wall. Your friends will see a special note.`;
+    if (nn && !s.replaced) { try { dayDate = await latestNewDay(s.newSpecies); } catch (e) { dayDate = ""; } if (dayDate) notice += ` <button type="button" class="primary share-day-btn" data-share-day>Share your new ${nn === 1 ? "bird" : "birds"} to your story</button>`; }
     if (scope === "flock") await showFlock(); else await show(me.u);
     joinStep = 1; view = "profile"; render(); paintChrome();
     setTimeout(maybeNightNote, 1500);
@@ -7828,7 +7944,8 @@ const Acct = (() => {
     if (t.closest("[data-share-send]")) { await sendShare(false); return; }
     if (t.closest("[data-share-save]")) { await sendShare(true); return; }
     if (t.closest("[data-invite-card]")) { shareKind = "invite"; await openShare(); return; }
-    const sh = t.closest('[data-acct="share"]'); if (sh) { if (!me.birds) shareKind = "invite"; await openShare(); return; }
+    if (t.closest("[data-share-day]")) { shareKind = "day"; await openShare(); return; }
+    const sh = t.closest('[data-acct="share"]'); if (sh) { if (!me.birds) shareKind = "invite"; else if (!dayDate) { try { dayDate = await latestNewDay(); } catch (e) {} } await openShare(); return; }
     const fs = t.closest("[data-fl-sort]"); if (fs) { flSort = fs.dataset.flSort; render(); return; }
     if (t.closest("[data-fl-invite]")) { flInvite = !flInvite; render(); return; }
     if (t.closest("[data-fl-map]")) { close(); await showFlock(); return; }
