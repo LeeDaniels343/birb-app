@@ -335,6 +335,14 @@ body.night .nt .tx .acts .primary { color: #0f191d; }
 @media (min-width: 761px) { body.has-me .map-tools { top: 76px; } }
 .av { position: relative; display: inline-grid; place-items: center; border-radius: 50%; overflow: hidden; flex: none; background: var(--avbg, var(--accent-soft)); box-shadow: inset 0 0 0 2px var(--avrim, transparent); }
 .av img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.av.hasdots { overflow: visible; }
+.av.hasdots img { border-radius: 50%; }
+.av-dots { position: absolute; z-index: 2; right: -4%; bottom: -4%; width: 38%; height: 38%; min-width: 13px; min-height: 13px; border-radius: 50%; background: var(--surface); box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--tier) 55%, var(--surface)); pointer-events: none; }
+.av-dots i { position: absolute; width: 26%; height: 26%; border-radius: 50%; background: var(--tier); transform: translate(-50%, -50%); }
+.av-dots.d1 i { left: 50%; top: 50%; width: 34%; height: 34%; }
+.av-dots.d2 i:nth-child(1) { left: 32%; top: 50%; } .av-dots.d2 i:nth-child(2) { left: 68%; top: 50%; }
+.av-dots.d3 i:nth-child(1) { left: 50%; top: 31%; } .av-dots.d3 i:nth-child(2) { left: 31%; top: 64%; } .av-dots.d3 i:nth-child(3) { left: 69%; top: 64%; }
+.by-stack .av-dots, .who .av-dots, .scope .av-dots, .heard-by .av-dots, .who-chip .av-dots, .tl-row .av-dots { display: none; }
 .world-level { display: flex; align-items: center; gap: 10px; margin: 10px 0 2px; padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--line) 35%, transparent); font-size: 12.5px; color: var(--muted); }
 .world-level:empty { display: none; }
 .world-level i { width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--tier); box-sizing: border-box; flex: none; }
@@ -395,6 +403,10 @@ body.night .nt .tx .acts .primary { color: #0f191d; }
 .jy-st b { font-size: 15.5px; font-weight: 600; }
 .jy-st.cur b { font-size: 17px; }
 .jy-st small { font-size: 12px; color: var(--muted); }
+.jy-st .stp { display: inline-grid; place-items: center; min-width: 22px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 6px; font: 600 10.5px/1 var(--font-mono); vertical-align: 2px; color: var(--muted); border: 1px solid var(--line); }
+.jy-st .stp.on { color: var(--ink); background: color-mix(in srgb, var(--c) 22%, transparent); border-color: color-mix(in srgb, var(--c) 45%, transparent); }
+.jy-st .stp.nx { border-style: dashed; border-color: var(--c); color: var(--ink); }
+.jy-hero h2 .rn { font-family: var(--font-mono); font-size: 18px; font-weight: 600; vertical-align: 5px; padding: 3px 8px; border-radius: 8px; color: var(--ink); background: color-mix(in srgb, var(--c) 22%, transparent); }
 .jy-st .pill { font-family: var(--font-mono); font-size: 11.5px; padding: 4px 9px; border-radius: 99px; color: var(--ink); background: color-mix(in srgb, var(--c) 16%, transparent); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); }
 .jy-st .pill.nx { color: var(--muted); background: transparent; border-style: dashed; border-color: var(--line); }
 .jy-you { display: flex; align-items: center; gap: 12px; padding-left: 16px; position: relative; z-index: 2; }
@@ -1761,7 +1773,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
       <div class="legend-sub" id="world-sum"></div>
       <div class="wl" id="world-hab-list"></div>
       <div class="world-level" id="world-level"></div>
-      <div class="hint">The island grows with each level, with more room and more to see. Birds sing more often the more days you've heard them. Click one for its story, drag to look around, scroll to zoom.</div>
+      <div class="hint">The island grows bigger with each level, and every step adds a little more, like lamps, benches, reeds and rows in the field. Birds sing more often the more days you've heard them. Click one for its story, drag to look around, scroll to zoom.</div>
     </div>
     <div class="world-tip" id="world-tip" hidden></div>
     <div class="world-msg" id="world-msg" hidden>The 3D scene couldn't load. Check your internet connection, then reload the page.</div>
@@ -4657,6 +4669,7 @@ const Badges = (() => {
   const svgIc = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${IC[k] || IC.bird}</svg>`;
   const FAMS = [
     { id: "species", name: "Species", col: "#1d6b86" },
+    { id: "journey", name: "Journey", col: "#1D9E75" },
     { id: "uk", name: "Your UK collection", col: "#2b7f9b" },
     { id: "europe", name: "Your Europe collection", col: "#2f7d8c" },
     { id: "habitat", name: "Habitats", col: "#4f9d69" },
@@ -4853,6 +4866,9 @@ const Badges = (() => {
       const T = TIERS.find((x) => x.n === n);
       add("species", "sp-" + n, `${n} species`, `Hear ${n} different species, anywhere in the world${T ? `. That's the ${T.name} level` : ""}`, spDates.length, n, reach(spDates, n), { t: String(n), tier });
     });
+    /* the journey: a badge for every step of every level */
+    STEPS.forEach((st) => add("journey", "lv-" + st.n, st.name, `Hear ${st.n.toLocaleString("en-GB")} ${st.n === 1 ? "species" : "different species"}, anywhere in the world`, spDates.length, st.n, reach(spDates, st.n),
+      st.short ? { t: st.short, col: st.t.c, tier: st.ti >= 6 ? "gold" : st.ti >= 3 ? "silver" : null } : { ic: "star", col: st.t.c, tier: "gold" }));
     /* the UK list */
     const WL = WALL.length;
     [[20, "1 in 20", "5%"], [10, "1 in 10", "10%"], [4, "A quarter", "25%"], [2, "Half the list", "50%"]].forEach(([f, name, t]) => {
@@ -5139,7 +5155,9 @@ const Badges = (() => {
     const n = Math.max(nRecs, who ? Tier.count(who) : 0);
     let ci = -1; TIERS.forEach((x, i) => { if (n >= x.n) ci = i; });
     const cur = TIERS[ci] || null, nx = TIERS[ci + 1] || null;
+    const SA = Tier.stepAt(n), sc = SA.cur, sn = SA.next;
     const frac = nx ? Math.min(1, (n - (cur ? cur.n : 0)) / (nx.n - (cur ? cur.n : 0))) : 0;
+    const sfrac = sn ? Math.min(1, (n - (sc ? sc.n : 0)) / (sn.n - (sc ? sc.n : 0))) : 1;
     const ringCss = (x) => `--tier:${x.c};--tier2:${x.c2 || x.c}`;
     const whoName = who ? (mine ? "Your" : `${esc(nameOf(who))}'s`) : "";
     const ROW = 62, YOU = 40, top = ROW / 2, here = !!(nx && ci >= 0), fillH = ci < 0 ? 0 : here ? (ci + 1) * ROW + YOU / 2 - top : ci * ROW;
@@ -5151,21 +5169,22 @@ const Badges = (() => {
       <div class="jy-hero" style="--c:${cur ? cur.c : "#888"};--n:${nx ? nx.c : cur ? cur.c : "#888"}">
         <span class="aura" aria-hidden="true"></span>
         <div class="top">${who ? Avatar.html(who.avatar, "", cur ? { species: n, u: "~" } : null) : ""}
-          <div class="t"><span class="eyebrow">${whoName ? whoName + " level" : "Level"}</span><h2>${cur ? esc(cur.name) : "Just starting"}</h2>
-          <p>${curB && curB.date ? `Reached ${esc(when(curB.date))} · ` : ""}${n.toLocaleString("en-GB")} species heard</p></div></div>
-        ${nx ? `<div class="prog"><div class="lab"><span>Next · <b>${esc(nx.name)}</b></span><span><b>${n}</b> / ${nx.n.toLocaleString("en-GB")}</span></div>
-          <span class="bar"><i style="width:${Math.max(3, Math.round(frac * 100))}%"></i></span><small>${nx.n - n} more species to go</small></div>` : `<div class="prog"><small>The top level. Every bird from here is a bonus.</small></div>`}
+          <div class="t"><span class="eyebrow">${whoName ? whoName + " level" : "Level"}</span><h2>${cur ? esc(cur.name) : "Just starting"}${sc && sc.short ? ` <span class="rn">${sc.short}</span>` : ""}</h2>
+          <p>${(() => { const sb = sc ? byId.get("lv-" + sc.n) || (sc.si === 0 ? curB : null) : null; return sb && sb.date ? `Reached ${esc(when(sb.date))} · ` : ""; })()}${n.toLocaleString("en-GB")} species heard</p></div></div>
+        ${sn ? `<div class="prog"><div class="lab"><span>Next · <b>${esc(sn.name)}</b>${sn.si === 0 ? " · a new level" : ""}</span><span><b>${n}</b> / ${sn.n.toLocaleString("en-GB")}</span></div>
+          <span class="bar"><i style="width:${Math.max(3, Math.round(sfrac * 100))}%"></i></span><small>${sn.n - n} more species to go${nx && sn !== STEPS.find((x) => x.n === nx.n) ? ` · ${nx.n - n} to ${esc(nx.name)}` : ""}</small></div>` : `<div class="prog"><small>The top level. Every bird from here is a bonus.</small></div>`}
       </div>
       <div class="jy-line" style="--row:${ROW}px">
         <span class="rail" style="top:${top}px;bottom:${top}px"></span><span class="fill" style="top:${top}px;height:${fillH}px;background:${lineBg}"></span>
         ${TIERS.map((x, i) => {
           const b = byId.get("sp-" + x.n), got = n >= x.n, isNext = nx && x.n === nx.n, isCur = cur && x.n === cur.n;
           return `<div class="jy-st${got ? " got" : ""}${isCur ? " cur" : ""}${isNext ? " next" : ""}" style="--c:${x.c}"><span class="av tr${x.k ? " k" + x.k : ""}" style="--avrim:transparent;${ringCss(x)}"></span>
-            <span class="t"><b>${esc(x.name)}</b><small>${x.n === 1 ? "First species" : `${x.n.toLocaleString("en-GB")} species`}${isNext ? ` · ${x.n - n} to go` : ""}</small></span>
+            <span class="t"><b>${esc(x.name)}${STEPS.filter((st) => st.ti === i && st.short).map((st) => { const sb = byId.get("lv-" + st.n), on = n >= st.n; return `<span class="stp${on ? " on" : ""}${sn && st.n === sn.n ? " nx" : ""}" title="${esc(st.name)} · ${on && sb && sb.date ? "reached " + esc(when(sb.date)) : st.n + " species"}">${st.short}</span>`; }).join("")}</b>
+            <small>${STEPS.filter((st) => st.ti === i).map((st) => st.n === 1 ? "First species" : st.n.toLocaleString("en-GB")).join(" · ")}${isNext ? ` · ${x.n - n} to go` : ""}</small></span>
             <span class="d">${got && b && b.date ? `<span class="pill">${esc(when(b.date))}</span>` : isNext ? '<span class="pill nx">Next</span>' : ""}</span></div>${here && i === ci ? `<div class="jy-you" style="height:${YOU}px"><i></i><b>${mine ? "You" : esc(nameOf(who || {}))} · ${n} species</b></div>` : ""}`;
         }).join("")}
       </div>
-      <p class="jy-note">Levels count every species ${mine ? "you've" : "they've"} heard, anywhere in the world, and never go down. Each level comes with a ring round ${mine ? "your" : "their"} birb.${mine && who && Tier.founder(who) ? " Your birb wears the Founder ring instead, but this is still your journey." : ""}</p>
+      <p class="jy-note">Each level has two or three steps, shown by the dots on ${mine ? "your" : "their"} birb. Levels count every species ${mine ? "you've" : "they've"} heard, anywhere in the world, and never go down. Each level comes with a ring round ${mine ? "your" : "their"} birb.${mine && who && Tier.founder(who) ? " Your birb wears the Founder ring instead, but this is still your journey." : ""}</p>
     </div>`;
     box.innerHTML = h;
   }
@@ -5730,8 +5749,10 @@ const World = (() => {
     const names = new Set((state.data || []).map((d) => d.name)); let n = names.size;
     try { const v = Acct.viewing; if (v && state.source === "account") n = Math.max(n, Tier.count(v)); } catch (e) {}
     let i = 0; TIERS.forEach((x, j) => { if (n >= x.n) i = j; });
-    if (typeof window.__worldLevel === "number") i = window.__worldLevel;   // for trying sizes out
-    return { i, t: TIERS[i], n };
+    let G = Math.max(0, Tier.stepAt(n).i);
+    if (typeof window.__worldLevel === "number") { i = window.__worldLevel; G = STEPS.findIndex((x) => x.ti === i); }   // for trying sizes out
+    if (typeof window.__worldStep === "number") { G = window.__worldStep; i = STEPS[G].ti; }
+    return { i, t: TIERS[i], n, G, step: STEPS[G] };
   };
   const fpos = (k) => { const [f, d] = FOCUS[k]; return [[ISL[0] + (f[0] - ISL[0]) * WK, f[1], ISL[1] + (f[2] - ISL[1]) * WK], k === "all" ? d * WK : d * (0.55 + 0.45 * WK)]; };
   const ZMAX = () => Math.min(120, 74 * WK);
@@ -5837,6 +5858,8 @@ const World = (() => {
     WLV = levelHere(); const wkWas = WK; WK = WORLD_K[WLV.i] || 1;
     if (wkWas !== WK && R) { const [f, d] = fpos("all"); tgtGo.x = f[0]; tgtGo.y = f[1]; tgtGo.z = f[2]; distGo = d * narrow("all"); setFocusPressed("all"); }
     const K = WK, KK = K * K, kx = (x) => ISL[0] + (x - ISL[0]) * K, kz = (z) => ISL[1] + (z - ISL[1]) * K;
+    /* each step within a level adds small touches: more lamps, benches, reeds, flowers and a longer field */
+    const G = WLV.G || 0, FROWS = Math.min(24, 8 + G), FW = 9.4 * Math.max(1, K * 0.95), FD = 0.5 + (FROWS - 1) * 0.33;
     S = new THREE.Scene();
     S.background = new THREE.Color(L.sky); S.fog = new THREE.Fog(L.fog, 44 * K, 122 * K);
     hemi = new THREE.HemisphereLight(L.hemi[0], L.hemi[1], L.hemi[2]); S.add(hemi);
@@ -5962,7 +5985,7 @@ const World = (() => {
       if (Math.hypot((x - CX) / (4.1 + m), (z - CZ) / (3.3 + m)) < 1) return false;
       if (pathPts.some((p) => Math.hypot(p.x - x, p.z - z) < 0.8 + m)) return false;
       const dx = x - HX, dz = z - HZ, lx = dx * hc - dz * hs, lz = dx * hs + dz * hc;
-      return !(lx > -5 && lx < 6.3 && lz > -0.9 && lz < 4.7);
+      return !(lx > -FW / 2 - 0.3 - m && lx < FW / 2 + 1.6 + m && lz > -0.9 - m && lz < 0.6 + FD + 0.3 + m);
     };
     for (let i = 0; i < Math.round((LITE ? 40 : 90) * KK); i++) { const x = ISL[0] + (rnd() - 0.5) * 33.5 * K, z = ISL[1] + (rnd() - 0.5) * 25.5 * K; if (clear(x, z)) tuft(x, z, rnd() < 0.5 ? 0x7fb45e : 0x8dc26b, 6, 0.3); }
     const inWood = (x, z) => Math.hypot((x - kx(3.2)) / (7.8 * K), (z - kz(-6.6)) / (5.4 * K)) < 1;
@@ -5999,7 +6022,8 @@ const World = (() => {
         if (lit && !LITE) { const pl = new THREE.PointLight(0xffd38a, light === "night" ? 1.25 : 0.55, 6.5, 2); pl.position.y = 2.3; g.add(pl); }
         g.position.set(x, 0, z); S.add(g);
       };
-      [[0.08, -1], [0.3, 1], [0.52, 1], [0.72, -1], [0.92, 1]].forEach(([t, side]) => {
+      const nL = 5 + Math.floor(G / 3);
+      Array.from({ length: nL }, (_, i) => [0.08 + (i * 0.84) / (nL - 1), [-1, 1, 1, -1][i % 4]]).forEach(([t, side]) => {
         const p = path.getPoint(t), tan = path.getTangent(t);
         lamp(p.x - tan.z * 0.85 * side, p.z + tan.x * 0.85 * side);
       });
@@ -6007,7 +6031,7 @@ const World = (() => {
     const FLW = [0xfdf8ea, 0xf6cf4f, 0xb590dc, 0xee8fb3, 0xff8f6b];
     {
       const beds = FLW.map(() => []), all = [];
-      for (let d = 0; d < Math.round(17 * KK); d++) {
+      for (let d = 0; d < Math.round(17 * KK) + G; d++) {
         const cx = ISL[0] + (rnd() - 0.5) * 30 * K, cz = ISL[1] + (rnd() - 0.5) * 22.5 * K, c1 = d % 5, c2 = (d * 2 + 1) % 5;
         for (let i = 0; i < (LITE ? 9 : 18); i++) { const a = rnd() * 6.283, r = Math.sqrt(rnd()) * 1.5, x = cx + Math.cos(a) * r * 1.3, z = cz + Math.sin(a) * r * 0.8; if (!clear(x, z, -0.15)) continue; const f = [x, z, 0.16 + rnd() * 0.16]; beds[rnd() < 0.72 ? c1 : c2].push(f); all.push(f); }
       }
@@ -6022,21 +6046,23 @@ const World = (() => {
     const swimmers = by.pond.filter((b) => habitOf(b) === "swim"), waders = by.pond.filter((b) => habitOf(b) === "stand");
     const pondFly = by.pond.filter((b) => !swimmers.includes(b) && !waders.includes(b) && (b.fam === "coastal" || b.fam === "aerial"));
     const edge = by.pond.filter((b) => !swimmers.includes(b) && !waders.includes(b) && !pondFly.includes(b));
-    const pr = (1.05 + Math.min(1, swimmers.length / 10) * 0.3) * (0.6 + 0.4 * K); PR = pr;
+    const pr = (1.05 + Math.min(1, swimmers.length / 10) * 0.3) * K; PR = pr;
     const pw = (a) => 1 + 0.13 * Math.sin(a * 3) + 0.08 * Math.cos(a * 5);
     blob(PX, PZ, 3.6 * pr, 2.75 * pr, 0.012, 0xdccfa6, pw); blob(PX, PZ, 3.25 * pr, 2.45 * pr, 0.02, 0x86cce6, pw); blob(PX, PZ, 2.9 * pr, 2.15 * pr, 0.026, 0x57add8, pw); blob(PX - 0.2, PZ + 0.1, 1.9 * pr, 1.3 * pr, 0.03, 0x4a9fcf, pw);
     [[-0.9, -0.5, 0.9, 0.5], [0.8, 0.9, 0.7, 2.2], [-0.3, 1.1, 0.6, 4]].forEach(([x, z, r, a0]) => { const gl = new THREE.Mesh(new THREE.RingGeometry(r, r + 0.035, 24, 1, a0, 1.1), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: light === "night" ? 0.18 : 0.5 })); gl.rotation.x = -Math.PI / 2; add(gl, PX + x * pr, 0.034, PZ + z * pr); });
     const rim = (a, k = 1) => [PX + Math.cos(a) * 3.25 * pr * pw(a) * k, PZ - Math.sin(a) * 2.45 * pr * pw(a) * k];
-    for (let i = 0; i < 48; i++) { const big = i % 7 === 3, [x, z] = rim((i / 48) * Math.PI * 2 + rnd() * 0.04, 1.03 + rnd() * 0.03); const p = new THREE.Mesh(puff((big ? 0.2 : 0.1) + rnd() * 0.07, 0), M(rnd() < 0.5 ? 0xbfb9aa : 0xa29c8e)); p.scale.y = 0.5; p.rotation.y = rnd() * 6; p.castShadow = big; p.receiveShadow = true; add(p, x, 0.04, z); }
-    for (let i = 0; i < 20; i++) {
-      const [x, z] = rim(1.25 + i * 0.085 + rnd() * 0.03, 1.02 + rnd() * 0.1), g = new THREE.Group(), h = 1 + rnd() * 0.5;
+    const nStone = Math.round(48 * pr / 1.2);
+    for (let i = 0; i < nStone; i++) { const big = i % 7 === 3, [x, z] = rim((i / nStone) * Math.PI * 2 + rnd() * 0.04, 1.03 + rnd() * 0.03); const p = new THREE.Mesh(puff((big ? 0.2 : 0.1) + rnd() * 0.07, 0), M(rnd() < 0.5 ? 0xbfb9aa : 0xa29c8e)); p.scale.y = 0.5; p.rotation.y = rnd() * 6; p.castShadow = big; p.receiveShadow = true; add(p, x, 0.04, z); }
+    const nReed = Math.round(20 * K) + 2 * G;
+    for (let i = 0; i < nReed; i++) {
+      const [x, z] = i < 28 ? rim(1.25 + i * 0.085 + rnd() * 0.03, 1.02 + rnd() * 0.1) : rim(3.9 + (i - 28) * 0.09 + rnd() * 0.03, 1.02 + rnd() * 0.1), g = new THREE.Group(), h = 1 + rnd() * 0.5;
       const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.02, h, 5), M(0x7f9c5c)); stem.position.y = h / 2; g.add(stem);
       const hd = new THREE.Mesh(new THREE.SphereGeometry(0.065, 8, 6), M(0x6e4a2e)); hd.scale.y = 2.3; hd.position.y = h - 0.15; hd.castShadow = true; g.add(hd);
       const spk = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.007, 0.2, 4), M(0x9a8a62)); spk.position.y = h + 0.07; g.add(spk);
       for (let k = 0; k < 3; k++) { const lf = new THREE.Mesh(new THREE.ConeGeometry(0.025, h * 0.85, 3), M(0x8fae6c)); lf.position.set((rnd() - 0.5) * 0.1, h * 0.42, (rnd() - 0.5) * 0.1); lf.rotation.z = (rnd() - 0.5) * 0.4; g.add(lf); }
       g.position.set(x, 0, z); S.add(g); sway.push({ g, ph: rnd() * 6, a: 0.06 });
     }
-    for (let i = 0; i < 7; i++) { const [x, z] = rim(4.8 + i * 0.2, 1.03); tuft(x, z, rnd() < 0.5 ? 0x9cb57a : 0xb2c78f, 9, 0.9); }
+    for (let i = 0; i < 7 + Math.floor(G / 2); i++) { const [x, z] = rim(4.8 + i * 0.2, 1.03); tuft(x, z, rnd() < 0.5 ? 0x9cb57a : 0xb2c78f, 9, 0.9); }
     [[1, 0.6, 0.3], [1.6, 0.2, 0.24], [0.6, 1.1, 0.26], [-1.4, -0.8, 0.28], [-1, -1.2, 0.22], [1.9, -0.7, 0.25], [-0.2, -1.5, 0.2], [-2, 0.5, 0.26], [-1.6, 1.1, 0.2], [0.3, -0.4, 0.22], [2.2, 0.9, 0.2]].forEach(([x, z, r], i) => {
       const lp = new THREE.Mesh(new THREE.CircleGeometry(r, 18, 0.3, Math.PI * 2 - 0.6), M(i % 3 ? 0x4f9a55 : 0x66ad5e)); lp.rotation.x = -Math.PI / 2; lp.rotation.z = i; add(lp, PX + x * pr, 0.035, PZ + z * pr);
       if (i % 2 === 0) { const fw = new THREE.Group(); for (let k = 0; k < 7; k++) { const pe = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 4), M(i === 2 ? 0xffffff : 0xf2b8cf)); pe.position.set(Math.cos(k) * 0.04, 0.07, Math.sin(k) * 0.04); pe.rotation.z = Math.cos(k) * 0.5; pe.rotation.x = Math.sin(k) * 0.5; fw.add(pe); } const ce = new THREE.Mesh(new THREE.SphereGeometry(0.028, 6, 4), M(0xf2c84b)); ce.position.y = 0.08; fw.add(ce); add(fw, PX + x * pr + 0.05, 0.03, PZ + z * pr); }
@@ -6045,11 +6071,21 @@ const World = (() => {
     for (let i = 0; i < 6; i++) { const pl = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.06, 1.1), M(i % 2 ? 0xb59a7a : 0xa88c6c)); pl.position.set(i * 0.3, 0.18, 0); pl.castShadow = true; pl.receiveShadow = true; jetty.add(pl); }
     [[0, 0.5], [0, -0.5], [1.5, 0.5], [1.5, -0.5]].forEach(([x, z]) => { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.4, 6), M(0x8f7c68)); p.position.set(x, 0.1, z); jetty.add(p); });
     jetty.position.set(PX + 2.5 * pr, 0, PZ + 1.1 * pr); jetty.rotation.y = 0.6; S.add(jetty);
-    const bench = new THREE.Group(), bm = M(0xa88c6c);
-    [[0, 0.38, 0, 1.4, 0.06, 0.4], [0, 0.68, -0.19, 1.4, 0.28, 0.05]].forEach(([x, y, z, w, h, d]) => { const p = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bm); p.position.set(x, y, z); p.castShadow = true; bench.add(p); });
-    [-0.6, 0.6].forEach((x) => { const l = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.38, 0.38), M(0x55606a)); l.position.set(x, 0.19, 0); bench.add(l); });
+    const bm = M(0xa88c6c), benchAt = (x, z, ry) => {
+      const bench = new THREE.Group();
+      [[0, 0.38, 0, 1.4, 0.06, 0.4], [0, 0.68, -0.19, 1.4, 0.28, 0.05]].forEach(([x2, y, z2, w, h, d]) => { const p = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bm); p.position.set(x2, y, z2); p.castShadow = true; bench.add(p); });
+      [-0.6, 0.6].forEach((x2) => { const l = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.38, 0.38), M(0x55606a)); l.position.set(x2, 0.19, 0); bench.add(l); });
+      bench.position.set(x, 0, z); bench.rotation.y = ry; S.add(bench); return bench;
+    };
     /* beside the path, not on it, looking across to the pond */
-    bench.position.set(kx(-6.5), 0, kz(9.3)); bench.rotation.y = Math.PI + 0.1; S.add(bench);
+    benchAt(kx(-6.5), kz(9.3), Math.PI + 0.1);
+    /* one more bench along the path every few steps, facing it */
+    for (let b = 0; b < Math.min(5, Math.floor((G + 1) / 3)); b++) {
+      const t = 0.22 + b * 0.16, p = path.getPoint(t), tan = path.getTangent(t), sd = b % 2 ? 1 : -1;
+      const bx = p.x + tan.z * 1.5 * sd, bz = p.z - tan.x * 1.5 * sd;
+      if (!inIsland(bx, bz, 1)) continue;
+      benchAt(bx, bz, Math.atan2(p.x - bx, p.z - bz));
+    }
     swimmers.forEach((b, i) => { const big = /Swan|Goose/.test(b.n) ? 1.25 : 1; swim.push({ g: addBird(b, big), r: 0.35 + ((i * 0.618) % 1) * 0.6, a: i * 2.4, sp: (i % 2 ? 1 : -1) * (0.1 + (i % 3) * 0.04) }); });
     waders.forEach((b, i) => { const [x, z] = rim(0.9 + i * 0.75, 0.84); const g = addBird(b); g.position.set(x, 0.1 * BS, z); g.rotation.y = 2.8 - i * 0.9; g.userData.home = g.position.clone(); });
     pondFly.forEach((b, i) => flyers.push({ g: addBird(b, 1.1, null, true), cx: PX, cz: PZ, r: 4 + i * 1.1, h: 4.2 + (i % 3) * 0.8, a: i * 3, sp: 0.32 + (i % 3) * 0.08 }));
@@ -6091,24 +6127,26 @@ const World = (() => {
     // hedgerow and field
     const hedge = new THREE.Group(); hedge.position.set(HX, 0, HZ); hedge.rotation.y = -0.5; S.add(hedge);
     const hms = [M(0x4d8a48), M(0x5f9d55)];
-    for (let i = 0; i < 15; i++) { const h = new THREE.Mesh(puff(0.5 + rnd() * 0.1), hms[i % 2]); h.rotation.y = rnd() * 6; h.scale.set(1, 0.95, 0.75); h.position.set(-3.92 + i * 0.56, 0.45 + rnd() * 0.1, (rnd() - 0.5) * 0.12); h.castShadow = true; hedge.add(h); }
-    for (let i = 0; i < 84; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), M(rnd() < 0.75 ? 0xc23b3b : 0x3b2f4f)); b.position.set(-4.1 + rnd() * 8.2, 0.25 + rnd() * 0.6, (rnd() < 0.5 ? 1 : -1) * (0.33 + rnd() * 0.07)); hedge.add(b); }
-    [-4.5, 4.45].forEach((x) => { const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.9, 0.1), M(0xa08e78)); p.position.set(x, 0.45, 0); p.castShadow = true; hedge.add(p); });
+    const nHedge = Math.round((FW - 1) / 0.56) + 1;
+    for (let i = 0; i < nHedge; i++) { const h = new THREE.Mesh(puff(0.5 + rnd() * 0.1), hms[i % 2]); h.rotation.y = rnd() * 6; h.scale.set(1, 0.95, 0.75); h.position.set(-FW / 2 + 0.78 + i * 0.56, 0.45 + rnd() * 0.1, (rnd() - 0.5) * 0.12); h.castShadow = true; hedge.add(h); }
+    for (let i = 0; i < Math.round(84 * FW / 9.4); i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), M(rnd() < 0.75 ? 0xc23b3b : 0x3b2f4f)); b.position.set(-FW / 2 + 0.6 + rnd() * (FW - 1.2), 0.25 + rnd() * 0.6, (rnd() < 0.5 ? 1 : -1) * (0.33 + rnd() * 0.07)); hedge.add(b); }
+    [-FW / 2 + 0.2, FW / 2 - 0.25].forEach((x) => { const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.9, 0.1), M(0xa08e78)); p.position.set(x, 0.45, 0); p.castShadow = true; hedge.add(p); });
     const gate = new THREE.Group();
     for (let i = 0; i < 4; i++) { const r = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.06, 0.05), M(0xb59a7a)); r.position.set(0, 0.2 + i * 0.18, 0); gate.add(r); }
-    const dg = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.06, 0.05), M(0xb59a7a)); dg.position.set(0, 0.47, 0); dg.rotation.z = 0.48; gate.add(dg); gate.position.set(5.2, 0, 0); hedge.add(gate);
-    const field = new THREE.Mesh(new THREE.PlaneGeometry(9.4, 3.8), M(0xdcc27c)); field.rotation.x = -Math.PI / 2; field.position.set(0, 0.012, 2.5); field.receiveShadow = true; hedge.add(field);
+    const dg = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.06, 0.05), M(0xb59a7a)); dg.position.set(0, 0.47, 0); dg.rotation.z = 0.48; gate.add(dg); gate.position.set(FW / 2 + 0.5, 0, 0); hedge.add(gate);
+    const field = new THREE.Mesh(new THREE.PlaneGeometry(FW, FD), M(0xdcc27c)); field.rotation.x = -Math.PI / 2; field.position.set(0, 0.012, 0.6 + FD / 2); field.receiveShadow = true; hedge.add(field);
     /* ploughed ridges, a post-and-rail fence along the front and two hay bales */
-    for (let i = 0; i < 11; i++) { const fr = new THREE.Mesh(new THREE.BoxGeometry(9.2, 0.07, 0.15), M(i % 2 ? 0xc9aa60 : 0xd2b56b)); fr.position.set(0, 0.035, 0.85 + i * 0.33); fr.receiveShadow = true; hedge.add(fr); }
+    for (let i = 0; i < FROWS; i++) { const fr = new THREE.Mesh(new THREE.BoxGeometry(FW - 0.2, 0.07, 0.15), M(i % 2 ? 0xc9aa60 : 0xd2b56b)); fr.position.set(0, 0.035, 0.85 + i * 0.33); fr.receiveShadow = true; hedge.add(fr); }
     const fm = M(0xa68862);
-    for (let i = 0; i <= 9; i++) { const fp = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.62, 0.09), fm); fp.position.set(-4.7 + i * (9.4 / 9), 0.31, 4.46); fp.castShadow = true; hedge.add(fp); }
-    [0.26, 0.5].forEach((y) => { const rl = new THREE.Mesh(new THREE.BoxGeometry(9.5, 0.06, 0.04), fm); rl.position.set(0, y, 4.46); rl.castShadow = true; hedge.add(rl); });
-    [[3.95, 3.5, 0.3], [3.3, 3.85, -0.5]].forEach(([x, z, r]) => { const bl = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.6, 14), M(0xdcb85a)); bl.rotation.z = Math.PI / 2; bl.rotation.y = r; bl.position.set(x, 0.34, z); bl.castShadow = true; hedge.add(bl); const cap = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 5, 16), M(0xc19a3f)); cap.rotation.y = Math.PI / 2 + r; cap.position.set(x + Math.cos(r) * 0.305, 0.34, z - Math.sin(r) * 0.305); hedge.add(cap); });
-    for (let i = 0; i < 42; i++) { const x = -4.1 + rnd() * 8.2, z = 0.5 + rnd() * 0.3, h = 0.14 + rnd() * 0.16; const st = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.009, h, 4), M(0x86a46a)); st.position.set(x, h / 2, z); hedge.add(st); const fh = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), M(FLW[i % 4])); fh.position.set(x, h, z); hedge.add(fh); }
+    const nFp = Math.round(FW);
+    for (let i = 0; i <= nFp; i++) { const fp = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.62, 0.09), fm); fp.position.set(-FW / 2 + i * (FW / nFp), 0.31, 0.66 + FD); fp.castShadow = true; hedge.add(fp); }
+    [0.26, 0.5].forEach((y) => { const rl = new THREE.Mesh(new THREE.BoxGeometry(FW + 0.1, 0.06, 0.04), fm); rl.position.set(0, y, 0.66 + FD); rl.castShadow = true; hedge.add(rl); });
+    [[FW / 2 - 0.75, FD - 0.3, 0.3], [FW / 2 - 1.4, FD + 0.05, -0.5], ...(G >= 8 ? [[-FW / 2 + 0.9, FD - 0.2, 0.1]] : []), ...(G >= 14 ? [[-FW / 2 + 1.6, FD + 0.1, -0.3]] : [])].forEach(([x, z, r]) => { const bl = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.6, 14), M(0xdcb85a)); bl.rotation.z = Math.PI / 2; bl.rotation.y = r; bl.position.set(x, 0.34, z); bl.castShadow = true; hedge.add(bl); const cap = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 5, 16), M(0xc19a3f)); cap.rotation.y = Math.PI / 2 + r; cap.position.set(x + Math.cos(r) * 0.305, 0.34, z - Math.sin(r) * 0.305); hedge.add(cap); });
+    for (let i = 0; i < Math.round(42 * FW / 9.4); i++) { const x = -FW / 2 + 0.6 + rnd() * (FW - 1.2), z = 0.5 + rnd() * 0.3, h = 0.14 + rnd() * 0.16; const st = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.009, h, 4), M(0x86a46a)); st.position.set(x, h / 2, z); hedge.add(st); const fh = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), M(FLW[i % 4])); fh.position.set(x, h, z); hedge.add(fh); }
     const fGround = by.farm.filter((b) => b.fam === "corvids" || b.fam === "pigeons" || b.fam === "game" || habitOf(b) === "stand"), fAir = by.farm.filter((b) => b.fam === "aerial");
     const fPerch = by.farm.filter((b) => !fGround.includes(b) && !fAir.includes(b));
-    fPerch.forEach((b, i) => { const n = fPerch.length, row = i % 2 && n > 9 ? -0.25 : 0; const g = addBird(b, 1, hedge); g.position.set(n === 1 ? 0 : -3.5 + (i / (n - 1)) * 7, 1.08 + (row ? -0.08 : 0), row); g.rotation.y = i % 2 ? 0.5 : -0.5; g.userData.home = g.position.clone(); });
-    fGround.forEach((b, i) => { const g = addBird(b, 1, hedge); g.position.set(-3.2 + ((i * 0.618) % 1) * 6.2, 0.15 * BS + 0.05, 1.45 + (i % 4) * 0.62); g.rotation.y = i * 2; peckers.push({ g, ph: i * 2 }); });
+    fPerch.forEach((b, i) => { const n = fPerch.length, row = i % 2 && n > 9 ? -0.25 : 0; const g = addBird(b, 1, hedge); g.position.set(n === 1 ? 0 : -(FW / 2 - 1.2) + (i / (n - 1)) * (FW - 2.4), 1.08 + (row ? -0.08 : 0), row); g.rotation.y = i % 2 ? 0.5 : -0.5; g.userData.home = g.position.clone(); });
+    fGround.forEach((b, i) => { const g = addBird(b, 1, hedge); g.position.set(-(FW / 2 - 1.5) + ((i * 0.618) % 1) * (FW - 3), 0.15 * BS + 0.05, 1.45 + (i % 4) * ((FD - 1.4) / 4)); g.rotation.y = i * 2; peckers.push({ g, ph: i * 2 }); });
     fAir.forEach((b, i) => flyers.push({ g: addBird(b, 1, null, true), cx: HX, cz: HZ + 1.8, r: 3 + i * 0.8, h: 2.6 + (i % 2) * 0.6, a: i * 2, sp: 0.6 + (i % 2) * 0.15 }));
     signpost("farm", "Farmland", by.farm.length, kx(4.4), kz(6.9));
 
@@ -6283,7 +6321,7 @@ const World = (() => {
 
   function updateUi(SP, by) {
     $("world-sum").textContent = `${SP.length} species · ${HABS.filter((h) => by[h].length).length} habitats`;
-    const wl = $("world-level"); if (wl && WLV) { const nx = TIERS[WLV.i + 1]; wl.innerHTML = `<i style="--tier:${WLV.t.c}"></i><span><b>${esc(WLV.t.name)} world</b>${nx ? `Grows again at ${esc(nx.name)}` : "Fully grown"}</span>`; }
+    const wl = $("world-level"); if (wl && WLV) { const nx = TIERS[WLV.i + 1], ns = STEPS[WLV.G + 1]; wl.innerHTML = `<i style="--tier:${WLV.t.c}"></i><span><b>${esc((WLV.step || WLV.t).name)} world</b>${ns ? (ns.si === 0 ? `Grows bigger at ${esc(ns.name)}` : `More to see at ${esc(ns.name)}`) : "Fully grown"}</span>`; }
     const n = (h) => by[h].length;
     document.querySelectorAll("[data-wfocus]").forEach((b) => { const k = b.dataset.wfocus; const c = b.querySelector(".n"); if (c) c.textContent = k === "all" ? SP.length : n(k); });
     $("world-hab-list").innerHTML = HABS.map((h) => `<button type="button" class="wl-row" data-wfocus="${h}"><i style="background:${hCol(h)}"></i><span>${HAB_SHORT[h]}</span><b>${n(h)}</b></button>`).join("");
@@ -6793,19 +6831,43 @@ const TIERS = [
   { n: 100, name: "Birder", c: "#378ADD" }, { n: 200, name: "Twitcher", c: "#7F77DD" }, { n: 300, name: "Ornithologist", c: "#D4537E" },
   { n: 400, name: "Legend", c: "#EF9F27", k: 2 }, { n: 600, name: "Globetrotter", c: "#EF9F27", c2: "#378ADD", k: 2 }, { n: 1000, name: "World legend", c: "#EF9F27", k: 3 },
 ];
+/* each level has steps, I, II and sometimes III. A level splits into three when its gap is wide enough for tidy thirds
+   (rounded to the nearest 5 species), and into two when only halves come out clean. The top level has no steps */
+const ROMAN = ["I", "II", "III"];
+const STEPS = (() => {
+  const out = [];
+  TIERS.forEach((t, i) => {
+    const nx = TIERS[i + 1]; if (!nx) { out.push({ t, ti: i, si: 0, of: 1, n: t.n, name: t.name, short: "" }); return; }
+    const base = t.n === 1 ? 0 : t.n, gap = nx.n - base, r5 = (v) => Math.round(v / 5) * 5;
+    const parts = gap >= 60 ? 3 : 2, ns = [t.n];
+    for (let k = 1; k < parts; k++) ns.push(base + (parts === 2 && gap < 50 ? 10 * k : r5((gap * k) / parts)));
+    ns.forEach((n, k) => out.push({ t, ti: i, si: k, of: parts, n, name: `${t.name} ${ROMAN[k]}`, short: ROMAN[k] }));
+  });
+  return out;
+})();
 const Tier = {
   full(u) { if (!u) return null; let m = null; try { m = u.u ? Acct.member(u.u) : null; } catch (e) {} return m && m !== u ? { ...m, ...u, birds: u.birds || m.birds, badges: u.badges || m.badges } : u; },
   count(u) {
     u = Tier.full(u); if (!u) return 0;
     let n = (u.birds && u.birds.species) || u.species || 0;
-    for (const id of Object.keys(u.badges || {})) { const k = /^sp-(\d+)$/.exec(id); if (k) n = Math.max(n, +k[1]); }
+    for (const id of Object.keys(u.badges || {})) { const k = /^(?:sp|lv)-(\d+)$/.exec(id); if (k) n = Math.max(n, +k[1]); }
     return n;
   },
+  /* the step you're on (Birder II and so on) and the next one, by species count */
+  stepAt(n) { let i = -1; STEPS.forEach((x, j) => { if (n >= x.n) i = j; }); return { cur: STEPS[i] || null, next: STEPS[i + 1] || null, i }; },
+  step(u) { return Tier.stepAt(Tier.count(u)); },
   of(u) { const n = Tier.count(u); let t = null; for (const x of TIERS) if (n >= x.n) t = x; return t ? { ...t, have: n, next: TIERS.find((x) => x.n > n) || null } : null; },
   founder(u) { if (!u) return false; if (u.owner) return true; try { return !!Acct.ownerU && u.u === Acct.ownerU; } catch (e) { return false; } },
   chip(u) {
     const t = Tier.of(u), f = Tier.founder(u);
-    return `${f ? '<span class="tier-chip fd">Founder</span>' : ""}${t ? `<span class="tier-chip" style="--tier:${t.c}">${esc(t.name)}</span>` : ""}`;
+    const st = t ? Tier.step(u).cur : null;
+    return `${f ? '<span class="tier-chip fd">Founder</span>' : ""}${t ? `<span class="tier-chip" style="--tier:${t.c}">${esc(st ? st.name : t.name)}</span>` : ""}`;
+  },
+  /* the little dots on a birb: one, two, or a triangle of three, for the step within its level */
+  dots(u) {
+    const t = Tier.of(u); if (!t) return "";
+    const st = Tier.step(u).cur; if (!st || st.of < 2) return "";
+    return `<span class="av-dots d${st.si + 1}" style="--tier:${t.c}" aria-hidden="true">${"<i></i>".repeat(st.si + 1)}</span>`;
   },
 };
 const Avatar = (() => {
@@ -6998,10 +7060,12 @@ const Avatar = (() => {
   function html(a, label = "", who = null) {
     const f = who && Tier.founder(who), t = who && !f ? Tier.of(who) : null;
     const rc = f ? " fd" : t ? ` tr${t.k ? " k" + t.k : ""}` : "", rs = t ? `;--tier:${t.c};--tier2:${t.c2 || t.c}` : "";
-    const ti = f ? ` title="${esc((label ? label + " · " : "") + "Founder")}"` : t ? ` title="${esc((label ? label + " · " : "") + t.name)}"` : "";
-    if (!a) return `<span class="av${rc}" aria-hidden="true" style="--avrim:transparent${rs}"${ti}>${BIRDSVG}</span>`;
+    const stn = who ? (Tier.step(who).cur || {}).name : "";
+    const ti = f ? ` title="${esc((label ? label + " · " : "") + "Founder" + (stn ? " · " + stn : ""))}"` : t ? ` title="${esc((label ? label + " · " : "") + (stn || t.name))}"` : "";
+    const dots = who ? Tier.dots(who) : "", dc = dots ? " hasdots" : "";
+    if (!a) return `<span class="av${rc}${dc}" aria-hidden="true" style="--avrim:transparent${rs}"${ti}>${BIRDSVG}${dots}</span>`;
     const A = norm(a), src = snapshot(A);
-    return `<span class="av${rc}" style="--avbg:${A.bg};--avrim:${rc ? "transparent" : A.cBody}${rs}"${ti}>${src ? `<img src="${src}" alt="${esc(label)}">` : BIRDSVG}</span>`;
+    return `<span class="av${rc}${dc}" style="--avbg:${A.bg};--avrim:${rc ? "transparent" : A.cBody}${rs}"${ti}>${src ? `<img src="${src}" alt="${esc(label)}">` : BIRDSVG}${dots}</span>`;
   }
   const of = (u, label = "") => html(u && u.avatar, label, u || null);
   /* live turntable used by the builder */
@@ -7533,7 +7597,7 @@ const Acct = (() => {
   /* your ring: which tier you're on, how far to the next, and the whole ladder on a tap */
   const tierHTML = () => {
     const t = Tier.of(me), f = Tier.founder(me); if (!t && !f) return "";
-    const n = Tier.count(me), nx = t && t.next;
+    const n = Tier.count(me), nx = Tier.stepAt(n).next;
     return `<button type="button" class="pv2-tier" data-go-journey>${Tier.chip(me)}<span class="t">${nx ? `${nx.n - n} more species to ${esc(nx.name)}` : t ? "The top level" : ""}</span><span class="more">Journey ›</span></button>`;
   };
   const tabs = () => me ? `<nav class="acct-tabs" aria-label="Account">${[["profile", "Overview"], ["settings", "Settings"], ["flock", "Flock"], ...(me.admin ? [["admin", "Admin"]] : [])].map(([k, l]) => `<button type="button" data-acct="${k}" aria-current="${view === k ? "page" : "false"}">${l}${k === "flock" && requests.in.length ? `<span class="tab-n" aria-label="${requests.in.length} new">${requests.in.length}</span>` : ""}</button>`).join("")}${DEVSITE ? '<span class="acct-dev" title="Test copy with separate data">DEV</span>' : ""}</nav>` : "";
