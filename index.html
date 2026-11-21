@@ -335,6 +335,38 @@ body.night .nt .tx .acts .primary { color: #0f191d; }
 @media (min-width: 761px) { body.has-me .map-tools { top: 76px; } }
 .av { position: relative; display: inline-grid; place-items: center; border-radius: 50%; overflow: hidden; flex: none; background: var(--avbg, var(--accent-soft)); box-shadow: inset 0 0 0 2px var(--avrim, transparent); }
 .av img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.av.tr::after, .av.fd::after { content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+.av.tr::after { box-shadow: inset 0 0 0 var(--rw, 3px) var(--tier); }
+.av.tr.k2::after { box-shadow: inset 0 0 0 2px var(--tier), inset 0 0 0 4px var(--avbg, var(--surface)), inset 0 0 0 6px var(--tier2); }
+.av.tr.k3::after { box-shadow: inset 0 0 0 2px var(--tier), inset 0 0 0 3.5px var(--avbg, var(--surface)), inset 0 0 0 5.5px var(--tier), inset 0 0 0 7px var(--avbg, var(--surface)), inset 0 0 0 9px var(--tier); }
+.av.fd::after { background: conic-gradient(from 210deg, #f2c14e, #e07b39, #d4537e, #7f77dd, #378add, #1d9e75, #97c459, #f2c14e);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--rw, 3.5px)), #000 calc(100% - var(--rw, 3.5px) + .5px)); mask: radial-gradient(farthest-side, transparent calc(100% - var(--rw, 3.5px)), #000 calc(100% - var(--rw, 3.5px) + .5px)); }
+.acct .pv2-head .av, .prof .av, .flock-row .av, .me-btn .av { --rw: 4px; }
+.acct .pv2-head .av.fd { --rw: 5px; }
+.by-stack .av, .who .av, .scope .av, .heard-by .av, .who-chip .av { --rw: 2px; }
+.tier-chip { display: inline-flex; align-items: center; gap: 5px; font: 600 11.5px/1 var(--font-body); padding: 4px 9px 4px 7px; border-radius: 999px; color: var(--ink); background: color-mix(in srgb, var(--tier, #888) 16%, transparent); white-space: nowrap; }
+.tier-chip::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 2.5px solid var(--tier, #888); box-sizing: border-box; }
+.tier-chip.fd { background: color-mix(in srgb, #e07b39 14%, transparent); }
+.tier-chip.fd::before { border: 0; background: conic-gradient(#f2c14e, #e07b39, #d4537e, #7f77dd, #378add, #1d9e75, #f2c14e); -webkit-mask: radial-gradient(farthest-side, transparent 52%, #000 56%); mask: radial-gradient(farthest-side, transparent 52%, #000 56%); }
+.tier-chip.sm { font-size: 10.5px; padding: 3px 7px 3px 5px; margin-left: 6px; vertical-align: 1px; }
+.tier-chip + .tier-chip { margin-left: 4px; }
+.mem-tier { margin: 6px 0 0; }
+.pv2-tier { margin: 12px 0 0; }
+.pv2-tier summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 13px; color: var(--muted); }
+.pv2-tier summary::-webkit-details-marker { display: none; }
+.pv2-tier summary .t { flex: 1; }
+.pv2-tier summary .more { color: var(--accent); font-weight: 600; font-size: 13px; }
+.pv2-tier[open] summary .more::after { content: " ▴"; }
+.pv2-tier:not([open]) summary .more::after { content: " ▾"; }
+.tier-ladder { display: grid; gap: 2px; margin: 10px 0 4px; padding: 8px 12px; border-radius: 14px; background: color-mix(in srgb, var(--line) 35%, transparent); }
+.tl-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; font-size: 13.5px; opacity: .55; }
+.tl-row.got, .tl-row.fd-row { opacity: 1; }
+.tl-row .av { width: 30px; height: 30px; --rw: 3px; background: var(--surface); }
+.tl-row > span:nth-child(2) { flex: 1; display: grid; }
+.tl-row small { color: var(--muted); font-size: 12px; }
+.tl-row .you { font: 600 11px/1 var(--font-body); color: var(--accent); background: var(--accent-soft); padding: 4px 8px; border-radius: 999px; }
+.tl-row.cur b { color: var(--accent); }
+.tier-ladder .hint { margin: 6px 0 2px; font-size: 12px; }
 .av svg { width: 60%; height: 60%; color: var(--accent); }
 .who { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .who[hidden] { display: none; }
@@ -4359,7 +4391,7 @@ const NIGHT_GENUS = new Set(["Tyto", "Strix", "Asio", "Athene", "Bubo", "Otus", 
 const NIGHT_SP = new Set(["Rallus aquaticus", "Luscinia megarhynchos", "Luscinia luscinia", "Crex crex"]);
 const isNightBird = (sci) => { const w = String(sci || "").trim().split(/\s+/); return NIGHT_GENUS.has(w[0]) || NIGHT_SP.has(w.slice(0, 2).join(" ")); };
 const MOON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>`;
-const byStack = (list, max = 3) => `<span class="by-stack">${list.slice(0, max).map((x) => { const m = Acct.member(x.u); return Avatar.html(m && m.avatar, m ? m.name || m.u : x.u); }).join("")}${list.length > max ? `<span class="by-more">+${list.length - max}</span>` : ""}</span>`;
+const byStack = (list, max = 3) => `<span class="by-stack">${list.slice(0, max).map((x) => { const m = Acct.member(x.u); return Avatar.of(m, m ? m.name || m.u : x.u); }).join("")}${list.length > max ? `<span class="by-more">+${list.length - max}</span>` : ""}</span>`;
 const byName = (u) => { const m = Acct.member(u); return m ? m.name || m.u : u; };
 
 /* ---------- collection wall ---------- */
@@ -4778,8 +4810,10 @@ const Badges = (() => {
     const add = (fam, id, name, ask, have, need, date, x = {}) => out.push({ fam, id, name, ask, have: Math.min(have, need), need, date: date || null, got: !!date, ...x });
     /* species */
     add("species", "sp-1", "First bird", "Hear your first bird", spDates.length, 1, reach(spDates, 1), { ic: "bird" });
-    [[10, "bronze"], [25, "bronze"], [50, "silver"], [75, "silver"], [100, "silver"], [150, "gold"], [200, "gold"], [250, "gold"], [300, "gold"], [400, "gold"]].forEach(([n, tier]) =>
-      add("species", "sp-" + n, `${n} species`, `Hear ${n} different species`, spDates.length, n, reach(spDates, n), { t: String(n), tier }));
+    [[10, "bronze"], [25, "bronze"], [50, "silver"], [75, "silver"], [100, "silver"], [150, "gold"], [200, "gold"], [250, "gold"], [300, "gold"], [400, "gold"], [600, "gold"], [1000, "gold"]].forEach(([n, tier]) => {
+      const T = TIERS.find((x) => x.n === n);
+      add("species", "sp-" + n, `${n} species`, `Hear ${n} different species, anywhere in the world${T ? `. Your birb's ring turns ${T.name}` : ""}`, spDates.length, n, reach(spDates, n), { t: String(n), tier });
+    });
     /* the UK list */
     const WL = WALL.length;
     [[20, "1 in 20", "5%"], [10, "1 in 10", "10%"], [4, "A quarter", "25%"], [2, "Half the list", "50%"]].forEach(([f, name, t]) => {
@@ -5505,7 +5539,7 @@ function openSpecies(name) {
       <div class="where hab-line"><i class="hab-dot" style="background:${habColour(s0.hab.id)}"></i>${esc(habName(s0.hab.id))} <span class="src">· ${esc(s0.hab.src)}</span></div>
       <div class="nums"><div><b>${allDays.length}</b><span>days heard</span></div><div><b>${places.length}</b><span>${places.length === 1 ? "place" : "places"}</span></div><div><b>${esc(fmtDate(allDays[0]).replace(/ \d{4}$/, ""))}</b><span>first heard</span></div></div>
     </div>
-    ${flockOn() ? (() => { const hb = heardBy(pool); return hb.length ? `<div class="heard-by"><span class="lab">Heard by</span>${hb.map((x, i) => { const m = Acct.member(x.u); return `<span class="hb">${Avatar.html(m && m.avatar, "")}<b>${esc(byName(x.u))}</b><small>${i === 0 && hb.length > 1 ? "first, " : ""}${esc(fmtDate(x.first))}</small></span>`; }).join("")}</div>` : ""; })() : ""}
+    ${flockOn() ? (() => { const hb = heardBy(pool); return hb.length ? `<div class="heard-by"><span class="lab">Heard by</span>${hb.map((x, i) => { const m = Acct.member(x.u); return `<span class="hb">${Avatar.of(m, "")}<b>${esc(byName(x.u))}</b><small>${i === 0 && hb.length > 1 ? "first, " : ""}${esc(fmtDate(x.first))}</small></span>`; }).join("")}</div>` : ""; })() : ""}
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       ${favContext().mine && (favContext().local || Acct.me) && (!flockOn() || pool.some((d) => Acct.me && d.by === Acct.me.u)) ? `<button type="button" class="fav-btn" data-fav="${esc(name)}" data-fav-sci="${esc(s0.sci)}" aria-pressed="${isFav(name)}">${HEART}<span>${isFav(name) ? " Your favourite" : " Make favourite"}</span></button>` : ""}
       <button type="button" data-only="${esc(name)}">Show only this bird on the map</button>
@@ -6623,6 +6657,28 @@ document.addEventListener("keydown", (e) => {
 });
 
 /* ---------- bird avatars: low-poly 3D birds built from parts, matching Habitat world ---------- */
+/* ---------- tiers: a ring round your birb for how many species you've heard, anywhere in the world ----------
+   Earned species badges hold the tier, so it never drops if a later file has fewer birds. The founder has a ring of their own. */
+const TIERS = [
+  { n: 1, name: "Hatchling", c: "#B4B2A9" }, { n: 25, name: "Fledgling", c: "#97C459" }, { n: 50, name: "Spotter", c: "#1D9E75" },
+  { n: 100, name: "Birder", c: "#378ADD" }, { n: 200, name: "Twitcher", c: "#7F77DD" }, { n: 300, name: "Ornithologist", c: "#D4537E" },
+  { n: 400, name: "Legend", c: "#EF9F27", k: 2 }, { n: 600, name: "Globetrotter", c: "#EF9F27", c2: "#378ADD", k: 2 }, { n: 1000, name: "World legend", c: "#EF9F27", k: 3 },
+];
+const Tier = {
+  full(u) { if (!u) return null; let m = null; try { m = u.u ? Acct.member(u.u) : null; } catch (e) {} return m && m !== u ? { ...m, ...u, birds: u.birds || m.birds, badges: u.badges || m.badges } : u; },
+  count(u) {
+    u = Tier.full(u); if (!u) return 0;
+    let n = (u.birds && u.birds.species) || u.species || 0;
+    for (const id of Object.keys(u.badges || {})) { const k = /^sp-(\d+)$/.exec(id); if (k) n = Math.max(n, +k[1]); }
+    return n;
+  },
+  of(u) { const n = Tier.count(u); let t = null; for (const x of TIERS) if (n >= x.n) t = x; return t ? { ...t, have: n, next: TIERS.find((x) => x.n > n) || null } : null; },
+  founder(u) { if (!u) return false; if (u.owner) return true; try { return !!Acct.ownerU && u.u === Acct.ownerU; } catch (e) { return false; } },
+  chip(u) {
+    const t = Tier.of(u), f = Tier.founder(u);
+    return `${f ? '<span class="tier-chip fd">Founder</span>' : ""}${t ? `<span class="tier-chip" style="--tier:${t.c}">${esc(t.name)}</span>` : ""}`;
+  },
+};
 const Avatar = (() => {
   const OPTS = {
     head: ["Round", "Crested", "Duck", "Owl", "Heron"], beak: ["Short", "Pointy", "Hooked", "Flat", "Long"], wing: ["Folded", "Spread", "Pointed", "Stubby"],
@@ -6810,11 +6866,15 @@ const Avatar = (() => {
     } catch (e) { return ""; }
   }
   const BIRDSVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 15.5c1.8-.2 3.2-1 4.2-2.3.9-3 3.3-5.2 6.4-5.2.6-1.8 2.2-3 4-3 1.5 0 2.7.8 3.3 2l1.6.6-1.6.7c0 3.9-2.4 7.2-6.3 8.2l-1.1 2.5h-1.6l.8-2.2c-1.6 0-3-.4-4.1-1.1-1.6.8-3.4 1.1-5.6.8z"/></svg>';
-  function html(a, label = "") {
-    if (!a) return `<span class="av" aria-hidden="true">${BIRDSVG}</span>`;
+  function html(a, label = "", who = null) {
+    const f = who && Tier.founder(who), t = who && !f ? Tier.of(who) : null;
+    const rc = f ? " fd" : t ? ` tr${t.k ? " k" + t.k : ""}` : "", rs = t ? `;--tier:${t.c};--tier2:${t.c2 || t.c}` : "";
+    const ti = f ? ` title="${esc((label ? label + " · " : "") + "Founder")}"` : t ? ` title="${esc((label ? label + " · " : "") + t.name)}"` : "";
+    if (!a) return `<span class="av${rc}" aria-hidden="true" style="--avrim:transparent${rs}"${ti}>${BIRDSVG}</span>`;
     const A = norm(a), src = snapshot(A);
-    return `<span class="av" style="--avbg:${A.bg};--avrim:${A.cBody}">${src ? `<img src="${src}" alt="${esc(label)}">` : BIRDSVG}</span>`;
+    return `<span class="av${rc}" style="--avbg:${A.bg};--avrim:${rc ? "transparent" : A.cBody}${rs}"${ti}>${src ? `<img src="${src}" alt="${esc(label)}">` : BIRDSVG}</span>`;
   }
+  const of = (u, label = "") => html(u && u.avatar, label, u || null);
   /* live turntable used by the builder */
   function stage(host, a, { edit = false } = {}) {
     const R = new THREE.WebGLRenderer({ antialias: !LITE }); R.setPixelRatio(LITE ? 1 : Math.min(2, devicePixelRatio || 1));
@@ -6843,7 +6903,7 @@ const Avatar = (() => {
     const deg = () => String(Math.round((((base * 180) / Math.PI) % 360 + 360) % 360));
     return { set, get turn() { return deg(); }, destroy() { alive = false; cancelAnimationFrame(raf); if (rig) dispose(rig); R.domElement.dataset.bye = "1"; R.dispose(); try { R.forceContextLoss(); } catch (e) {} host.innerHTML = ""; } };
   }
-  return { OPTS, LABELS, DEF, AUTOBEAK, EXTRA_SETS, norm, random, snapshot, html, stage };
+  return { of, OPTS, LABELS, DEF, AUTOBEAK, EXTRA_SETS, norm, random, snapshot, html, stage };
 })();
 
 /* ---------- accounts: join, sign in, profile, flock and admin, stored on the site ---------- */
@@ -6896,7 +6956,7 @@ const Acct = (() => {
     const b = $("me-btn"); b.hidden = false;
     document.body.classList.add("has-me");
     const nReq = me ? requests.in.length : 0;
-    b.innerHTML = me ? `${nReq ? `<span class="req-dot" aria-hidden="true">${nReq}</span>` : ""}${Avatar.html(me.avatar, "")}<span class="me-txt"><small>${me.admin ? "You · admin" : "You"}</small><b>${esc(nameOf(me))}</b></span>`
+    b.innerHTML = me ? `${nReq ? `<span class="req-dot" aria-hidden="true">${nReq}</span>` : ""}${Avatar.of(me, "")}<span class="me-txt"><small>${me.admin ? "You · admin" : "You"}</small><b>${esc(nameOf(me))}</b></span>`
       : `${Avatar.html(null)}<span class="me-txt"><small>Flock</small><b>Join or sign in</b></span>`;
     const tn = $("tab-flock-n"); if (tn) { tn.hidden = !nReq; tn.textContent = String(nReq); }
     b.classList.toggle("in", !!me);
@@ -6907,11 +6967,11 @@ const Acct = (() => {
     let h = "";
     if (me) {
       h = `<div class="scope" role="group" aria-label="Whose birds to show">
-        <button type="button" data-scope="me" aria-pressed="${scope === "me"}">${Avatar.html(me.avatar, "")}Mine</button>
+        <button type="button" data-scope="me" aria-pressed="${scope === "me"}">${Avatar.of(me, "")}Mine</button>
         <button type="button" data-scope="flock" aria-pressed="${scope === "flock"}" ${scope === "flock" ? `aria-haspopup="dialog" aria-expanded="${pickOpen()}" title="Choose whose birds to show"` : ""}>${byStack((scope === "flock" ? flockShown() : flockers).map((m) => ({ u: m.u })), 3)}Flock${scope === "flock" && flockShown().length < flockers.length ? ` <span class="fp-n">${flockShown().length} of ${flockers.length}</span>` : ""}${scope === "flock" && flockers.length > 1 ? '<svg class="fp-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>' : ""}</button></div>`;
-      if (scope === "user" && viewing) h += `<span class="who-chip">${Avatar.html(viewing.avatar, "")}<span><b>${esc(nameOf(viewing))}</b>'s birds</span><button type="button" data-scope-back aria-label="Back to ${backTo === "flock" ? "the flock" : "your birds"}">×</button></span>`;
+      if (scope === "user" && viewing) h += `<span class="who-chip">${Avatar.of(viewing, "")}<span><b>${esc(nameOf(viewing))}</b>'s birds</span><button type="button" data-scope-back aria-label="Back to ${backTo === "flock" ? "the flock" : "your birds"}">×</button></span>`;
     } else if (viewing) {
-      h = `<span class="who-chip link" data-open-flock role="button" tabindex="0">${Avatar.html(viewing.avatar, "")}<span><b>${esc(nameOf(viewing))}</b>'s birds</span></span>`;
+      h = `<span class="who-chip link" data-open-flock role="button" tabindex="0">${Avatar.of(viewing, "")}<span><b>${esc(nameOf(viewing))}</b>'s birds</span></span>`;
     }
     w.hidden = !h; w.innerHTML = h;
     if (scope !== "flock" && pickOpen()) openPick(false);
@@ -6952,7 +7012,7 @@ const Acct = (() => {
   }
   function ntHTML(x) {
     const by = x.by || {}, nm = `<b>${esc(nameOf(by))}</b>`, isNew = x.t > inboxShownRead;
-    const av = Avatar.html(by.avatar, nameOf(by)), when = `<small>${esc(tAgo(x.t))}</small>`;
+    const av = Avatar.of(by, nameOf(by)), when = `<small>${esc(tAgo(x.t))}</small>`;
     const acts = (h) => (h ? `<div class="acts">${h}</div>` : "");
     const btn = (k, label, extra = "", primary = false) => `<button type="button" ${primary ? 'class="primary"' : 'class="ghost"'} data-nt="${k}" data-u="${esc(by.u)}" ${extra}>${label}</button>`;
     let tx = "", cls = "", lead = av;
@@ -6980,7 +7040,7 @@ const Acct = (() => {
       tx = `<span class="eyebrow">Feedback · ${esc({ idea: "an idea", problem: "a problem", other: "something else" }[x.fk] || "note")}</span>${nm}: “${esc(x.text || "")}${(x.text || "").length >= 180 ? "…" : ""}”${when}${acts(btn("feedback", "See all feedback"))}`;
     } else if (x.kind === "intro") {
       const o = x.other || {}, isFr = members.some((m) => m.u === o.u), sent = requests.out.some((q) => q.u === o.u);
-      cls = " intro"; lead = Avatar.html(o.avatar, nameOf(o));
+      cls = " intro"; lead = Avatar.of(o, nameOf(o));
       const st = isFr ? `<span class="sug-done">You're friends now.</span>` : sent ? `<span class="sug-done">Friend request sent.</span>` : x.done ? "" : btn("intro-no", "Not now", `data-id="${esc(x.id)}"`) + btn("intro-yes", "Send friend request", `data-id="${esc(x.id)}" data-o="${esc(o.u)}"`, true);
       tx = `<span class="eyebrow">An introduction</span>${nm} thinks you'd get on with <b>${esc(nameOf(o))}</b>.${x.note ? `<span class="nt-note">“${esc(x.note)}”</span>` : ""}<span class="nt-meta">${o.species ? `${o.species} species` : "New to BIRB"}${o.county ? ` · ${esc(o.county)}` : ""}${o.common ? ` · ${o.common} ${o.common === 1 ? "bird" : "birds"} in common` : ""}</span>${when}${acts(st)}`;
     } else if (x.kind === "react") {
@@ -6995,7 +7055,7 @@ const Acct = (() => {
     return `<div class="nt${cls}${isNew ? " new" : ""}">${lead}<div class="tx">${tx}</div></div>`;
   }
   /* existing members who haven't answered yet: the question waits at the top of the bell */
-  const sugAskHTML = () => (!me || me.suggest !== null ? "" : `<div class="nt intro new">${Avatar.html(founder().avatar, "")}<div class="tx"><span class="eyebrow">New</span><b>Meet other birders</b><span class="nt-meta" style="font-size:13px">BIRB can now suggest people to each other, matched by birds you've both heard. Want to be suggested? Only your name, birb, species count and county are shown.</span><div class="acts"><button type="button" class="ghost" data-sug-no>No thanks</button><button type="button" class="primary" data-sug-yes>Yes, suggest me</button></div></div></div>`);
+  const sugAskHTML = () => (!me || me.suggest !== null ? "" : `<div class="nt intro new">${Avatar.of(founder(), "")}<div class="tx"><span class="eyebrow">New</span><b>Meet other birders</b><span class="nt-meta" style="font-size:13px">BIRB can now suggest people to each other, matched by birds you've both heard. Want to be suggested? Only your name, birb, species count and county are shown.</span><div class="acts"><button type="button" class="ghost" data-sug-no>No thanks</button><button type="button" class="primary" data-sug-yes>Yes, suggest me</button></div></div></div>`);
   function renderBell() {
     const c = $("bell-card"), items = inbox.items || [];
     const clock = clockHTML() + sugAskHTML();
@@ -7022,7 +7082,7 @@ const Acct = (() => {
     const c = $("rare-card");
     c.innerHTML = `<button type="button" class="acct-x mem-x" data-rare-close aria-label="Close">×</button>
       <div class="rare-hero">${Photos.slot(b0.sci, "ph-hero", "#a982e8")}<span class="tag">Rare find</span></div>
-      <div class="mem-body"><div class="who-line">${Avatar.html(by.avatar, "")}<span>${nm} just heard</span></div>
+      <div class="mem-body"><div class="who-line">${Avatar.of(by, "")}<span>${nm} just heard</span></div>
         <h2 id="rare-h">${esc(b0.name)}</h2><p class="sub" style="margin:0;font-style:italic">${esc(b0.sci || "")}</p>
         <p class="lede">One of the rarer visitors to the UK, in lilac on the Collection wall.${x.birds.length > 1 ? ` ${nm} found ${x.birds.length - 1} more rare ${x.birds.length === 2 ? "bird" : "birds"} too.` : ""}</p>
         <div class="wel-acts"><button type="button" class="primary" data-nt="rare" data-u="${esc(by.u)}" data-bird="${esc(b0.name)}">See it on ${nm}'s map</button><div class="row"><button type="button" class="ghost" data-rare-close>Lovely</button></div></div></div>`;
@@ -7072,7 +7132,7 @@ const Acct = (() => {
   const whoLabel = (list) => { const names = list.map((m) => (me && m.u === me.u ? "you" : nameOf(m))); return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0]; };
   function pickHTML() {
     const all = flockAll(), shown = new Set(flockShown().map((m) => m.u)), every = shown.size === all.length;
-    const row = (m) => `<button type="button" class="fp-row" data-fp="${esc(m.u)}" aria-pressed="${shown.has(m.u)}">${Avatar.html(m.avatar, "")}<span class="t"><b>${me && m.u === me.u ? "You" : esc(nameOf(m))}</b><small>${m.birds.species} species</small></span><span class="tick" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>`;
+    const row = (m) => `<button type="button" class="fp-row" data-fp="${esc(m.u)}" aria-pressed="${shown.has(m.u)}">${Avatar.of(m, "")}<span class="t"><b>${me && m.u === me.u ? "You" : esc(nameOf(m))}</b><small>${m.birds.species} species</small></span><span class="tick" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>`;
     const mine = all.filter((m) => me && m.u === me.u), rest = all.filter((m) => !me || m.u !== me.u).sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
     return `<div class="fp-h"><b id="fp-h">Whose birds?</b><span><button type="button" class="linkish" data-fp-all ${every ? "disabled" : ""}>Everyone</button><button type="button" class="fp-x" data-fp-close aria-label="Close">×</button></span></div>
       <div class="fp-list">${[...mine, ...rest].map(row).join("")}</div>
@@ -7186,7 +7246,7 @@ const Acct = (() => {
         <path d="M0 100 Q140 84 260 98 T400 92 V110 H0Z" fill="var(--surface)"/>
         <g transform="translate(76 58)"><path d="M-34 32 L46 27" stroke="#5a4636" stroke-width="5" stroke-linecap="round"/><ellipse cx="0" cy="14" rx="14" ry="17" fill="#8a6a4f"/><ellipse cx="0" cy="18" rx="9" ry="11" fill="#e8dcc4"/><circle cx="-6" cy="3" r="6" fill="#f4f0e6"/><circle cx="6" cy="3" r="6" fill="#f4f0e6"/><circle cx="-6" cy="3" r="2.4" fill="#1b1b1b"/><circle cx="6" cy="3" r="2.4" fill="#1b1b1b"/><path d="M-1.5 8 L1.5 8 L0 12Z" fill="#d9a441"/></g></svg></div>
       <div class="mem-body night-body">
-        <div class="night-from">${Avatar.html(o.avatar, "")}<span><b>${esc(nameOf(o))}<span class="tag-owner">founder</span></b><small>A note on listening at night</small></span></div>
+        <div class="night-from">${Avatar.of(o, "")}<span><b>${esc(nameOf(o))}<span class="tag-owner">founder</span></b><small>A note on listening at night</small></span></div>
         <h2 id="wel-h">${first ? `${esc(first)} is your first night bird` : "Listening for birds at night"}</h2>
         <p class="lede">${first ? "It has moved into the Night corner of your Habitat world. " : ""}Before you head out after dark, a few things I'd ask:</p>
         <ul class="night-list">
@@ -7269,7 +7329,7 @@ const Acct = (() => {
   const clocksBack = () => { const d = new Date(new Date().getFullYear(), 9, 31); d.setDate(31 - d.getDay()); return d; };
   const CLOCK_KEY = () => `birb-clocks:${new Date().getFullYear()}:${me ? me.u : ""}`;
   const clockNote = () => { if (!me) return null; const t0 = clocksBack(), gap = Date.now() - t0; if (gap < 0 || gap > 21 * 864e5) return null; let seen = false; try { seen = !!localStorage.getItem(CLOCK_KEY()); } catch (e) {} return { seen }; };
-  const clockHTML = () => { const k = clockNote(); if (!k) return ""; const o = founder(); return `<div class="nt night${k.seen ? "" : " new"}">${Avatar.html(o.avatar, "")}<div class="tx"><span class="eyebrow">From the founder</span><b>${esc(nameOf(o))}</b>: dark evenings are here. If you're out listening after dark, tell someone where you're going.<div class="acts"><button type="button" class="ghost" data-night-help>Staying safe at night</button></div></div></div>`; };
+  const clockHTML = () => { const k = clockNote(); if (!k) return ""; const o = founder(); return `<div class="nt night${k.seen ? "" : " new"}">${Avatar.of(o, "")}<div class="tx"><span class="eyebrow">From the founder</span><b>${esc(nameOf(o))}</b>: dark evenings are here. If you're out listening after dark, tell someone where you're going.<div class="acts"><button type="button" class="ghost" data-night-help>Staying safe at night</button></div></div></div>`; };
 
   function popCard(avatar, html) {
     const A = Avatar.norm(avatar), c = $("wel-card");
@@ -7341,6 +7401,15 @@ const Acct = (() => {
     if (live) { live.destroy(); live = null; }
     $("acct").hidden = true; view = ""; notice = ""; firstUp = false; newDayCard = null;
   }
+  /* your ring: which tier you're on, how far to the next, and the whole ladder on a tap */
+  const tierHTML = () => {
+    const t = Tier.of(me), f = Tier.founder(me); if (!t && !f) return "";
+    const n = Tier.count(me), nx = t && t.next;
+    return `<details class="pv2-tier"><summary>${Tier.chip(me)}<span class="t">${nx ? `${nx.n - n} more species to ${esc(nx.name)}` : t ? "The top ring" : ""}</span><span class="more">Rings</span></summary>
+      <div class="tier-ladder">${f ? `<div class="tl-row fd-row"><span class="av fd" style="--avrim:transparent"></span><span><b>Founder</b><small>Only for the person who started BIRB</small></span></div>` : ""}
+      ${TIERS.map((x) => `<div class="tl-row${t && x.n === t.n ? " cur" : ""}${n >= x.n ? " got" : ""}"><span class="av tr${x.k ? " k" + x.k : ""}" style="--avrim:transparent;--tier:${x.c};--tier2:${x.c2 || x.c}"></span><span><b>${esc(x.name)}</b><small>${x.n === 1 ? "Your first species" : `${x.n} species`}</small></span>${t && x.n === t.n ? '<span class="you">You</span>' : ""}</div>`).join("")}
+      <p class="hint">Rings count every species you've heard, anywhere in the world, and never go down.${f ? " Your Founder ring shows instead of the species ring, so everyone knows who started BIRB." : ""}</p></div></details>`;
+  };
   const tabs = () => me ? `<nav class="acct-tabs" aria-label="Account">${[["profile", "Overview"], ["settings", "Settings"], ["flock", "Flock"], ...(me.admin ? [["admin", "Admin"]] : [])].map(([k, l]) => `<button type="button" data-acct="${k}" aria-current="${view === k ? "page" : "false"}">${l}${k === "flock" && requests.in.length ? `<span class="tab-n" aria-label="${requests.in.length} new">${requests.in.length}</span>` : ""}</button>`).join("")}${DEVSITE ? '<span class="acct-dev" title="Test copy with separate data">DEV</span>' : ""}</nav>` : "";
   const X = `<button type="button" class="acct-x" data-acct-close aria-label="Close">×</button>`;
   const steps = (n) => `<div class="steps" aria-hidden="true">${[1, 2, 3].map((i) => `<span class="${i <= n ? "on" : ""}"></span>`).join("")}</div>`;
@@ -7384,7 +7453,7 @@ const Acct = (() => {
           <p class="hint switch" style="margin:2px 0 0">Before you join, see <button type="button" data-acct="privacy">what BIRB keeps and who can see it</button>.</p></form>`;
       else if (joinStep === 2) h = `${X}${steps(2)}<h2 id="acct-h">Build your birb</h2><p class="sub">Your birb is you around BIRB. You can change it any time.</p>${builderHTML()}
         <div class="err" id="acct-err" role="alert"></div><div class="acts"><span></span><button type="button" class="primary" data-av-save="join">Next: add your birds</button></div>`;
-      else h = `${X}${steps(3)}<div class="prof">${Avatar.html(me && me.avatar)}<div><h2 id="acct-h">Welcome, ${esc(nameOf(me))}</h2><p class="sub" style="margin:0">Last step: add the birds you've heard.</p></div></div>${uploadHTML()}
+      else h = `${X}${steps(3)}<div class="prof">${Avatar.of(me)}<div><h2 id="acct-h">Welcome, ${esc(nameOf(me))}</h2><p class="sub" style="margin:0">Last step: add the birds you've heard.</p></div></div>${uploadHTML()}
         <div class="acts"><button type="button" data-guide>Show me how, step by step</button><button type="button" class="ghost" data-acct="profile">Skip for now</button></div>`;
     } else if (view === "signin") {
       h = `${X}<h2 id="acct-h">Sign in</h2><p class="sub">Welcome back.</p>
@@ -7423,7 +7492,7 @@ const Acct = (() => {
     } else if (view === "feedback" && me) {
       const o = founder(), FK = [["idea", "An idea"], ["problem", "A problem"], ["other", "Something else"]];
       h = `${X}${tabs()}<h2 id="acct-h">Send feedback</h2>
-        <div class="fb-from">${Avatar.html(o.avatar, "")}<p>Ideas, problems, or anything that felt confusing. It goes straight to ${esc(nameOf(o))}, who reads every one.</p></div>
+        <div class="fb-from">${Avatar.of(o, "")}<p>Ideas, problems, or anything that felt confusing. It goes straight to ${esc(nameOf(o))}, who reads every one.</p></div>
         <form id="f-feedback" class="stack" novalidate>
           <div class="fld"><label>What is it?</label><div class="seg fb-kind" role="radiogroup" aria-label="What is it?">${FK.map(([k, l], i) => `<button type="button" role="radio" data-fbk="${k}" aria-checked="${fbKind === k}" aria-pressed="${fbKind === k}">${l}</button>`).join("")}</div></div>
           <div class="fld"><label for="fb-text">Tell us more</label><textarea id="fb-text" rows="5" maxlength="1500" placeholder="${fbKind === "problem" ? "What happened, and what were you trying to do?" : fbKind === "idea" ? "What would make BIRB better for you?" : "What's on your mind?"}"></textarea><span class="hint" id="fb-n">0 / 1500</span></div>
@@ -7479,7 +7548,7 @@ const Acct = (() => {
       const link = me.invite ? `${location.origin}/?invite=${encodeURIComponent(me.invite)}` : "";
       const ukPct = b ? Math.round((b.species / WALL.length) * 100) : 0;
       h = `${X}${tabs()}<div class="pv2-band" style="--band:${esc(A.cBody || A.bg)}"></div>
-        <div class="pv2-head">${Avatar.html(me.avatar)}<div class="pv2-who"><h2 id="acct-h">${esc(nameOf(me))}</h2><p class="sub">@${esc(me.u)}${me.admin ? '<span class="tag-owner">admin</span>' : ""}${since ? ` · since ${esc(since)}` : ""}</p></div>
+        <div class="pv2-head">${Avatar.of(me)}<div class="pv2-who"><h2 id="acct-h">${esc(nameOf(me))}</h2><p class="sub">@${esc(me.u)}${me.admin ? '<span class="tag-owner">admin</span>' : ""}${since ? ` · since ${esc(since)}` : ""}</p></div>
           <div class="pv2-tools"><button type="button" class="ghost" data-acct="avatar" aria-label="Edit my birb" title="Edit my birb">${ICO.edit}</button>${b ? `<button type="button" class="ghost" data-acct="share" aria-label="Share my birds" title="Share my birds">${ICO.share}</button>` : ""}</div></div>
         ${newDayCard ? newDayHTML() : ""}
         ${notice ? `<p class="ok${newDayCard ? " nd-small" : ""}" role="status">${notice}</p>` : ""}
@@ -7487,6 +7556,7 @@ const Acct = (() => {
         ${!me.hasRecovery ? `<div class="pv2-warn">${ICO.key}<span>Add a recovery phrase, so you can reset your passcode yourself</span><button type="button" data-acct="phrase-new">Set up</button></div>` : ""}
         ${b ? `<div class="pv2-stats"><span><b>${b.species}</b>species</span><span><b>${b.places}</b>places</span><span><b>${b.rows}</b>sightings</span><button type="button" data-acct-badges><b>${nB}</b>${nB === 1 ? "badge" : "badges"}</button></div>
           <div class="pv2-uk"><span class="bar"><i id="pv2-ukbar" style="width:${Math.min(100, ukPct)}%"></i></span><span class="t"><b id="pv2-uk">${ukPct}%</b> of the UK list heard</span></div>` : ""}
+        ${tierHTML()}
         ${nB && shelf.length ? `<div class="pv2-sec pv2-sech"><span>${(me.pins || []).length ? "Pinned badges" : "Latest badges"}</span><button type="button" class="linkish" data-acct-badges>See all ${nB} ›</button></div>
           <div class="pv2-shelf">${shelf.map((x) => `<span title="${esc(x.name)}">${Badges.medal(x, 46)}</span>`).join("")}</div>` : ""}
         ${b ? `<div class="pv2-sec">Most heard</div><div class="pv2-top" id="pv2-top"><span class="hint">Loading…</span></div>
@@ -7927,7 +7997,7 @@ const Acct = (() => {
       <button type="button" data-invite-card style="justify-self:start;margin-top:2px">Make an invite card for Instagram</button>
       <span class="hint">Anyone who joins with it becomes your friend. Code <b>${esc(me.invite)}</b>. <button type="button" class="linkish" data-new-code>Make a new code</button> if it's been passed around: the old one stops working.</span></div>`;
   }
-  const frRow = (x, sub, btns, cls = "") => `<div class="fr-row ${cls}">${Avatar.html(x.avatar)}<span class="t"><b>${esc(nameOf(x))}${x.owner ? '<span class="tag-owner">founder</span>' : ""}</b><small>@${esc(x.u)}${sub ? ` · ${sub}` : ""}</small></span><span class="btns">${btns}</span></div>`;
+  const frRow = (x, sub, btns, cls = "") => `<div class="fr-row ${cls}">${Avatar.of(x)}<span class="t"><b>${esc(nameOf(x))}${x.owner ? '<span class="tag-owner">founder</span>' : ""}</b><small>@${esc(x.u)}${sub ? ` · ${sub}` : ""}</small></span><span class="btns">${btns}</span></div>`;
   const frBtn = (act, u, label, primary) => `<button type="button" ${primary ? 'class="primary"' : 'class="ghost"'} data-fr="${act}" data-u="${esc(u)}">${label}</button>`;
   function findResHTML() {
     if (!findRes) return "";
@@ -7983,10 +8053,10 @@ const Acct = (() => {
     const line = (m) => m.birds ? (m.birds.latest ? `New: ${esc(m.birds.latest.name)}, ${esc(ago(m.birds.latest.date))}` : `${m.birds.places} places · updated ${esc(ago(m.birds.updated))}`) : m.hidden ? "Birds private" : m.u === me.u ? "No birds yet" : "No birds yet";
     return `<div class="fl-head"><h2 id="acct-h">Your flock</h2>${link ? `<button type="button" data-fl-invite aria-expanded="${flInvite}">${ICO.invite} Invite</button>` : ""}</div>
       ${flInvite && link ? `<div class="fl-inv"><button type="button" class="primary" data-copy="${esc(link)}">Copy invite link</button><button type="button" data-invite-card>Instagram card</button></div>` : ""}
-      ${withBirds.length > 1 ? `<button type="button" class="fl-sum" data-fl-map><span class="stack">${withBirds.slice(0, 3).map((m) => Avatar.html(m.avatar)).join("")}</span><span class="t">Together <b id="fl-total">${withBirds.length} birders</b></span><span class="go">See on map</span></button>` : ""}
-      ${rin.map((x) => `<div class="fl-req">${Avatar.html(x.avatar)}<span class="t"><b>${esc(nameOf(x))}</b> wants to be friends</span>${frBtn("accept", x.u, "Accept", true)}${frBtn("decline", x.u, "Not now")}</div>`).join("")}
+      ${withBirds.length > 1 ? `<button type="button" class="fl-sum" data-fl-map><span class="stack">${withBirds.slice(0, 3).map((m) => Avatar.of(m)).join("")}</span><span class="t">Together <b id="fl-total">${withBirds.length} birders</b></span><span class="go">See on map</span></button>` : ""}
+      ${rin.map((x) => `<div class="fl-req">${Avatar.of(x)}<span class="t"><b>${esc(nameOf(x))}</b> wants to be friends</span>${frBtn("accept", x.u, "Accept", true)}${frBtn("decline", x.u, "Not now")}</div>`).join("")}
       <div class="fl-sort" role="group" aria-label="Sort friends">${[["recent", "Recent"], ["species", "Most species"], ["az", "A to Z"]].map(([k, l]) => `<button type="button" data-fl-sort="${k}" aria-pressed="${flSort === k}">${l}</button>`).join("")}</div>
-      <div class="flock fl2">${list.map((m) => `<button type="button" class="flock-row" data-view-u="${esc(m.u)}">${Avatar.html(m.avatar)}
+      <div class="flock fl2">${list.map((m) => `<button type="button" class="flock-row" data-view-u="${esc(m.u)}">${Avatar.of(m)}
         <span class="t"><b>${esc(nameOf(m))}${m.owner ? '<span class="tag-owner">founder</span>' : ""}${m.u === me.u ? '<span class="tag-owner">you</span>' : ""}${m.birds && Date.parse(m.birds.updated) > week ? '<span class="fl-dot" title="Added birds this week"></span>' : ""}</b>
           <small>${line(m)}</small>${dots(m) ? `<span class="fl-pins">${dots(m)}</span>` : ""}</span>
         <span class="n">${m.birds ? m.birds.species : "–"}<small>species</small></span></button>`).join("")}</div>
@@ -8002,7 +8072,7 @@ const Acct = (() => {
     const L = sug.people, list = sugAll ? L : L.slice(0, 3);
     const chips = (p) => [p.common ? `<span class="sug-chip c">${p.common} ${p.common === 1 ? "bird" : "birds"} in common</span>` : "", p.sameCounty ? `<span class="sug-chip">Same county</span>` : "", p.extra ? `<span class="sug-chip x">Has heard ${esc(p.extra)}</span>` : "", !p.species ? `<span class="sug-chip">New to BIRB</span>` : ""].join("");
     const act = (p) => p.requested ? `<span class="sug-done">Requested</span>` : p.asked ? frBtn("accept", p.u, "Accept", true) : `<button type="button" data-sug-add="${esc(p.u)}">Add</button>`;
-    const card = (p) => `<div class="sug-card"><div class="sug-top">${Avatar.html(p.avatar)}<span class="t"><b>${esc(nameOf(p))}</b><small>${p.species ? `${p.species} species` : "No birds yet"}${p.county ? ` · ${esc(p.county)}` : ""}</small></span>${act(p)}</div>
+    const card = (p) => `<div class="sug-card"><div class="sug-top">${Avatar.of(p)}<span class="t"><b>${esc(nameOf(p))}</b><small>${p.species ? `${p.species} species` : "No birds yet"}${p.county ? ` · ${esc(p.county)}` : ""}</small></span>${act(p)}</div>
       <div class="sug-why">${chips(p)}${p.requested ? "" : `<button type="button" class="sug-x" data-sug-hide="${esc(p.u)}">Not now</button>`}</div></div>`;
     return `${head}<p class="lede-s">${L.length ? "People who've said they're happy to be suggested, matched by birds you've both heard." : "No one to suggest yet. As more people say yes, they'll show up here."}</p>
       ${L.length ? `<div class="sug-list">${list.map(card).join("")}</div>` : ""}
@@ -8039,7 +8109,7 @@ const Acct = (() => {
     if (me && !compact && list.length === 1 && list[0].u === me.u) return `<p class="sub">No friends yet. Share your invite link from Your profile, or add someone by their username above.</p>`;
     return `${compact ? '<div class="sec" style="margin:18px 0 8px;font-size:13px;font-weight:600">Or have a look around</div>' : ""}<div class="flock">${list.map((m) => `
       <button type="button" class="flock-row${viewing && viewing.u === m.u ? " cur" : ""}" data-view-u="${esc(m.u)}">
-        ${Avatar.html(m.avatar)}<span class="t"><b>${esc(nameOf(m))}${m.owner ? '<span class="tag-owner">founder</span>' : ""}${me && m.u === me.u ? '<span class="tag-owner">you</span>' : ""}</b>
+        ${Avatar.of(m)}<span class="t"><b>${esc(nameOf(m))}${m.owner ? '<span class="tag-owner">founder</span>' : ""}${me && m.u === me.u ? '<span class="tag-owner">you</span>' : ""}${(() => { const t = Tier.of(m); return t ? `<span class="tier-chip sm" style="--tier:${t.c}">${esc(t.name)}</span>` : ""; })()}</b>
         <small>${m.birds ? `${m.birds.places} places · updated ${esc(ago(m.birds.updated))}` : m.hidden ? "Birds private" : me && m.u === me.u ? "No birds yet. Add your eBird export in Your profile" : "No birds yet"}${m.hidden || m.visibility === "private" ? " · keeps birds private" : ""}</small></span>
         <span class="n">${m.birds ? m.birds.species : "–"}<small>species</small></span></button>`).join("")}</div>`;
   }
@@ -8054,7 +8124,8 @@ const Acct = (() => {
       <div class="mem-hero"><div class="mem-stage" id="mem-stage" aria-label="${esc(nameOf(m))}'s birb. Drag to turn it.">${m.avatar ? "" : Avatar.html(null)}</div></div>
       <div class="mem-body">
         <h2 id="mem-h">${esc(nameOf(m))}</h2>
-        <p class="sub" style="margin:0">@${esc(m.u)}${m.owner ? '<span class="tag-owner">founder</span>' : ""}${mine ? '<span class="tag-owner">you</span>' : ""}</p>
+        <p class="sub" style="margin:0">@${esc(m.u)}${mine ? '<span class="tag-owner">you</span>' : ""}</p>
+        <div class="mem-tier">${Tier.chip(m)}</div>
         <p class="hint" style="margin:2px 0 0">${m.joined ? `Joined ${esc(ago(m.joined))} · ` : ""}${m.hidden || m.visibility === "private" ? "Keeps their birds private" : m.visibility === "public" ? "Birds visible to anyone with the link" : "Birds visible to friends"}</p>
         ${b ? `<div class="mem-stats"><span><b>${b.species}</b>species</span><span><b>${b.places}</b>places</span><span><b>${b.rows}</b>sightings</span><span><b>${esc(ago(b.updated))}</b>last upload</span></div>
           <div id="mem-more" class="mem-more"><p class="hint">Loading ${mine ? "your" : "their"} birds…</p></div>`
@@ -8065,7 +8136,7 @@ const Acct = (() => {
     $("mem-pop").hidden = false;
     if (memLive) { memLive.destroy(); memLive = null; }
     if (m.avatar && typeof THREE !== "undefined" && !LITE) memLive = Avatar.stage($("mem-stage"), m.avatar);
-    else if (m.avatar) $("mem-stage").innerHTML = Avatar.html(m.avatar);
+    else if (m.avatar) $("mem-stage").innerHTML = Avatar.of(m);
     if (b) loadMember(u);
     card.querySelector("[data-mem-close]").focus();
   }
@@ -8169,7 +8240,7 @@ const Acct = (() => {
       <form id="f-invite" class="copybox" novalidate><input id="inv-new" maxlength="32" placeholder="New invite code, e.g. BIRB-SPRING" style="flex:1;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"><button type="submit">Set code</button></form>
       <div class="err" id="inv-err" role="alert"></div>
       <div><div class="lab" style="font-size:12px;color:var(--muted);margin:6px 0 2px">Members (${r.data.users.length})</div>
-      ${r.data.users.map((u) => `<div class="adm-row">${Avatar.html(u.avatar)}<span class="t"><b>${esc(nameOf(u))}</b> @${esc(u.u)}<small>${u.birds ? `${u.birds.species} species` : "no birds"} · joined ${esc(ago(u.joined))}${u.invitedBy && !u.owner ? ` via @${esc(u.invitedBy)}` : ""} · ${esc(u.visibility)}${u.owner ? "" : u.friend ? " · your friend" : " · not your friend"}${u.locked ? " · locked out" : ""}</small></span>
+      ${r.data.users.map((u) => `<div class="adm-row">${Avatar.of(u)}<span class="t"><b>${esc(nameOf(u))}</b> @${esc(u.u)}<small>${u.birds ? `${u.birds.species} species` : "no birds"} · joined ${esc(ago(u.joined))}${u.invitedBy && !u.owner ? ` via @${esc(u.invitedBy)}` : ""} · ${esc(u.visibility)}${u.owner ? "" : u.friend ? " · your friend" : " · not your friend"}${u.locked ? " · locked out" : ""}</small></span>
         ${u.owner ? "" : `<button type="button" data-adm-reset="${esc(u.u)}">Reset passcode</button><button type="button" class="danger" data-adm-remove="${esc(u.u)}">Remove</button>`}
         <span class="ok" id="adm-${esc(u.u)}" style="width:100%"></span></div>`).join("")}</div>`;
   }
@@ -8509,7 +8580,7 @@ const Acct = (() => {
     return true;
   }
   const busy = () => document.body.classList.contains("welcoming") || !$("acct").hidden || !!document.querySelector(".mem-pop:not([hidden])") || !$("help").hidden || !$("wel-pop").hidden;
-  return { boot, flock: showFlock, open, member, saveFavourite, savePins, saveBadges, badgeNote, shareBadges, busy, hideBird, recs: getRecs, cached: (u) => cache.get(u) || null, get members() { return members; }, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
+  return { boot, flock: showFlock, open, member, saveFavourite, savePins, saveBadges, badgeNote, shareBadges, busy, hideBird, recs: getRecs, cached: (u) => cache.get(u) || null, get members() { return members; }, get ownerU() { return owner; }, get api() { return !!API; }, get me() { return me; }, get viewing() { return viewing; }, get scope() { return scope; } };
 })();
 
 /* ---------- reading an eBird export: the .csv, or the .zip eBird emails (opened right here in the browser) ---------- */
