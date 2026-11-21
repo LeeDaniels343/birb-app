@@ -4538,7 +4538,8 @@ const Badges = (() => {
   const when = (iso) => (iso ? (iso.slice(0, 4) === thisYear() ? fmtDate(iso).replace(/ \d{4}$/, "") : fmtDate(iso)) : "");
   const WS = new Map(WALL.map((w) => [w[1], w]));
   const nameOf = (m) => (m && (m.name || m.u)) || "";
-  const nm = (sci) => (WS.get(sci) || [sci])[0];
+  const WE = new Map(); for (const w of WALL_EU) if (!WE.has(w[1])) WE.set(w[1], w);
+  const nm = (sci) => (WS.get(sci) || WE.get(sci) || [sci])[0];
   const IC = {
     bird: '<path d="M21 6c-1.2 0-2.2.5-3 1.3-.8-1.4-2.3-2.3-4-2.3-2.6 0-4.6 2-4.6 4.6v.8C6.6 10.2 4.3 8.8 3 7c0 3.4 1.8 6.2 4.7 7.6L5 18h6.5c3.9 0 7-3 7-6.8V9.3L21 6z"/>',
     drop: '<path d="M12 2s-7 7.6-7 12.5a7 7 0 0 0 14 0C19 9.6 12 2 12 2z"/>',
@@ -4562,13 +4563,17 @@ const Badges = (() => {
   const FAMS = [
     { id: "species", name: "Species", col: "#1d6b86" },
     { id: "uk", name: "Your UK collection", col: "#2b7f9b" },
+    { id: "europe", name: "Your Europe collection", col: "#2f7d8c" },
     { id: "habitat", name: "Habitats", col: "#4f9d69" },
     { id: "sets", name: "Bird sets", col: "#b5683a" },
+    { id: "south", name: "Southern bird sets", col: "#d08a2a" },
     { id: "families", name: "Bird families", col: "#8a6d3b" },
     { id: "friends", name: "Old friends", col: "#c0587a" },
     { id: "rare", name: "Rarer visitors", col: "#9a74df" },
     { id: "region", name: "Counties and regions", col: "#7a5bb8" },
+    { id: "abroad", name: "Countries and regions abroad", col: "#9c5a8a" },
     { id: "places", name: "Spots and journeys", col: "#4f6fc0" },
+    { id: "trips", name: "Trips", col: "#3f8f6f" },
     { id: "bigday", name: "Big days", col: "#2f8f9a" },
     { id: "year", name: "Through the year", col: "#c08a1e" },
     { id: "fun", name: "Just for fun", col: "#e07b39" },
@@ -4611,6 +4616,30 @@ const Badges = (() => {
     ["seaduck", "Sea ducks", "Eider, Common and Velvet Scoter, and Long-tailed Duck", "Somateria mollissima|Melanitta nigra|Melanitta fusca|Clangula hyemalis"],
     ["swans", "Three swans", "Mute, Bewick's and Whooper Swan", "Cygnus cygnus|Cygnus olor|Cygnus columbianus"],
   ].map(([id, name, ask, list]) => ({ id, name, ask, list: list.split("|") }));
+  /* southern sets: an item can name the bird and list more than one Latin name, for birds eBird has split ("Subalpine Warbler:Curruca iberiae/Curruca cantillans") */
+  const SOUTH_SETS = [
+    ["medwarb", "Mediterranean warblers", "Sardinian, Subalpine, Orphean, Spectacled and Dartford Warbler", "Curruca melanocephala|Subalpine Warbler:Curruca iberiae/Curruca cantillans/Curruca subalpina|Orphean Warbler:Curruca hortensis/Curruca crassirostris|Curruca conspicillata|Curruca undata"],
+    ["colour", "Southern colour", "Bee-eater, Roller, Hoopoe and Golden Oriole", "Merops apiaster|Coracias garrulus|Upupa epops|Oriolus oriolus"],
+    ["vultures", "Vultures", "Griffon, Black, Egyptian and Bearded Vulture", "Gyps fulvus|Black Vulture:Aegypius monachus|Neophron percnopterus|Gypaetus barbatus"],
+    ["steppe", "Steppe birds", "Great and Little Bustard, Pin-tailed Sandgrouse and Calandra Lark", "Otis tarda|Tetrax tetrax|Pterocles alchata|Melanocorypha calandra"],
+    ["iberian", "Iberian five", "Spanish Imperial Eagle, Iberian Green Woodpecker, Iberian Chiffchaff, Iberian Grey Shrike and Iberian Magpie", "Aquila adalberti|Picus sharpei|Phylloscopus ibericus|Iberian Grey Shrike:Lanius meridionalis|Cyanopica cooki"],
+    ["greek", "Greek specialities", "Krüper's Nuthatch, Rüppell's Warbler, Cretzschmar's Bunting, Olive-tree Warbler and Western Rock Nuthatch", "Sitta krueperi|Curruca ruppeli|Emberiza caesia|Hippolais olivetorum|Sitta neumayer"],
+    ["nights", "Southern nights", "Scops Owl, Red-necked Nightjar and Stone-curlew", "Scops Owl:Otus scops|Caprimulgus ruficollis|Stone-curlew:Burhinus oedicnemus"],
+  ].map(([id, name, ask, list]) => ({ id, name, ask, list: list.split("|").map((x) => { const [a, b] = x.includes(":") ? x.split(":") : [null, x]; const alts = b.split("/"); return { name: a, alts }; }) }));
+  /* countries: which one a sighting is in. The Canaries sit outside the map's Europe shapes, so they're found by a box */
+  const CANARY = (d) => d.lat > 27.4 && d.lat < 29.6 && d.lng > -18.4 && d.lng < -13.2;
+  const ccOf = (d) => {
+    let c = d.country || "";
+    if (c === "GR") c = "EL";
+    if (!c && CANARY(d)) c = "ES";
+    if (!c && d.region && d.region !== "Outside the UK") c = "GB";
+    return c || null;
+  };
+  const ES_REG = { "Andalucía": "Andalusia", "Región de Murcia": "Murcia", "Extremadura": "Extremadura", "Comunitat Valenciana": "Valencia", "Illes Balears": "Balearic Islands", "Castilla-La Mancha": "Castilla-La Mancha", "Comunidad de Madrid": "Madrid", "Aragón": "Aragon", "Castilla y León": "Castilla y León", "Cataluña": "Catalonia", "La Rioja": "La Rioja", "Comunidad Foral de Navarra": "Navarre", "Galicia": "Galicia", "País Vasco": "Basque Country", "Cantabria": "Cantabria", "Principado de Asturias": "Asturias", "Canarias": "Canary Islands" };
+  const GR_REG = { "Kriti": "Crete", "Notio Aigaio": "South Aegean", "Voreio Aigaio": "North Aegean", "Attiki": "Attica", "Peloponnisos": "Peloponnese", "Dytiki Elláda": "Western Greece", "Sterea Elláda": "Central Greece", "Ionia Nisia": "Ionian Islands", "Thessalia": "Thessaly", "Ipeiros": "Epirus", "Dytiki Makedonia": "Western Macedonia", "Kentriki Makedonia": "Central Macedonia", "Anatoliki Makedonia, Thraki": "Eastern Macedonia and Thrace" };
+  /* island counties abroad, and the islands they stand for */
+  const SUN_ISLES = { "Mallorca": "Mallorca", "Menorca": "Menorca", "Eivissa y Formentera": "Ibiza", "__canary": "the Canaries", "Kerkyra": "Corfu", "Lesvos, Limnos": "Lesvos", "Kalymnos, Karpathos, Kasos, Kos, Rodos": "Rhodes", "__crete": "Crete" };
+  const PLACE_NAMED = /\b(Spanish|Sardinian|Balearic|Iberian|Egyptian|Dartford|Kentish|Manx|Canary|Cyprus|Corsican|Barbary|Siberian|Mediterranean|Caspian|Tenerife|Fuerteventura|Madeira|Azores)\b/;
   const FAM_BADGES = [
     ["water", "Waterbird watcher", 5, "Anas platyrhynchos"], ["coastal", "Shorebird", 5, "Haematopus ostralegus"], ["raptors", "Hawk eye", 5, "Buteo buteo"],
     ["game", "Gamebird spotter", 3, "Phasianus colchicus"], ["pigeons", "Dove fancier", 4, "Streptopelia decaocto"], ["aerial", "Sky dancer", 4, "Hirundo rustica"],
@@ -4647,10 +4676,18 @@ const Badges = (() => {
     const R = recs.filter((d) => d.date).slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     const sp = new Map(), byDay = new Map(), county = new Map(), region = new Map(), edge = {}, spotSp = new Map(), spotMonth = new Map(), spot = new Map(), patch = new Map(), nation = new Map(), months = new Map(), seasons = new Map(), years = new Map(), mmdd = new Map();
     let abroad = null, spring = null;
+    const ctry = new Map(), esReg = new Map(), grReg = new Map(), isles = new Map(), awayDays = [];
     for (const d of R) {
-      const k = wallKey(d.name, d.sci);
+      const k = wallKey(d.name, d.sci), cc = ccOf(d), home = !!cc && UKIE(cc);
       let s = sp.get(k);
-      if (!s) { const night = isNightBird(d.sci); s = { k, date: d.date, name: d.name, sci: d.sci, hab: night ? "night" : (d.hab && d.hab.id) || "wood", w: WS.get(k), days: [] }; sp.set(k, s); }
+      if (!s) { const night = isNightBird(d.sci); s = { k, date: d.date, name: d.name, sci: d.sci, hab: night ? "night" : (d.hab && d.hab.id) || "wood", w: WS.get(k), e: WE.get(k), days: [], cc: new Map(), uk: null, away: !home }; sp.set(k, s); }
+      if (cc && !s.cc.has(cc)) s.cc.set(cc, d.date);
+      if (cc === "GB" && !s.uk) s.uk = d.date;
+      if (cc && !ctry.has(cc)) ctry.set(cc, d.date);
+      if (!home && awayDays[awayDays.length - 1] !== d.date) awayDays.push(d.date);
+      if (cc === "ES") { const r = CANARY(d) ? "Canarias" : String(d.region || "").trim(); if (ES_REG[r] && !esReg.has(r)) esReg.set(r, d.date); }
+      if (cc === "EL" && GR_REG[d.region] && !grReg.has(d.region)) grReg.set(d.region, d.date);
+      { const ik = cc === "ES" && CANARY(d) ? "__canary" : cc === "EL" && d.region === "Kriti" ? "__crete" : (cc === "ES" || cc === "EL") ? d.county : null; if (ik && SUN_ISLES[ik] && !isles.has(ik)) isles.set(ik, d.date); }
       if (s.days[s.days.length - 1] !== d.date) s.days.push(d.date);
       if (!byDay.has(d.date)) byDay.set(d.date, new Set());
       byDay.get(d.date).add(k);
@@ -4679,7 +4716,8 @@ const Badges = (() => {
     const S = [...sp.values()];
     const spDates = S.map((s) => s.date).sort();
     const wallDates = S.filter((s) => s.w).map((s) => s.date).sort();
-    const rareDates = S.filter((s) => s.w && s.w[3] === 2).map((s) => s.date).sort();
+    /* UK rarities: birds first heard before 22 Nov 2026 keep counting wherever they were heard; after that only a UK sighting counts */
+    const rareDates = S.filter((s) => s.w && s.w[3] === 2).map((s) => (s.date < "2026-11-22" ? s.date : s.uk)).filter(Boolean).sort();
     const hab = { pond: [], wood: [], farm: [], coast: [], night: [] };
     S.forEach((s) => (hab[s.hab] || hab.wood).push(s.date)); Object.values(hab).forEach((a) => a.sort());
     const days = [...byDay.keys()];
@@ -4711,6 +4749,7 @@ const Badges = (() => {
     const cuckoo = (sp.get("Cuculus canorus") || {}).date || null;
     let sameAgain = null; for (const s of S) { let r = 1; for (let i = 1; i < s.days.length; i++) { r = toN(s.days[i]) - toN(s.days[i - 1]) === 1 ? r + 1 : 1; if (r >= 7) { if (!sameAgain || s.days[i] < sameAgain) sameAgain = s.days[i]; break; } } }
 
+    const lt0 = () => [...S].sort((a, b) => (a.date < b.date ? -1 : 1));
     const out = [];
     const add = (fam, id, name, ask, have, need, date, x = {}) => out.push({ fam, id, name, ask, have: Math.min(have, need), need, date: date || null, got: !!date, ...x });
     /* species */
@@ -4723,6 +4762,18 @@ const Badges = (() => {
       const n = Math.ceil(WL / f);
       add("uk", "uk-" + f, name, `Hear ${n} of the ${WL} birds on the UK list`, wallDates.length, n, reach(wallDates, n), { t });
     });
+    /* Europe: species heard in each country, and the whole Europe list */
+    const inCC = (cc) => S.map((s) => s.cc.get(cc)).filter(Boolean).sort();
+    const esDates = inCC("ES"), grDates = inCC("EL");
+    const euDates = S.filter((s) => s.e && s.cc.size).map((s) => [...s.cc.values()].sort()[0]).sort();
+    [[25, "bronze"], [50, "bronze"], [100, "silver"], [200, "gold"]].forEach(([n, tier]) => {
+      add("europe", "es-" + n, `Spain ${n}`, `Hear ${n} species in Spain`, esDates.length, n, reach(esDates, n), { ic: "flag", t: String(n), tier, col: "#c8553d" });
+    });
+    [[25, "bronze"], [50, "bronze"], [100, "silver"], [200, "gold"]].forEach(([n, tier]) => {
+      add("europe", "gr-" + n, `Greece ${n}`, `Hear ${n} species in Greece`, grDates.length, n, reach(grDates, n), { ic: "flag", t: String(n), tier, col: "#3a6fb0" });
+    });
+    [[100, "silver"], [250, "gold"], [500, "gold"]].forEach(([n, tier]) =>
+      add("europe", "eu-" + n, `Europe ${n}`, `Hear ${n} of the ${WALL_EU.length} birds on the Europe list, anywhere in Europe`, euDates.length, n, reach(euDates, n), { ic: "star", t: String(n), tier }));
     /* habitats */
     const H = (id, name, h, n, x) => add("habitat", id, name, `Hear ${n} ${h === "night" ? "night" : { pond: "pond and wetland", wood: "woodland", farm: "farmland", coast: "coast and sea" }[h]} ${n === 1 ? "bird" : "birds"}`, hab[h].length, n, reach(hab[h], n), { ic: { pond: "drop", wood: "tree", farm: "wheat", coast: "wave", night: "moon" }[h], col: HABC[h], ...x });
     H("hb-pond", "Pond regular", "pond", 5); H("hb-pond2", "Pond expert", "pond", 15, { t: "15" });
@@ -4741,6 +4792,11 @@ const Badges = (() => {
       return { st, have: have.length, date, cover, list: st.list.map((s) => ({ name: nm(s), sci: s, got: sp.has(s) })) };
     });
     setOut.forEach((o) => add("sets", "set-" + o.st.id, o.st.name, o.st.ask, o.have, o.st.list.length, o.date, { photo: o.cover, list: o.list }));
+    SOUTH_SETS.forEach((st) => {
+      const items = st.list.map((it) => { const ds = it.alts.map((x) => sp.get(x)).filter(Boolean).map((x) => x.date).sort(); return { name: it.name || nm(it.alts[0]), sci: it.alts[0], got: ds.length > 0, date: ds[0] || null, hit: it.alts.find((x) => sp.has(x)) }; });
+      const have = items.filter((x) => x.got).length, date = have === items.length ? items.map((x) => x.date).sort().pop() : null;
+      add("south", "ss-" + st.id, st.name, st.ask, have, items.length, date, { photo: (items.find((x) => x.got) || {}).hit || items[0].sci, list: items.map(({ name, sci, got }) => ({ name, sci, got })) });
+    });
     /* bird families: a handful from each, like pages in a field guide */
     const famHave = new Map(); S.forEach((s2) => { const f = s2.w ? s2.w[2] : null; if (!f) return; if (!famHave.has(f)) famHave.set(f, []); famHave.get(f).push(s2.date); }); famHave.forEach((l) => l.sort());
     FAM_BADGES.forEach(([id, name, n, cover]) => { const l = famHave.get(id) || [], F = FAMILY_BY_ID.get(id); add("families", "fm-" + id, name, `Hear ${n} ${F ? F.name.toLowerCase() : "birds"}`, l.length, n, reach(l, n), { photo: cover, col: F ? F.colour : null }); });
@@ -4771,13 +4827,23 @@ const Badges = (() => {
     const owls2 = lt.filter((s2) => /Owl\b/.test(s2.name));
     add("fun", "fn-owls", "Owl prowl", "Hear three kinds of owl", owls2.length, 3, owls2[2] ? owls2[2].date : null, { ic: "moon", t: "3" });
     /* rarer visitors */
-    add("rare", "rr-1", "First rarity", "Hear a lilac bird: one nobody logged in the UK on eBird last year", rareDates.length, 1, reach(rareDates, 1), { ic: "gem" });
+    add("rare", "rr-1", "First rarity", "Hear a lilac bird in the UK: one nobody logged in the UK on eBird last year", rareDates.length, 1, reach(rareDates, 1), { ic: "gem" });
     add("rare", "rr-5", "Five rarities", "Hear 5 lilac birds", rareDates.length, 5, reach(rareDates, 5), { ic: "gem", t: "5" });
     add("rare", "rr-10", "Ten rarities", "Hear 10 lilac birds", rareDates.length, 10, reach(rareDates, 10), { ic: "gem", t: "10" });
     add("rare", "rr-25", "Rarity hunter", "Hear 25 lilac birds", rareDates.length, 25, reach(rareDates, 25), { ic: "gem", t: "25", tier: "gold" });
     add("rare", "rr-away", "Far from home", "Log a bird outside the UK", abroad ? 1 : 0, 1, abroad, { ic: "pin" });
+    /* rarities abroad, judged on the list of the country where you heard them */
+    const rareIn = (cc, col) => S.filter((s) => s.e && s.e[col] === 2 && s.cc.has(cc)).map((s) => s.cc.get(cc)).sort();
+    [["ES", 6, "Spanish", "Spain", "#c8553d"], ["EL", 7, "Greek", "Greece", "#3a6fb0"]].forEach(([cc, col, adj, place, c]) => {
+      const l = rareIn(cc, col);
+      add("rare", `rr-${cc.toLowerCase()}1`, `${adj} rarity`, `Hear a lilac bird in ${place}: one nobody logged in ${place} on eBird last year`, l.length, 1, reach(l, 1), { ic: "gem", col: c });
+      add("rare", `rr-${cc.toLowerCase()}5`, `Five ${adj} rarities`, `Hear 5 lilac birds in ${place}`, l.length, 5, reach(l, 5), { ic: "gem", t: "5", col: c });
+      add("rare", `rr-${cc.toLowerCase()}10`, `Ten ${adj} rarities`, `Hear 10 lilac birds in ${place}`, l.length, 10, reach(l, 10), { ic: "gem", t: "10", col: c, tier: "gold" });
+    });
+    const dbl = S.filter((s) => s.e && [s.e[5], s.e[6], s.e[7]].filter((t) => t === 2).length >= 2).map((s) => s.date).sort();
+    add("rare", "rr-double", "Double rarity", "Hear a bird that's a rarer visitor in two of the UK, Spain and Greece", dbl.length, 1, reach(dbl, 1), { ic: "gem", t: "×2" });
     /* counties and regions */
-    const UKC = COUNTIES.filter((c) => c.f.properties.country !== "IE").length;
+    const UKC = COUNTIES.filter((c) => (c.f.properties.country || "GB") === "GB").length;
     [[3, "Three", "bronze"], [5, "Five", "bronze"], [10, "Ten", "bronze"], [20, "Twenty", "silver"], [30, "Thirty", "silver"], [50, "Fifty", "silver"], [100, "A hundred", "gold"]].forEach(([n, w, tier]) =>
       add("region", "pl-c" + n, `${w} counties`, `Hear birds in ${n} counties`, cnt.length, n, reach(cnt, n), { ic: "pin", t: String(n), tier }));
     add("region", "pl-c" + UKC, "Grand tour", `Hear birds in every one of the UK's ${UKC} counties`, cnt.length, UKC, reach(cnt, UKC), { ic: "pin", t: "All", tier: "gold" });
@@ -4810,6 +4876,31 @@ const Badges = (() => {
     [["n", "True north", "Hear birds north of Inverness", "N"], ["s", "Deep south", "Hear birds on the south coast of Devon, Cornwall or the Isle of Wight", "S"], ["e", "Far east", "Hear birds on the East Anglian coast", "E"], ["w", "Wild west", "Hear birds in Cornwall's far west, Pembrokeshire, the Hebrides or Northern Ireland", "W"]].forEach(([k, name, ask, t]) =>
       add("places", "pl-cp" + k, name, ask, edge[k] ? 1 : 0, 1, edge[k], { ic: "pin", t }));
     const pts = ["n", "s", "e", "w"].filter((k) => edge[k]);
+    /* countries and regions abroad */
+    const cts = [...ctry.values()].sort();
+    [[2, "Two countries"], [3, "Three countries"], [5, "Five countries"]].forEach(([n, name]) =>
+      add("abroad", "ct-" + n, name, `Hear birds in ${n} different countries`, cts.length, n, reach(cts, n), { ic: "flag", t: String(n), tier: n === 5 ? "gold" : null, sub: cts.length >= n ? null : `${cts.length} so far` }));
+    const regBadges = (pre, place, names, got, steps, col) => {
+      const all = Object.keys(names), l = [...got.values()].sort();
+      const list = all.map((k) => ({ name: names[k], got: got.has(k) }));
+      steps.forEach(([n, name, tier]) => add("abroad", `${pre}-r${n}`, name, n === all.length ? `Hear birds in all ${n} of ${place}'s regions` : `Hear birds in ${n} of ${place}'s ${all.length} regions`, l.length, n, reach(l, n), { ic: "flag", t: n === all.length ? "All" : String(n), tier, col, list }));
+    };
+    regBadges("es", "Spain", ES_REG, esReg, [[1, "Spanish region", null], [3, "Three Spanish regions", null], [8, "Across Spain", "silver"], [17, "All of Spain", "gold"]], "#c8553d");
+    regBadges("gr", "Greece", GR_REG, grReg, [[1, "Greek region", null], [3, "Three Greek regions", null], [6, "Across Greece", "silver"], [13, "All of Greece", "gold"]], "#3a6fb0");
+    { const l = [...isles.values()].sort(), list = Object.entries(SUN_ISLES).map(([k, v]) => ({ name: v[0].toUpperCase() + v.slice(1), got: isles.has(k) }));
+      add("abroad", "is-1", "Island sun", "Hear birds on Mallorca, Menorca, Ibiza, the Canaries, Crete, Corfu, Lesvos or Rhodes", l.length, 1, reach(l, 1), { ic: "wave", list });
+      add("abroad", "is-3", "Southern island hopper", "Hear birds on three of those islands", l.length, 3, reach(l, 3), { ic: "wave", t: "3", list }); }
+    /* trips abroad: days away with no more than three days between them count as one trip */
+    { const trips = []; for (const d2 of awayDays) { const t = trips[trips.length - 1]; if (t && toN(d2) - toN(t.end) <= 4) t.end = d2; else trips.push({ start: d2, end: d2 }); }
+      const tripNew = trips.map((t) => S.filter((s) => s.away && s.date >= t.start && s.date <= t.end).map((s) => s.date).sort());
+      const best = Math.max(0, ...tripNew.map((l) => l.length));
+      const at = (n) => tripNew.filter((l) => l.length >= n).map((l) => l[n - 1]).sort()[0] || null;
+      add("trips", "tr-post", "Postcard", "Hear 10 birds you've never heard before on one trip abroad", best, 10, at(10), { ic: "pin", t: "+10", sub: at(10) ? null : best ? `Best trip has ${best}` : null });
+      add("trips", "tr-post25", "Postcard home", "Hear 25 birds you've never heard before on one trip abroad", best, 25, at(25), { ic: "pin", t: "+25", tier: "gold", sub: at(25) ? null : best ? `Best trip has ${best}` : null }); }
+    { const three = S.filter((s) => s.cc.size >= 3).map((s) => [...s.cc.values()].sort()[2]).sort(), most = Math.max(0, ...S.map((s) => s.cc.size));
+      add("trips", "tr-stamps", "Passport stamps", "Hear the same bird in three different countries", Math.min(most, 3), 3, three[0] || null, { ic: "swap", t: "3" }); }
+    { const pn = lt0().filter((s) => PLACE_NAMED.test(s.name));
+      add("trips", "tr-name", "Name check", "Hear a bird named after a place, like Spanish Sparrow, Sardinian Warbler or Kentish Plover", pn.length, 1, pn[0] ? pn[0].date : null, { ic: "star" }); }
     add("places", "pl-cpall", "Compass points", "Earn True north, Deep south, Far east and Wild west", pts.length, 4, pts.length === 4 ? pts.map((k) => edge[k]).sort().pop() : null, { ic: "star", t: "4" });
     /* big days */
     [[20, "Big day"], [30, "Bigger day"], [50, "Biggest day"]].forEach(([n, name]) =>
@@ -4856,7 +4947,8 @@ const Badges = (() => {
      ["sc-back", "Comeback", "Hear a bird again after six months without it", comeback, "swap"],
      ["sc-full", "Full house", "Hear a pond, woodland, farmland and night bird on the same day", fullHouse, "home"],
      ["sc-cuckoo", "Cuckoo!", "Hear a Cuckoo", cuckoo, "bird"],
-     ["sc-same", "Same again", "Hear the same bird seven days in a row", sameAgain, "cal"]].forEach(([id, name, ask, date, ic]) =>
+     ["sc-same", "Same again", "Hear the same bird seven days in a row", sameAgain, "cal"],
+     ["sc-south", "A taste of the south", "Hear a bird in the UK that's rare here but common in Spain or Greece", S.filter((s) => s.uk && s.w && s.w[3] === 2 && s.e && (s.e[6] === 1 || s.e[7] === 1)).map((s) => s.uk).sort()[0] || null, "sun"]].forEach(([id, name, ask, date, ic]) =>
       add("secret", id, name, ask, date ? 1 : 0, 1, date, { ic, secret: true }));
     return out;
   }
