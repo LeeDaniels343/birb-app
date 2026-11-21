@@ -7522,22 +7522,22 @@ const Acct = (() => {
     };
     shown.forEach((x, i) => card(x, photos[i], spots[i]));
     if (rest.length) {
-      const w = 236, h = 222, cx = 660, cy = 1392;
+      const w = 236, h = 204, cx = 690, cy = 1366;
       g.save(); g.translate(cx + w / 2, cy + h / 2); g.rotate((-9 * Math.PI) / 180); g.translate(-w / 2, -h / 2);
       g.shadowColor = "rgba(0,0,0,.38)"; g.shadowBlur = 30; g.shadowOffsetY = 12;
       g.fillStyle = "#5ab8d8"; g.beginPath(); g.roundRect(0, 0, w, h, 16); g.fill(); g.shadowColor = "transparent";
-      g.fillStyle = "#0e2830"; g.beginPath(); g.roundRect(12, 12, w - 24, 118, 10); g.fill();
-      text(`+${rest.length}`, w / 2, 84, `700 66px ${DISP}`, "#5ab8d8"); text("more", w / 2, 116, `500 24px ${BODY}`, "#cfe3e8");
+      g.fillStyle = "#0e2830"; g.beginPath(); g.roundRect(12, 12, w - 24, 106, 10); g.fill();
+      text(`+${rest.length}`, w / 2, 76, `700 62px ${DISP}`, "#5ab8d8"); text("more", w / 2, 106, `500 22px ${BODY}`, "#cfe3e8");
       const short = rest.map((x) => x.name.split(" ").pop()).join(", "), sl = wrap2(short, w - 28, `500 20px ${BODY}`);
-      sl.forEach((l, i) => text(l, w / 2, 162 + i * 25, `500 20px ${BODY}`, "#0e2830"));
+      sl.forEach((l, i) => text(l, w / 2, 148 + i * 24, `500 20px ${BODY}`, "#0e2830"));
       g.restore();
     }
 
     /* the total, then space for Instagram's link sticker */
-    text(`That's ${info.total} species heard on BIRB`, W / 2, 1655, `500 34px ${BODY}`, "#cfe3e8");
+    text(`That's ${info.total} species logged on BIRB`, W / 2, 1678, `500 34px ${BODY}`, "#cfe3e8");
     g.strokeStyle = "#5ab8d8"; g.lineWidth = 4; g.lineCap = "round"; g.lineJoin = "round";
-    g.beginPath(); g.moveTo(W / 2, 1680); g.lineTo(W / 2, 1704); g.moveTo(W / 2 - 12, 1693); g.lineTo(W / 2, 1706); g.lineTo(W / 2 + 12, 1693); g.stroke();
-    text("Join my flock · tap the link", W / 2, 1742, `600 26px ${BODY}`, "#5ab8d8");
+    g.beginPath(); g.moveTo(W / 2, 1700); g.lineTo(W / 2, 1722); g.moveTo(W / 2 - 12, 1711); g.lineTo(W / 2, 1724); g.lineTo(W / 2 + 12, 1711); g.stroke();
+    text("Join my flock · tap the link", W / 2, 1758, `600 26px ${BODY}`, "#5ab8d8");
     return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
   }
   async function openShare() {
