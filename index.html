@@ -339,15 +339,18 @@ body.night .nt .tx .acts .primary { color: #0f191d; }
 .av.tr::after { box-shadow: inset 0 0 0 var(--rw, 3px) var(--tier); }
 .av.tr.k2::after { box-shadow: inset 0 0 0 2px var(--tier), inset 0 0 0 4px var(--avbg, var(--surface)), inset 0 0 0 6px var(--tier2); }
 .av.tr.k3::after { box-shadow: inset 0 0 0 2px var(--tier), inset 0 0 0 3.5px var(--avbg, var(--surface)), inset 0 0 0 5.5px var(--tier), inset 0 0 0 7px var(--avbg, var(--surface)), inset 0 0 0 9px var(--tier); }
-.av.fd::after { background: conic-gradient(from 210deg, #f2c14e, #e07b39, #d4537e, #7f77dd, #378add, #1d9e75, #97c459, #f2c14e);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--rw, 3.5px)), #000 calc(100% - var(--rw, 3.5px) + .5px)); mask: radial-gradient(farthest-side, transparent calc(100% - var(--rw, 3.5px)), #000 calc(100% - var(--rw, 3.5px) + .5px)); }
+.av.fd { overflow: visible; }
+.av.fd img { border-radius: 50%; }
+.av.fd::after { box-shadow: inset 0 0 0 var(--rw, 3px) #F1EFE8; }
+.av.fd::before { content: ""; position: absolute; z-index: 1; top: -6%; right: -6%; width: 36%; height: 36%; min-width: 14px; min-height: 14px; border-radius: 50%; background: #0F6E56 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E1F5EE' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 4C12 4 7 9 7 16v4'/%3E%3Cpath d='M7 16c6 0 10-3 11-8'/%3E%3Cpath d='M10 12h5'/%3E%3C/svg%3E") center / 62% no-repeat; box-shadow: 0 0 0 2px var(--surface); pointer-events: none; }
+.by-stack .av.fd::before, .who .av.fd::before, .scope .av.fd::before, .heard-by .av.fd::before, .who-chip .av.fd::before { display: none; }
 .acct .pv2-head .av, .prof .av, .flock-row .av, .me-btn .av { --rw: 4px; }
-.acct .pv2-head .av.fd { --rw: 5px; }
+.acct .pv2-head .av.fd { --rw: 4px; }
 .by-stack .av, .who .av, .scope .av, .heard-by .av, .who-chip .av { --rw: 2px; }
 .tier-chip { display: inline-flex; align-items: center; gap: 5px; font: 600 11.5px/1 var(--font-body); padding: 4px 9px 4px 7px; border-radius: 999px; color: var(--ink); background: color-mix(in srgb, var(--tier, #888) 16%, transparent); white-space: nowrap; }
 .tier-chip::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 2.5px solid var(--tier, #888); box-sizing: border-box; }
-.tier-chip.fd { background: color-mix(in srgb, #e07b39 14%, transparent); }
-.tier-chip.fd::before { border: 0; background: conic-gradient(#f2c14e, #e07b39, #d4537e, #7f77dd, #378add, #1d9e75, #f2c14e); -webkit-mask: radial-gradient(farthest-side, transparent 52%, #000 56%); mask: radial-gradient(farthest-side, transparent 52%, #000 56%); }
+.tier-chip.fd { background: color-mix(in srgb, #0F6E56 18%, transparent); }
+.tier-chip.fd::before { border: 0; width: 13px; height: 13px; background: #0F6E56 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E1F5EE' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 4C12 4 7 9 7 16v4'/%3E%3Cpath d='M7 16c6 0 10-3 11-8'/%3E%3Cpath d='M10 12h5'/%3E%3C/svg%3E") center / 70% no-repeat; }
 .tier-chip.sm { font-size: 10.5px; padding: 3px 7px 3px 5px; margin-left: 6px; vertical-align: 1px; }
 .tier-chip + .tier-chip { margin-left: 4px; }
 .mem-tier { margin: 6px 0 0; }
@@ -7408,7 +7411,7 @@ const Acct = (() => {
     return `<details class="pv2-tier"><summary>${Tier.chip(me)}<span class="t">${nx ? `${nx.n - n} more species to ${esc(nx.name)}` : t ? "The top ring" : ""}</span><span class="more">Rings</span></summary>
       <div class="tier-ladder">${f ? `<div class="tl-row fd-row"><span class="av fd" style="--avrim:transparent"></span><span><b>Founder</b><small>Only for the person who started BIRB</small></span></div>` : ""}
       ${TIERS.map((x) => `<div class="tl-row${t && x.n === t.n ? " cur" : ""}${n >= x.n ? " got" : ""}"><span class="av tr${x.k ? " k" + x.k : ""}" style="--avrim:transparent;--tier:${x.c};--tier2:${x.c2 || x.c}"></span><span><b>${esc(x.name)}</b><small>${x.n === 1 ? "Your first species" : `${x.n} species`}</small></span>${t && x.n === t.n ? '<span class="you">You</span>' : ""}</div>`).join("")}
-      <p class="hint">Rings count every species you've heard, anywhere in the world, and never go down.${f ? " Your Founder ring shows instead of the species ring, so everyone knows who started BIRB." : ""}</p></div></details>`;
+      <p class="hint">Rings count every species you've heard, anywhere in the world, and never go down.${f ? " Your Founder ring shows instead of the species ring." : ""}</p></div></details>`;
   };
   const tabs = () => me ? `<nav class="acct-tabs" aria-label="Account">${[["profile", "Overview"], ["settings", "Settings"], ["flock", "Flock"], ...(me.admin ? [["admin", "Admin"]] : [])].map(([k, l]) => `<button type="button" data-acct="${k}" aria-current="${view === k ? "page" : "false"}">${l}${k === "flock" && requests.in.length ? `<span class="tab-n" aria-label="${requests.in.length} new">${requests.in.length}</span>` : ""}</button>`).join("")}${DEVSITE ? '<span class="acct-dev" title="Test copy with separate data">DEV</span>' : ""}</nav>` : "";
   const X = `<button type="button" class="acct-x" data-acct-close aria-label="Close">×</button>`;
