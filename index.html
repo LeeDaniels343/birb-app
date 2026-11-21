@@ -354,22 +354,32 @@ body.night .nt .tx .acts .primary { color: #0f191d; }
 .tier-chip.sm { font-size: 10.5px; padding: 3px 7px 3px 5px; margin-left: 6px; vertical-align: 1px; }
 .tier-chip + .tier-chip { margin-left: 4px; }
 .mem-tier { margin: 6px 0 0; }
-.pv2-tier { margin: 12px 0 0; }
-.pv2-tier summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 13px; color: var(--muted); }
-.pv2-tier summary::-webkit-details-marker { display: none; }
-.pv2-tier summary .t { flex: 1; }
-.pv2-tier summary .more { color: var(--accent); font-weight: 600; font-size: 13px; }
-.pv2-tier[open] summary .more::after { content: " ▴"; }
-.pv2-tier:not([open]) summary .more::after { content: " ▾"; }
-.tier-ladder { display: grid; gap: 2px; margin: 10px 0 4px; padding: 8px 12px; border-radius: 14px; background: color-mix(in srgb, var(--line) 35%, transparent); }
-.tl-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; font-size: 13.5px; opacity: .55; }
-.tl-row.got, .tl-row.fd-row { opacity: 1; }
-.tl-row .av { width: 30px; height: 30px; --rw: 3px; background: var(--surface); }
-.tl-row > span:nth-child(2) { flex: 1; display: grid; }
-.tl-row small { color: var(--muted); font-size: 12px; }
-.tl-row .you { font: 600 11px/1 var(--font-body); color: var(--accent); background: var(--accent-soft); padding: 4px 8px; border-radius: 999px; }
-.tl-row.cur b { color: var(--accent); }
-.tier-ladder .hint { margin: 6px 0 2px; font-size: 12px; }
+.pv2-tier { display: flex; align-items: center; gap: 8px; width: 100%; margin: 12px 0 0; padding: 0; border: 0; background: none; box-shadow: none; font-size: 13px; color: var(--muted); text-align: left; cursor: pointer; }
+.pv2-tier .t { flex: 1; }
+.pv2-tier .more { color: var(--accent); font-weight: 600; }
+.jy { max-width: 560px; margin: 0 auto; }
+.jy-now { display: flex; align-items: center; gap: 16px; padding: 16px 18px; border-radius: 16px; background: color-mix(in srgb, var(--line) 35%, transparent); margin: 6px 0 22px; }
+.jy-now .av { width: 60px; height: 60px; --rw: 4px; }
+.jy-now .t { flex: 1; min-width: 0; }
+.jy-now h2 { margin: 0; font-size: 21px; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.jy-now p { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
+.jy-now .bar { display: block; height: 6px; border-radius: 3px; margin-top: 10px; background: color-mix(in srgb, var(--line) 70%, transparent); overflow: hidden; }
+.jy-now .bar i { display: block; height: 100%; border-radius: 3px; }
+.jy-line { position: relative; }
+.jy-line .rail, .jy-line .fill { position: absolute; left: 21px; width: 3px; border-radius: 2px; }
+.jy-line .rail { background: var(--line); }
+.jy-line .fill { background: var(--accent); }
+.jy-st { display: grid; grid-template-columns: 45px minmax(0, 1fr) auto; align-items: center; column-gap: 14px; height: var(--row); position: relative; opacity: .5; }
+.jy-st.got { opacity: 1; }
+.jy-st .av { width: 32px; height: 32px; justify-self: center; background: var(--bg); z-index: 1; --rw: 3.5px; }
+.jy-st .t { display: grid; }
+.jy-st b { font-size: 15px; }
+.jy-st.cur b { color: var(--accent); }
+.jy-st small { font-size: 12px; color: var(--muted); }
+.jy-st .d { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.jy-you { display: flex; align-items: center; gap: 12px; padding-left: 12px; position: relative; z-index: 2; }
+.jy-you i { width: 21px; height: 21px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 25%, transparent); flex: none; }
+.jy-you b { font: 600 12px/1 var(--font-body); color: var(--surface); background: var(--accent); border-radius: 999px; padding: 5px 10px; }
 .av svg { width: 60%; height: 60%; color: var(--accent); }
 .who { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .who[hidden] { display: none; }
@@ -1648,7 +1658,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
   </nav>
   <section class="coll" id="coll" hidden aria-label="Collection: every bird on eBird's UK list, with the ones you've heard">
     <div class="coll-in">
-      <div class="seg coll-tabs" role="group" aria-label="Collection or badges"><button type="button" data-cmode="wall" aria-pressed="true">Collection</button><button type="button" data-cmode="badges" aria-pressed="false">Badges<i class="bd-dot" hidden></i></button></div>
+      <div class="seg coll-tabs" role="group" aria-label="Collection, badges or journey"><button type="button" data-cmode="wall" aria-pressed="true">Collection</button><button type="button" data-cmode="badges" aria-pressed="false">Badges<i class="bd-dot" hidden></i></button><button type="button" data-cmode="journey" aria-pressed="false">Journey</button></div>
       <div id="coll-main">
       <div class="coll-head">
         <svg class="coll-ring" viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="30" fill="none" stroke="var(--line)" stroke-width="8"/><circle id="coll-ring" cx="36" cy="36" r="30" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round" transform="rotate(-90 36 36)" stroke-dasharray="0 999"/><text id="coll-pct" x="36" y="41" text-anchor="middle"></text></svg>
@@ -1681,6 +1691,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
       <p class="coll-note" id="coll-note">The wall holds every species on eBird's United Kingdom list (native, naturalised and provisional, 634 in all). Birds with a lilac frame are rarer visitors: species nobody has logged in the UK on eBird in the past year.</p>
       </div>
       <div id="badges" hidden></div>
+      <div id="journey" hidden></div>
     </div>
     <div class="coll-pop" id="coll-pop" hidden></div>
     <div class="coll-pop bd-pop" id="bd-pop" hidden></div>
@@ -4815,7 +4826,7 @@ const Badges = (() => {
     add("species", "sp-1", "First bird", "Hear your first bird", spDates.length, 1, reach(spDates, 1), { ic: "bird" });
     [[10, "bronze"], [25, "bronze"], [50, "silver"], [75, "silver"], [100, "silver"], [150, "gold"], [200, "gold"], [250, "gold"], [300, "gold"], [400, "gold"], [600, "gold"], [1000, "gold"]].forEach(([n, tier]) => {
       const T = TIERS.find((x) => x.n === n);
-      add("species", "sp-" + n, `${n} species`, `Hear ${n} different species, anywhere in the world${T ? `. Your birb's ring turns ${T.name}` : ""}`, spDates.length, n, reach(spDates, n), { t: String(n), tier });
+      add("species", "sp-" + n, `${n} species`, `Hear ${n} different species, anywhere in the world${T ? `. That's the ${T.name} level` : ""}`, spDates.length, n, reach(spDates, n), { t: String(n), tier });
     });
     /* the UK list */
     const WL = WALL.length;
@@ -5091,7 +5102,41 @@ const Badges = (() => {
     const fl = src.mine ? quickFlock() : null;
     return keep(compute(src.recs, fl), keptOf(src.mine ? Acct.me : src.who));
   }
+  /* ---------- the journey: each level on a line, with the date you reached it and where you are now ---------- */
+  function journey() {
+    const box = $("journey"); if (!box || box.hidden) return;
+    const src = source();
+    if (src && src.wait) { box.innerHTML = `<p class="hint bd-wait">Loading your journey…</p>`; return; }
+    if (!src || !src.recs.length) { box.innerHTML = `<div class="bd-empty">${svgIc("star")}<h3>Your journey</h3><p>Add your eBird export in Your profile and you'll see how far you've come.</p></div>`; return; }
+    const all = list(src), byId = new Map(all.map((b) => [b.id, b]));
+    const who = src.who, mine = src.mine;
+    const nRecs = new Set(src.recs.map((d) => wallKey(d.name, d.sci))).size;
+    const n = Math.max(nRecs, who ? Tier.count(who) : 0);
+    let ci = -1; TIERS.forEach((x, i) => { if (n >= x.n) ci = i; });
+    const cur = TIERS[ci] || null, nx = TIERS[ci + 1] || null;
+    const frac = nx ? Math.min(1, (n - (cur ? cur.n : 0)) / (nx.n - (cur ? cur.n : 0))) : 0;
+    const ringCss = (x) => `--tier:${x.c};--tier2:${x.c2 || x.c}`;
+    const whoName = who ? (mine ? "Your" : `${esc(nameOf(who))}'s`) : "";
+    const ROW = 62, YOU = 40, top = ROW / 2, here = !!(nx && ci >= 0), fillH = ci < 0 ? 0 : here ? (ci + 1) * ROW + YOU / 2 - top : ci * ROW;
+    let h = `<div class="jy">
+      <div class="jy-now">${who ? Avatar.html(who.avatar, "", cur ? { species: n, u: "~" } : null) : ""}<div class="t"><h2>${cur ? esc(cur.name) : "Just starting"}</h2>
+        <p>${whoName ? whoName + " journey · " : ""}${n} species heard${nx ? ` · ${nx.n - n} more to ${esc(nx.name)}` : " · the top level"}</p>
+        ${nx ? `<span class="bar"><i style="width:${Math.round(frac * 100)}%;background:${nx.c}"></i></span>` : ""}</div></div>
+      <div class="jy-line" style="--row:${ROW}px">
+        <span class="rail" style="top:${top}px;bottom:${top}px"></span><span class="fill" style="top:${top}px;height:${fillH}px"></span>
+        ${TIERS.map((x, i) => {
+          const b = byId.get("sp-" + x.n), got = n >= x.n, isNext = nx && x.n === nx.n;
+          return `<div class="jy-st${got ? " got" : ""}${cur && x.n === cur.n ? " cur" : ""}"><span class="av tr${x.k ? " k" + x.k : ""}" style="--avrim:transparent;${ringCss(x)}"></span>
+            <span class="t"><b>${esc(x.name)}</b><small>${x.n === 1 ? "First species" : `${x.n.toLocaleString("en-GB")} species`}${isNext ? ` · ${x.n - n} to go` : ""}</small></span>
+            <span class="d">${got && b && b.date ? esc(when(b.date)) : isNext ? "Next" : ""}</span></div>${here && i === ci ? `<div class="jy-you" style="height:${YOU}px"><i></i><b>${mine ? "You" : esc(nameOf(who || {}))} · ${n} species</b></div>` : ""}`;
+        }).join("")}
+      </div>
+      <p class="coll-note">Levels count every species ${mine ? "you've" : "they've"} heard, anywhere in the world, and never go down. Each level comes with a ring round ${mine ? "your" : "their"} birb.${mine && who && Tier.founder(who) ? " Your birb wears the Founder ring instead, but this is still your journey." : ""}</p>
+    </div>`;
+    box.innerHTML = h;
+  }
   function render() {
+    if (mode === "journey") { journey(); return; }
     const box = $("badges"); if (!box || box.hidden) return;
     const src = source();
     if (src && src.wait) { box.innerHTML = `<p class="hint bd-wait">Loading your badges…</p>`; return; }
@@ -5178,14 +5223,15 @@ const Badges = (() => {
 
   /* ---------- the Collection / Badges switch ---------- */
   function setMode(m) {
-    mode = m === "badges" ? "badges" : "wall";
-    $("coll-main").hidden = mode === "badges";
+    mode = m === "badges" || m === "journey" ? m : "wall";
+    $("coll-main").hidden = mode !== "wall";
     $("badges").hidden = mode !== "badges";
+    $("journey").hidden = mode !== "journey";
     $("coll-pop").hidden = true; $("bd-pop").hidden = true; sel = null;
     document.querySelectorAll("[data-cmode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cmode === mode)));
     $("coll").scrollTop = 0;
-    if (mode === "badges") render(); else Coll.render();
-    paintDot(); Tips.hideCur(); Tips.show(mode === "badges" ? "badges" : "coll");
+    if (mode === "badges") render(); else if (mode === "journey") journey(); else Coll.render();
+    paintDot(); Tips.hideCur(); if (mode !== "journey") Tips.show(mode === "badges" ? "badges" : "coll");
   }
   document.addEventListener("click", (e) => {
     const m = e.target.closest("[data-cmode]"); if (m) { setMode(m.dataset.cmode); return; }
@@ -7408,10 +7454,7 @@ const Acct = (() => {
   const tierHTML = () => {
     const t = Tier.of(me), f = Tier.founder(me); if (!t && !f) return "";
     const n = Tier.count(me), nx = t && t.next;
-    return `<details class="pv2-tier"><summary>${Tier.chip(me)}<span class="t">${nx ? `${nx.n - n} more species to ${esc(nx.name)}` : t ? "The top ring" : ""}</span><span class="more">Rings</span></summary>
-      <div class="tier-ladder">${f ? `<div class="tl-row fd-row"><span class="av fd" style="--avrim:transparent"></span><span><b>Founder</b><small>Only for the person who started BIRB</small></span></div>` : ""}
-      ${TIERS.map((x) => `<div class="tl-row${t && x.n === t.n ? " cur" : ""}${n >= x.n ? " got" : ""}"><span class="av tr${x.k ? " k" + x.k : ""}" style="--avrim:transparent;--tier:${x.c};--tier2:${x.c2 || x.c}"></span><span><b>${esc(x.name)}</b><small>${x.n === 1 ? "Your first species" : `${x.n} species`}</small></span>${t && x.n === t.n ? '<span class="you">You</span>' : ""}</div>`).join("")}
-      <p class="hint">Rings count every species you've heard, anywhere in the world, and never go down.${f ? " Your Founder ring shows instead of the species ring." : ""}</p></div></details>`;
+    return `<button type="button" class="pv2-tier" data-go-journey>${Tier.chip(me)}<span class="t">${nx ? `${nx.n - n} more species to ${esc(nx.name)}` : t ? "The top level" : ""}</span><span class="more">Journey ›</span></button>`;
   };
   const tabs = () => me ? `<nav class="acct-tabs" aria-label="Account">${[["profile", "Overview"], ["settings", "Settings"], ["flock", "Flock"], ...(me.admin ? [["admin", "Admin"]] : [])].map(([k, l]) => `<button type="button" data-acct="${k}" aria-current="${view === k ? "page" : "false"}">${l}${k === "flock" && requests.in.length ? `<span class="tab-n" aria-label="${requests.in.length} new">${requests.in.length}</span>` : ""}</button>`).join("")}${DEVSITE ? '<span class="acct-dev" title="Test copy with separate data">DEV</span>' : ""}</nav>` : "";
   const X = `<button type="button" class="acct-x" data-acct-close aria-label="Close">×</button>`;
@@ -8389,6 +8432,7 @@ const Acct = (() => {
     if (t.closest("[data-fl-invite]")) { flInvite = !flInvite; render(); return; }
     if (t.closest("[data-fl-map]")) { close(); await showFlock(); return; }
     if (t.closest("[data-acct-badges]")) { close(); setView("collection"); Badges.setMode("badges"); return; }
+    if (t.closest("[data-go-journey]")) { close(); setView("collection"); Badges.setMode("journey"); return; }
     const fk = t.closest("[data-fbk]"); if (fk) { const txt = $("fb-text").value; fbKind = fk.dataset.fbk; render(); $("fb-text").value = txt; $("fb-n").textContent = `${txt.length} / 1500`; return; }
     const go = t.closest("[data-acct]"); if (go) {
       if (go.dataset.acct === "privacy") { privFrom = view; if (view === "join" && $("f-join")) draft = { ...draft, invite: $("j-inv").value, name: $("j-name").value, username: $("j-user").value, suggest: $("j-sug") ? $("j-sug").checked : true }; }
