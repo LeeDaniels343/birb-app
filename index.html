@@ -6716,24 +6716,38 @@ const Podium = (() => {
   function fitAll() {
     if (!items.length || !C) { over = null; return; }
     const narrow = C.aspect < 1;
-    /* frame the top eight; the rest of the row runs on into the distance behind them */
-    const fr = items.slice(0, Math.min(items.length, 8));
+    /* the zoomed-out view faces the bars front on, like a real podium: the top few side by side,
+       with the rest of the row carrying on to the right for you to swipe along */
+    const fr = items.slice(0, Math.min(items.length, narrow ? 4 : 7));
     const xs = fr.map((o) => o.x), zs = fr.map((o) => o.z), top = Math.max(...fr.map((o) => o.h)) + 1.6;
     const ctr = new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, 0, (Math.min(...zs) + Math.max(...zs)) / 2);
-    const lk = new THREE.Vector3(ctr.x, top * (narrow ? 0.18 : 0.28), ctr.z);
-    const dir = new THREE.Vector3(...(narrow ? [-1, 0.36, 0.5] : [-0.62, 0.36, 0.9])).normalize();
+    const lk = new THREE.Vector3(ctr.x, top * 0.4, ctr.z);
+    const dir = new THREE.Vector3(-0.16, 0.3, 1).normalize();
     const corners = [];
     fr.forEach((o) => { for (const y of [0, o.h + 1.6]) for (const dx of [-RAD, RAD]) corners.push(new THREE.Vector3(o.x + dx, y, o.z)); });
-    const cam2 = C.clone(), card = $("pod-card"), H = host.clientHeight || innerHeight;
-    /* leave room for the card at the bottom and the top bar */
-    const yLo = card && !card.hidden ? -1 + 2 * ((card.offsetHeight + (narrow ? 90 : 34)) / H) : -0.8, yHi = narrow ? 0.62 : 0.72, xLim = 0.86;
+    const cam2 = C.clone(), card = $("pod-card"), rg = $("pod-range"), hr = host.getBoundingClientRect(), H = hr.height || innerHeight;
+    /* keep clear of the time switcher at the top and the card at the bottom */
+    let yHi = 0.72, yLo = -0.8;
+    if (rg && rg.offsetParent) { const r = rg.getBoundingClientRect(); yHi = Math.min(0.9, 1 - (2 * (r.bottom - hr.top + 14)) / H); }
+    if (card && !card.hidden) { const r = card.getBoundingClientRect(); yLo = Math.max(-0.95, 1 - (2 * (r.top - hr.top - 10)) / H); }
+    if (yHi - yLo < 0.4) yLo = yHi - 0.4;
+    const xLim = 0.94;
     const fits = (d) => {
       cam2.position.copy(lk).addScaledVector(dir, d); cam2.lookAt(lk); cam2.updateMatrixWorld(); cam2.updateProjectionMatrix();
-      return corners.every((p) => { const v = p.clone().project(cam2); return v.z < 1 && Math.abs(v.x) <= xLim && v.y >= yLo && v.y <= yHi; });
+      const ys = [], xs2 = [];
+      for (const p of corners) { const v = p.clone().project(cam2); if (v.z >= 1) return false; ys.push(v.y); xs2.push(v.x); }
+      return Math.max(...xs2) - Math.min(...xs2) <= 2 * xLim && Math.max(...ys) - Math.min(...ys) <= yHi - yLo;
     };
     let lo = 4, hi = 400;
     for (let k = 0; k < 30; k++) { const m = (lo + hi) / 2; if (fits(m)) hi = m; else lo = m; }
-    const d = Math.max(hi, 9), p = lk.clone().addScaledVector(dir, d);
+    const d = Math.max(hi, 8);
+    /* then nudge the aim so the group sits in the middle of the free space */
+    cam2.position.copy(lk).addScaledVector(dir, d); cam2.lookAt(lk); cam2.updateMatrixWorld(); cam2.updateProjectionMatrix();
+    let ymin = 9, ymax = -9, xmin = 9, xmax = -9; for (const p of corners) { const v = p.clone().project(cam2); ymin = Math.min(ymin, v.y); ymax = Math.max(ymax, v.y); xmin = Math.min(xmin, v.x); xmax = Math.max(xmax, v.x); }
+    const want = (yHi + yLo) / 2, have = (ymax + ymin) / 2, vh = 2 * d * Math.tan((C.fov * Math.PI) / 360);
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam2.quaternion), right = new THREE.Vector3(1, 0, 0).applyQuaternion(cam2.quaternion);
+    lk.addScaledVector(up, ((have - want) / 2) * vh).addScaledVector(right, (((xmax + xmin) / 2) / 2) * vh * C.aspect);
+    const p = lk.clone().addScaledVector(dir, d);
     over = { cam: { x: p.x, y: p.y, z: p.z }, look: { x: lk.x, y: lk.y, z: lk.z }, d, dir };
   }
   const ease = (t) => t * t * (3 - 2 * t);
