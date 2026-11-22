@@ -1783,7 +1783,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
   </section>
   <section class="podium" id="podium" hidden aria-label="Your most-heard birds, one per podium">
     <div id="pod-gl"></div>
-    <div class="pod-zoom" id="pod-zoom" hidden><button type="button" id="pod-zin" aria-label="Zoom in" title="Zoom in (+)">+</button><button type="button" id="pod-zout" aria-label="Zoom out" title="Zoom out (−)">−</button><button type="button" id="pod-zall" aria-label="See them all" title="See them all (0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div>
+    <div class="pod-zoom" id="pod-zoom" hidden><button type="button" id="pod-zin" aria-label="Zoom in" title="Zoom in (+)">+</button><button type="button" id="pod-zout" aria-label="Zoom out" title="Zoom out (−)">−</button><button type="button" id="pod-zall" aria-label="Zoom right out" title="Zoom right out (0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div>
     <p class="pod-empty" id="pod-empty" hidden>Add your birds and your most-heard ones will line up on the podiums here.</p>
     <div class="seg pod-range" id="pod-range" role="group" aria-label="Time range">
       <button type="button" data-pr="all" aria-pressed="true">All time</button><button type="button" data-pr="month" aria-pressed="false">This month</button><button type="button" data-pr="week" aria-pressed="false">This week</button>
@@ -6716,12 +6716,14 @@ const Podium = (() => {
   function fitAll() {
     if (!items.length || !C) { over = null; return; }
     const narrow = C.aspect < 1;
-    const xs = items.map((o) => o.x), zs = items.map((o) => o.z), top = Math.max(...items.map((o) => o.h)) + 1.6;
+    /* frame the top eight; the rest of the row runs on into the distance behind them */
+    const fr = items.slice(0, Math.min(items.length, 8));
+    const xs = fr.map((o) => o.x), zs = fr.map((o) => o.z), top = Math.max(...fr.map((o) => o.h)) + 1.6;
     const ctr = new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, 0, (Math.min(...zs) + Math.max(...zs)) / 2);
     const lk = new THREE.Vector3(ctr.x, top * (narrow ? 0.18 : 0.28), ctr.z);
     const dir = new THREE.Vector3(...(narrow ? [-1, 0.36, 0.5] : [-0.62, 0.36, 0.9])).normalize();
     const corners = [];
-    items.forEach((o) => { for (const y of [0, o.h + 1.6]) for (const dx of [-RAD, RAD]) corners.push(new THREE.Vector3(o.x + dx, y, o.z)); });
+    fr.forEach((o) => { for (const y of [0, o.h + 1.6]) for (const dx of [-RAD, RAD]) corners.push(new THREE.Vector3(o.x + dx, y, o.z)); });
     const cam2 = C.clone(), card = $("pod-card"), H = host.clientHeight || innerHeight;
     /* leave room for the card at the bottom and the top bar */
     const yLo = card && !card.hidden ? -1 + 2 * ((card.offsetHeight + (narrow ? 90 : 34)) / H) : -0.8, yHi = narrow ? 0.62 : 0.72, xLim = 0.86;
