@@ -5472,10 +5472,11 @@ document.addEventListener("click", (e) => {
 /* ---------- loading data ---------- */
 function setStatus(msg, isError = false) { const s = $("status"); s.innerHTML = msg; s.classList.toggle("error", isError); }
 function useText(text, source, fileName, opts = {}) { useRecords(toRecords(text), source, fileName, { ...opts, text }); }
-function useRecords(recs, source, fileName, { save = false, text = "" } = {}) {
+function useRecords(recs, source, fileName, { save = false, text = "", keepArea = false } = {}) {
   /* sightings read while Europe's shapes were still loading get their country now (one friend's birds can arrive before them, another's after) */
   if (EUROPE_READY) fixAreas(recs);
-  Object.assign(state, { data: recs, source, fileName, area: null });
+  /* switching between your birds and the flock's keeps the area you're looking at open */
+  Object.assign(state, { data: recs, source, fileName, area: keepArea ? state.area : null });
   assignColours();
   setTimeout(setupReplay, 0);
   state.selected.clear();
@@ -7394,7 +7395,8 @@ const Acct = (() => {
   document.addEventListener("pointerdown", (e) => { if (pickOpen() && !e.target.closest('#flock-pick, #who [data-scope="flock"]')) openPick(false); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && pickOpen()) openPick(false); });
 
-  async function showFlock({ quiet = false, keepPick = false } = {}) {
+  /* stay: switching Mine/Flock fills the view you're already in, instead of flying off to frame everyone's birds */
+  async function showFlock({ quiet = false, keepPick = false, stay = false } = {}) {
     if (!API) return false;
     const list = flockShown();
     if (!list.length) {
@@ -7407,24 +7409,24 @@ const Acct = (() => {
     if (!recs.length) { if (!quiet) setStatus("Couldn't load the flock's birds. Try again.", true); return false; }
     const some = list.length < flockAll().length;
     setTimeout(() => Tips.show("flock"), 500);
-    useRecords(recs, "flock", some ? `birds from ${whoLabel(list)}` : `the flock's birds (${list.length} ${list.length === 1 ? "birder" : "birders"})`);
+    useRecords(recs, "flock", some ? `birds from ${whoLabel(list)}` : `the flock's birds (${list.length} ${list.length === 1 ? "birder" : "birders"})`, { keepArea: stay || keepPick });
     scope = "flock"; viewing = null; try { localStorage.setItem(SCOPE_KEY, "flock"); } catch (e) {}
     const url = new URL(location.href); url.searchParams.delete("who"); history.replaceState(null, "", url.pathname + url.search + location.hash);
-    paintChrome(); if (keepPick && pickOpen()) openPick(true); else try { fit(); } catch (e) {}
+    paintChrome(); if (keepPick && pickOpen()) openPick(true); else if (!stay && !keepPick) try { fit(); } catch (e) {}
     return true;
   }
-  async function show(u, { quiet = false } = {}) {
+  async function show(u, { quiet = false, stay = false } = {}) {
     if (!API || !u) return false;
     let recs;
     try { recs = await getRecs(u); } catch (e) { if (!quiet) setStatus(esc(e.message), true); return false; }
     const m = member(u) || { u, name: u };
-    useRecords(recs, "account", me && u === me.u ? "your birds" : `${nameOf(m)}'s birds`);
+    useRecords(recs, "account", me && u === me.u ? "your birds" : `${nameOf(m)}'s birds`, { keepArea: stay });
     viewing = m;
     if (me) { if (u === me.u) { scope = "me"; try { localStorage.setItem(SCOPE_KEY, "me"); } catch (e) {} } else { if (scope !== "user") backTo = scope || "me"; scope = "user"; } }
     const url = new URL(location.href);
     if (owner && u === owner && (!me || me.u === owner)) url.searchParams.delete("who"); else url.searchParams.set("who", u);
     history.replaceState(null, "", url.pathname + url.search + location.hash);
-    paintChrome(); try { fit(); } catch (e) {}
+    paintChrome(); if (!stay) try { fit(); } catch (e) {}
     return true;
   }
 
@@ -8583,12 +8585,12 @@ const Acct = (() => {
     const sc = t.closest("[data-scope]");
     if (sc) {
       if (sc.dataset.scope !== "flock") openPick(false);
-      if (sc.dataset.scope === "flock") { if (scope !== "flock") { sc.classList.add("busy"); await showFlock(); sc.classList.remove("busy"); } else if (flockAll().length > 1) openPick(!pickOpen()); }
-      else if (me && me.birds) { if (scope !== "me") await show(me.u); }
+      if (sc.dataset.scope === "flock") { if (scope !== "flock") { sc.classList.add("busy"); await showFlock({ stay: true }); sc.classList.remove("busy"); } else if (flockAll().length > 1) openPick(!pickOpen()); }
+      else if (me && me.birds) { if (scope !== "me") await show(me.u, { stay: true }); }
       else toast(`<span>You haven't added your birds yet. What's on the map now is the app's built-in birds.</span><span class="acts"><button type="button" data-acct-open="profile">Add my birds</button></span>`, $("who"));
       return;
     }
-    if (t.closest("[data-scope-back]")) { if (backTo === "flock") await showFlock(); else if (me && me.birds) await show(me.u); else await showFlock(); return; }
+    if (t.closest("[data-scope-back]")) { if (backTo === "flock") await showFlock({ stay: true }); else if (me && me.birds) await show(me.u, { stay: true }); else await showFlock({ stay: true }); return; }
     if (t.closest("[data-open-flock]")) { open("flock"); return; }
     const ao = t.closest("[data-acct-open]"); if (ao) { $("toast").hidden = true; open(ao.dataset.acctOpen); return; }
     if ($("acct").hidden) return;
