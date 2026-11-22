@@ -1983,6 +1983,8 @@ function fetchMunis() {
 const COUNTRY_NAMES = { GB: "UK", IE: "Republic of Ireland" };
 const areaCountry = (c) => (c ? c.f.properties.country || "GB" : "");
 const UKIE = (cc) => cc === "GB" || cc === "IE";
+/* the countries with their full detailed maps; the rest of Europe is shown muted until it's opened up */
+const OPEN_CC = new Set(["GB", "IE", "ES", "EL"]);
 let EUROPE_READY = false, europeAsked = false, geoVersion = 0, COUNTRY_AREAS = [], lastWardsHere = null;
 const COUNTRY_CODE = { "United Kingdom": "GB", UK: "GB", Ireland: "IE", "Republic of Ireland": "IE" };
 const COUNTRY_Z = 4.9;   // further out than this, the map groups everything by country
@@ -3833,8 +3835,8 @@ document.addEventListener("click", (e) => {
 const SCULPT_FADE_START = MODEL_ZOOM - 0.6;
 const SCULPT_BASE = 4500;
 const SCULPT = {
-  day: { ground: [213, 228, 233], slab: [249, 247, 240], slabIE: [238, 243, 230], edge: [216, 214, 203], label: [96, 110, 115] },
-  night: { ground: [14, 23, 27], slab: [36, 53, 60], slabIE: [40, 61, 55], edge: [58, 80, 88], label: [150, 172, 178] },
+  day: { ground: [213, 228, 233], slab: [249, 247, 240], slabIE: [238, 243, 230], slabLocked: [226, 229, 227], edge: [216, 214, 203], label: [96, 110, 115] },
+  night: { ground: [14, 23, 27], slab: [36, 53, 60], slabIE: [40, 61, 55], slabLocked: [27, 39, 44], edge: [58, 80, 88], label: [150, 172, 178] },
 };
 let lighting = null;
 function makeLighting() {
@@ -3964,10 +3966,12 @@ function layers() {
     const a = wardLevel ? null : agg.get(fkey(f));
     return tilted ? SCULPT_BASE + (a ? (a.n / maxN) * sculptMax : 0) : 0;
   };
+  /* countries whose detailed maps aren't open yet are a muted grey, so it's clear they're still to come */
+  const baseCol = (f) => { const p = f.properties || {}, cc = p.country || p.code; return cc && !OPEN_CC.has(cc) ? S.slabLocked : cc === "IE" ? S.slabIE : S.slab; };
   const slabColour = (f) => {
     const a = wardLevel ? null : agg.get(fkey(f));
     if (fkey(f) === state.area) return [201, 90, 36];
-    return a ? ramp(maxN === 1 ? 0.6 : (a.n - 1) / (maxN - 1)) : f.properties && f.properties.country === "IE" ? S.slabIE : S.slab;
+    return a ? ramp(maxN === 1 ? 0.6 : (a.n - 1) / (maxN - 1)) : baseCol(f);
   };
   /* wards only exist for Great Britain: close up anywhere else in Europe, the provinces stay on show */
   const wardZone = zone === "ward" && wardsHere();
@@ -3985,7 +3989,7 @@ function layers() {
   const aggC = current.aggBy.county || new Map(), maxC = Math.max(1, ...[...aggC.values()].map((a) => a.n));
   const slabH = wardZone ? (f) => wardSlabH(fkey(f)) : euClose ? () => (tilted ? mpp * 4 : 0) : slabHeight;
   const slabCol = euClose
-    ? () => S.slab
+    ? baseCol
     : wardZone
     ? (f) => { const a = aggW.get(fkey(f)); if (fkey(f) === state.area) return [201, 90, 36]; return a ? ramp(maxW === 1 ? 0.6 : (a.n - 1) / (maxW - 1)) : f.properties && f.properties.country === "IE" ? S.slabIE : S.slab; }
     : slabColour;
@@ -4030,7 +4034,7 @@ function layers() {
     })),
     wardZone && new deck.GeoJsonLayer({
       id: "ward-plinth", data: regionsNear(), extruded: true, filled: true, stroked: false,
-      getElevation: tilted ? mpp * 4 : 0, getFillColor: (f) => (f.properties.country === "IE" ? S.slabIE : S.slab), opacity: fade,
+      getElevation: tilted ? mpp * 4 : 0, getFillColor: baseCol, opacity: fade,
       material: { ambient: 0.66, diffuse: 0.5, shininess: 12, specularColor: [25, 28, 30] },
       updateTriggers: { getElevation: [Math.round(z * 8), tilted], getFillColor: themeName },
     }),
@@ -4098,7 +4102,7 @@ function layers() {
     sculpt && GEO.countries && z < 7.2 && new deck.TextLayer({
       id: "country-names", data: countryLabels(z), parameters: { depthCompare: "always", depthWriteEnabled: false, depthTest: false },
       getPosition: (c) => [c[1], c[2], tilted ? SCULPT_BASE + 400 : 0], getText: (c) => SHORT_NAMES[c[0]] || c[0],
-      getSize: z < 4.4 ? 12 : z < 5.6 ? 13 : 14.5, getColor: themeName === "night" ? [200, 218, 226, Math.round(205 * fade)] : [52, 72, 80, Math.round(210 * fade)],
+      getSize: z < 4.4 ? 12 : z < 5.6 ? 13 : 14.5, getColor: (c) => { const open = OPEN_CC.has(COUNTRY_CODE[c[0]] || ""); return themeName === "night" ? [200, 218, 226, Math.round((open ? 205 : 120) * fade)] : [52, 72, 80, Math.round((open ? 210 : 125) * fade)]; },
       fontFamily: "'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif", fontWeight: 500, characterSet: "auto", billboard: true,
       lineHeight: 1.1, wordBreak: "break-word", maxWidth: 7.5,
       outlineWidth: 2.5, outlineColor: themeName === "night" ? [10, 20, 26, 200] : [255, 255, 255, 220], fontSettings: { sdf: true, fontSize: 64, buffer: 6 },
