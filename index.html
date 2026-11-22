@@ -400,23 +400,26 @@ body.night .nt .tx .acts .primary { color: #0f191d; }
 .jy-line .rail, .jy-line .fill { position: absolute; left: 25px; width: 3px; border-radius: 2px; }
 .jy-line .rail { background: repeating-linear-gradient(to bottom, var(--line) 0 6px, transparent 6px 11px); }
 .jy-line .fill { box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 30%, transparent); }
-.jy-st { display: grid; grid-template-columns: 45px minmax(0, 1fr) auto; align-items: center; column-gap: 16px; height: var(--row); position: relative; border-radius: 14px; padding-right: 12px; }
-.jy-st .av { width: 32px; height: 32px; justify-self: center; background: var(--bg); z-index: 1; --rw: 3.5px; transition: transform .2s; }
-.jy-st.got .av { background: color-mix(in srgb, var(--c) 22%, var(--bg)); }
+.jy-st { display: grid; grid-template-columns: 45px minmax(0, 1fr) auto; align-items: center; column-gap: 16px; position: relative; border-radius: 14px; padding-right: 12px; }
+.jy-st .av { width: 32px; height: 32px; justify-self: center; background: var(--bg); z-index: 1; --rw: 3.5px; }
+.jy-st .dot { justify-self: center; width: 14px; height: 14px; border-radius: 50%; background: var(--bg); box-shadow: inset 0 0 0 2.5px var(--c); z-index: 1; }
+.jy-st.sub.got .dot { background: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent); }
+.jy-st.lvl.got .av { background: color-mix(in srgb, var(--c) 22%, var(--bg)); }
 .jy-st.cur { background: linear-gradient(90deg, color-mix(in srgb, var(--c) 14%, transparent), transparent 85%); }
-.jy-st.cur .av { width: 40px; height: 40px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 18%, transparent); }
+.jy-st.lvl.cur .av { width: 40px; height: 40px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 18%, transparent); }
+.jy-st.sub.cur .dot { width: 18px; height: 18px; box-shadow: 0 0 0 5px color-mix(in srgb, var(--c) 22%, transparent); }
 .jy-st:not(.got) { color: var(--muted); }
-.jy-st:not(.got) .av { opacity: .55; }
+.jy-st:not(.got) .av, .jy-st:not(.got) .dot { opacity: .6; }
 .jy-st:not(.got):not(.next) b { color: color-mix(in srgb, var(--muted) 85%, transparent); font-weight: 500; }
 .jy-st .t { display: grid; gap: 1px; }
-.jy-st b { font-size: 15.5px; font-weight: 600; }
-.jy-st.cur b { font-size: 17px; }
+.jy-st .nm { display: flex; align-items: center; gap: 6px; }
+.jy-st.lvl b { font-size: 16px; font-weight: 600; }
+.jy-st.sub b { font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.jy-st.lvl.cur b { font-size: 17px; }
 .jy-st small { font-size: 12px; color: var(--muted); }
-.bd-more { display: block; margin: 6px 0 0; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--accent); font-weight: 600; font-size: 13px; box-shadow: none; }
-.jy-st .stp { display: inline-grid; place-items: center; min-width: 22px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 6px; font: 600 10.5px/1 var(--font-mono); vertical-align: 2px; color: var(--muted); border: 1px solid var(--line); }
+.jy-st .stp { display: inline-grid; place-items: center; min-width: 22px; height: 18px; padding: 0 5px; border-radius: 6px; font: 600 10.5px/1 var(--font-mono); color: var(--muted); border: 1px solid var(--line); }
 .jy-st .stp.on { color: var(--ink); background: color-mix(in srgb, var(--c) 22%, transparent); border-color: color-mix(in srgb, var(--c) 45%, transparent); }
-.jy-st .stp.nx { border-style: dashed; border-color: var(--c); color: var(--ink); }
-.jy-hero h2 .rn { font-family: var(--font-mono); font-size: 18px; font-weight: 600; vertical-align: 5px; padding: 3px 8px; border-radius: 8px; color: var(--ink); background: color-mix(in srgb, var(--c) 22%, transparent); }
+.jy-st.next .stp { border-style: dashed; border-color: var(--c); color: var(--ink); }
 .jy-st .pill { font-family: var(--font-mono); font-size: 11.5px; padding: 4px 9px; border-radius: 99px; color: var(--ink); background: color-mix(in srgb, var(--c) 16%, transparent); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); }
 .jy-st .pill.nx { color: var(--muted); background: transparent; border-style: dashed; border-color: var(--line); }
 .jy-you { display: flex; align-items: center; gap: 12px; padding-left: 16px; position: relative; z-index: 2; }
@@ -5182,10 +5185,16 @@ const Badges = (() => {
     const sfrac = sn ? Math.min(1, (n - (sc ? sc.n : 0)) / (sn.n - (sc ? sc.n : 0))) : 1;
     const ringCss = (x) => `--tier:${x.c};--tier2:${x.c2 || x.c}`;
     const whoName = who ? (mine ? "Your" : `${esc(nameOf(who))}'s`) : "";
-    const ROW = 62, YOU = 40, top = ROW / 2, here = !!(nx && ci >= 0), fillH = ci < 0 ? 0 : here ? (ci + 1) * ROW + YOU / 2 - top : ci * ROW;
-    const curB = cur ? byId.get("sp-" + cur.n) : null;
+    /* every step gets its own stop on the line: a level opens with a big ring, its later steps are smaller stops beneath it */
+    const LV_H = 64, ST_H = 50, YOU = 40, here = !!sn && SA.i >= 0;
+    const rows = []; let y = 0;
+    STEPS.forEach((st, j) => { const hgt = st.si === 0 ? LV_H : ST_H; rows.push({ st, j, y, h: hgt, mid: y + hgt / 2 }); y += hgt; if (here && j === SA.i) { rows.push({ you: true, y, h: YOU, mid: y + YOU / 2 }); y += YOU; } });
+    const first = rows[0].mid, lastMid = rows[rows.length - 1].mid, youRow = rows.find((r) => r.you);
+    const reachedRow = SA.i >= 0 ? rows.find((r) => r.st && r.j === SA.i) : null;
+    const fillH = youRow ? youRow.mid - first : reachedRow ? reachedRow.mid - first : 0;
+    const curB = cur ? byId.get("lv-" + cur.n) : null;
     /* the filled line takes each reached level's colour in turn, then fades towards the next */
-    const stops = TIERS.slice(0, ci + 1).map((x, i) => `${x.c} ${Math.round(((i * ROW) / Math.max(1, fillH)) * 100)}%`);
+    const stops = TIERS.slice(0, ci + 1).map((x) => { const r = rows.find((q) => q.st && q.st.n === x.n); return `${x.c} ${Math.round(((r.mid - first) / Math.max(1, fillH)) * 100)}%`; });
     const lineBg = ci < 0 ? "transparent" : `linear-gradient(to bottom, ${stops.join(", ")}${nx ? `, ${nx.c}` : ""})`;
     let h = `<div class="jy">
       <div class="jy-hero" style="--c:${cur ? cur.c : "#888"};--n:${nx ? nx.c : cur ? cur.c : "#888"}">
@@ -5196,17 +5205,20 @@ const Badges = (() => {
         ${sn ? `<div class="prog"><div class="lab"><span>Next · <b>${esc(sn.name)}</b>${sn.si === 0 ? " · a new level" : ""}</span><span><b>${n}</b> / ${sn.n.toLocaleString("en-GB")}</span></div>
           <span class="bar"><i style="width:${Math.max(3, Math.round(sfrac * 100))}%"></i></span><small>${sn.n - n} more species to go${nx && sn !== STEPS.find((x) => x.n === nx.n) ? ` · ${nx.n - n} to ${esc(nx.name)}` : ""}</small></div>` : `<div class="prog"><small>The top level. Every bird from here is a bonus.</small></div>`}
       </div>
-      <div class="jy-line" style="--row:${ROW}px">
-        <span class="rail" style="top:${top}px;bottom:${top}px"></span><span class="fill" style="top:${top}px;height:${fillH}px;background:${lineBg}"></span>
-        ${TIERS.map((x, i) => {
-          const b = byId.get("sp-" + x.n), got = n >= x.n, isNext = nx && x.n === nx.n, isCur = cur && x.n === cur.n;
-          return `<div class="jy-st${got ? " got" : ""}${isCur ? " cur" : ""}${isNext ? " next" : ""}" style="--c:${x.c}"><span class="av tr${x.k ? " k" + x.k : ""}" style="--avrim:transparent;${ringCss(x)}"></span>
-            <span class="t"><b>${esc(x.name)}${STEPS.filter((st) => st.ti === i && st.short).map((st) => { const sb = byId.get("lv-" + st.n), on = n >= st.n; return `<span class="stp${on ? " on" : ""}${sn && st.n === sn.n ? " nx" : ""}" title="${esc(st.name)} · ${on && sb && sb.date ? "reached " + esc(when(sb.date)) : st.n + " species"}">${st.short}</span>`; }).join("")}</b>
-            <small>${STEPS.filter((st) => st.ti === i).map((st) => st.n === 1 ? "First species" : st.n.toLocaleString("en-GB")).join(" · ")}${isNext ? ` · ${x.n - n} to go` : ""}</small></span>
-            <span class="d">${got && b && b.date ? `<span class="pill">${esc(when(b.date))}</span>` : isNext ? '<span class="pill nx">Next</span>' : ""}</span></div>${here && i === ci ? `<div class="jy-you" style="height:${YOU}px"><i></i><b>${mine ? "You" : esc(nameOf(who || {}))} · ${n} species</b></div>` : ""}`;
+      <div class="jy-line">
+        <span class="rail" style="top:${first}px;height:${lastMid - first}px"></span><span class="fill" style="top:${first}px;height:${fillH}px;background:${lineBg}"></span>
+        ${rows.map((r) => {
+          if (r.you) return `<div class="jy-you" style="height:${YOU}px"><i></i><b>${mine ? "You" : esc(nameOf(who || {}))} · ${n} species</b></div>`;
+          const st = r.st, x = st.t, b = byId.get("lv-" + st.n), got = n >= st.n, isNext = sn && st.n === sn.n, isCur = sc && st.n === sc.n;
+          const label = st.si === 0 ? `<b>${esc(x.name)}</b>${st.short ? `<span class="stp${got ? " on" : ""}">${st.short}</span>` : ""}` : `<b>${esc(x.name)} <span class="stp${got ? " on" : ""}">${st.short}</span></b>`;
+          const sub = `${st.n === 1 ? "First species" : `${st.n.toLocaleString("en-GB")} species`}${isNext ? ` · ${st.n - n} to go` : ""}`;
+          return `<div class="jy-st ${st.si === 0 ? "lvl" : "sub"}${got ? " got" : ""}${isCur ? " cur" : ""}${isNext ? " next" : ""}" style="--c:${x.c};height:${r.h}px">
+            ${st.si === 0 ? `<span class="av tr${x.k ? " k" + x.k : ""}" style="--avrim:transparent;${ringCss(x)}"></span>` : `<span class="dot"></span>`}
+            <span class="t"><span class="nm">${label}</span><small>${sub}</small></span>
+            <span class="d">${got && b && b.date ? `<span class="pill">${esc(when(b.date))}</span>` : isNext ? '<span class="pill nx">Next</span>' : ""}</span></div>`;
         }).join("")}
       </div>
-      <p class="jy-note">Each level has two or three steps, shown by the dots on ${mine ? "your" : "their"} birb. Levels count every species ${mine ? "you've" : "they've"} heard, anywhere in the world, and never go down. Each level comes with a ring round ${mine ? "your" : "their"} birb.${mine && who && Tier.founder(who) ? " Your birb wears the Founder ring instead, but this is still your journey." : ""}</p>
+      <p class="jy-note">Each level has two or three steps, and the dots on ${mine ? "your" : "their"} birb show which one ${mine ? "you're" : "they're"} on. Levels count every species ${mine ? "you've" : "they've"} heard, anywhere in the world, and never go down. Each level comes with a ring round ${mine ? "your" : "their"} birb.${mine && who && Tier.founder(who) ? " Your birb wears the Founder ring instead, but this is still your journey." : ""}</p>
     </div>`;
     box.innerHTML = h;
   }
