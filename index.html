@@ -1371,6 +1371,30 @@ body.night .primary:not(.nd-share):not(.rare-card .primary):hover { background: 
 .pv2-row .linkish { font-size: 13.5px; cursor: pointer; color: var(--accent); font-weight: 600; text-decoration: none; }
 .pv2-inv .ghost { font-size: 13px; padding: 5px 8px; color: var(--accent); font-weight: 600; }
 .pv2-fb > svg:last-child { color: var(--muted); }
+.pv2-row small { color: var(--muted); font-size: 12.5px; margin-left: 4px; }
+/* update your birds: ask eBird, copy the link from the email, paste it here */
+.upd-steps { list-style: none; margin: 14px 0 16px; padding: 0; display: grid; gap: 10px; }
+.upd-steps li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+.upd-steps li.on { color: var(--ink); font-weight: 600; }
+.upd-steps li.done { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 50%, transparent); }
+.upd-steps .dot { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; border: 1.5px solid var(--line); color: var(--muted); }
+.upd-steps li.on .dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+.upd-steps li.done .dot { border-color: var(--accent); color: var(--accent); }
+body.night .upd-steps li.on .dot { color: #0f191d; }
+.upd-btns { display: grid; gap: 8px; }
+.acct .upd-btns button { height: 46px; width: 100%; border-radius: 12px; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.acct .upd-btns button.primary, body.night .acct .upd-btns button.primary { background: color-mix(in srgb, var(--accent) 62%, #0b2a33); color: #f1fafc; border-color: transparent; }
+body.night .acct .upd-btns button.primary { background: #1e5a6e; }
+.acct .upd-btns button:not(.primary) { background: none; border: 1px solid var(--line); color: var(--ink); }
+.upd-manual { display: flex; gap: 8px; margin-top: 10px; }
+.upd-manual[hidden] { display: none; }
+.upd-manual input { flex: 1; min-width: 0; font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
+.upd-priv { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; color: var(--muted); line-height: 1.5; margin: 12px 0 0; }
+.upd-priv svg { flex: none; margin-top: 2px; }
+.upd-priv .linkish, .upd-more .linkish { color: var(--accent); background: none; padding: 0; border: 0; text-decoration: underline; font-size: inherit; cursor: pointer; }
+.upd-more { font-size: 13px; color: var(--muted); margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+.acct .ok .linkish { color: inherit; font-weight: 700; text-decoration: underline; background: none; border: 0; padding: 0 0 0 4px; font-size: inherit; cursor: pointer; }
+.upd-quick { text-align: center; margin: 0 0 10px; }
 .pv2-sec { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 16px 0 8px; }
 .pv2-top { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
 .pv2-chip { display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px 4px 4px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 13px; box-shadow: none; }
@@ -1672,7 +1696,7 @@ body.quiet .map-card, body.quiet #crumbs, body.quiet .layers-btn, body.quiet .me
       </button>
       <div class="latest-card" id="fav-card" hidden></div>
       <input type="file" id="add-file" accept=".csv,.zip,text/csv,application/zip" hidden>
-      <button type="button" class="latest-pill add-pill" id="add-pill" data-add-birds hidden title="Add a newer eBird file">
+      <button type="button" class="latest-pill add-pill" id="add-pill" data-add-birds hidden title="Update your birds">
         <span class="latest-thumb add-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M5 20h14"/></svg></span>
         <span class="latest-txt"><small>Been out listening?</small><b>Add birds</b></span>
         <span class="pill-cap">Add birds</span>
@@ -7600,6 +7624,7 @@ const Acct = (() => {
     else if (invite) await showInvite(invite);
     else if (!me && !seen()) showWelcome();
     else document.body.classList.remove("welcoming");
+    if (me && !me.mustChange && !invite && updAsked()) { let auto = "1"; try { auto = localStorage.getItem(UPD() + ":auto"); localStorage.setItem(UPD() + ":auto", "1"); } catch (e) {} if (!auto) open("update"); }
     if (me) { setTimeout(maybeNightNote, 2500); setTimeout(() => Badges.check(), 3600); setTimeout(maybeSuggestNote, 5000); }
   }
 
@@ -7869,6 +7894,8 @@ const Acct = (() => {
           <div class="err" id="acct-err" role="alert"></div>
           <div class="acts"><button type="button" class="ghost" data-acct="signin">Back</button><button type="submit" class="primary">Set new passcode</button></div>
           <p class="hint">No phrase? Ask Lee to reset your passcode.</p></form>`;
+    } else if (view === "update" && me) {
+      h = `${X}${tabs()}${updHTML()}`;
     } else if (view === "privacy") {
       h = `${X}${tabs()}<h2 id="acct-h">Your data and privacy</h2><p class="sub">Here's what BIRB keeps, why, and who can see it, in plain English.</p>${privacyHTML()}
         <div class="acts"><span></span><button type="button" class="primary" data-acct="${me ? "profile" : privFrom === "join" ? "join" : "signin"}">${me ? "Back to your profile" : privFrom === "join" ? "Back to joining" : "OK"}</button></div>`;
@@ -7947,7 +7974,7 @@ const Acct = (() => {
           <button type="button" class="primary pv2-main" data-show-me>${ICO.map}<span>Show my birds on the map</span></button>`
         : `<div style="margin:14px 0">${uploadHTML()}</div>`}
         <div class="pv2-group">
-          ${b ? `<div class="pv2-row">${ICO.up}<span>Last upload ${esc(ago(b.updated))}</span><label class="linkish">Add a newer file<input type="file" id="acct-file" accept=".csv,.zip,text/csv,application/zip" hidden></label></div>` : ""}
+          ${b ? `<button type="button" class="pv2-row pv2-fb" data-acct="update">${ICO.up}<span>Update your birds<small>last ${esc(ago(b.updated))}</small></span>${ICO.chev}</button>` : ""}
           ${link ? `<div class="pv2-row pv2-inv">${ICO.invite}<span>Invite friends</span><button type="button" class="ghost" data-copy="${esc(link)}">Copy link</button><span class="sep" aria-hidden="true"></span><button type="button" class="ghost" data-invite-card>Instagram card</button></div>` : ""}
           <button type="button" class="pv2-row pv2-fb" data-acct="feedback">${ICO.chat}<span>Ideas or problems? Tell ${esc(nameOf(founder()))}</span>${ICO.chev}</button>
         </div>
@@ -8401,13 +8428,59 @@ const Acct = (() => {
     return true;
   }
   function uploadHTML() {
-    return `<label class="drop" id="acct-drop"><input type="file" id="acct-file" accept=".csv,.zip,text/csv,application/zip" hidden>
+    return `<div class="upd-btns upd-quick"><button type="button" class="primary" data-acct="update">Get my birds from eBird</button><span class="hint">Or add the file yourself:</span></div>
+      <label class="drop" id="acct-drop"><input type="file" id="acct-file" accept=".csv,.zip,text/csv,application/zip" hidden>
       <b>${me && me.birds ? "Upload a newer eBird export" : "Add your eBird export"}</b>
       <span class="hint">Choose the .zip from eBird's email, or the MyEBirdData.csv inside it. Home addresses are tidied to the nearest town before anything is saved.</span>
       <span class="btn">Choose file</span></label>
       ${me && me.birds ? `<label class="hint" style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:6px"><input type="checkbox" id="acct-replace"> Start fresh: replace all my birds with this file</label>` : ""}
       <p class="hint" style="margin:6px 0 0;text-align:center"><button type="button" class="linkish" data-guide>New to Merlin or eBird? See how to get your birds, step by step</button></p>
       <div class="err" id="up-err" role="alert"></div>`;
+  }
+  /* ---------- update your birds: ask eBird, copy the link from its email, paste it here ---------- */
+  const UPD = () => `birb-upd:${me ? me.u : ""}`;
+  const updAsked = () => { try { const t = +localStorage.getItem(UPD()) || 0; return Date.now() - t < 3 * 3600e3 ? t : 0; } catch (e) { return 0; } };
+  const updClear = () => { try { localStorage.removeItem(UPD()); localStorage.removeItem(UPD() + ":auto"); } catch (e) {} };
+  const EBIRD_LINK = /https:\/\/is-ebird-datadownload-projects-prod\.s3\.amazonaws\.com\/download_my_data\/(ebird_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.zip)/i;
+  let updManual = false, updBusy = false, lastUndo = "";
+  const ICO_EXT = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>`;
+  const ICO_PASTE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2"/></svg>`;
+  const ICO_LOCK = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
+  function updHTML() {
+    const asked = !!updAsked(), tick = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
+    const st = (i) => (asked ? (i === 1 ? "done" : "on") : i === 1 ? "on" : "");
+    const ebird = `<button type="button" class="${asked ? "" : "primary"}" data-upd-ebird>${asked ? "Open eBird again" : "Open eBird"}${ICO_EXT}</button>`;
+    const paste = `<button type="button" class="${asked ? "primary" : ""}" data-upd-paste>${ICO_PASTE}<span>${updBusy ? "Fetching your file…" : "Paste eBird link"}</span></button>`;
+    return `<h2 id="acct-h">${me.birds ? "Update your birds" : "Add your birds"}</h2>
+      <p class="sub">${asked ? "eBird is emailing you a link. It usually takes a minute or two." : "Ask eBird for your sightings file. It arrives by email in a minute or two."}</p>
+      <ol class="upd-steps">
+        <li class="${st(1)}"><span class="dot">${asked ? tick : "1"}</span><span>Ask eBird for your file</span></li>
+        <li class="${st(2)}"><span class="dot">2</span><span>In the email, press and hold the link, then Copy</span></li>
+        <li class="${st(3)}"><span class="dot">3</span><span>Paste it here</span></li></ol>
+      <div class="upd-btns">${asked ? paste + ebird : ebird + paste}</div>
+      <div class="upd-manual" id="upd-manual" ${updManual ? "" : "hidden"}><input id="upd-link" type="url" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Paste the link from eBird's email" aria-label="The link from eBird's email"><button type="button" data-upd-go>Add</button></div>
+      <div class="err" id="up-err" role="alert"></div>
+      <p class="upd-priv">${ICO_LOCK}<span>BIRB fetches this file once, keeps only what it needs for your birds, and tidies home addresses to the nearest town. The link isn't saved. <button type="button" class="linkish" data-acct="privacy">How BIRB uses your data</button></span></p>
+      <div class="upd-more">
+        <span>Already have the file? <label class="linkish">Choose it<input type="file" id="acct-file" accept=".csv,.zip,text/csv,application/zip" hidden></label></span>
+        <span>Tip: in Merlin, set the right date and place when you tap This is my bird, so there's nothing to fix in eBird later. <button type="button" class="linkish" data-guide>Step-by-step guide</button></span>
+      </div>`;
+  }
+  async function updFromLink(text) {
+    err("", "up-err");
+    const m = EBIRD_LINK.exec(String(text || "").replace(/\s+/g, ""));
+    if (!m) { updManual = true; render(); err("That isn't the link from eBird's email. In the email, press and hold the link, choose Copy, then tap Paste eBird link again.", "up-err"); return; }
+    updBusy = true; render();
+    let res;
+    try { res = await fetch("/ebird-file/" + m[1].toLowerCase(), { cache: "no-store" }); } catch (e) { res = null; }
+    if (!res || !res.ok) {
+      let msg = "Couldn't reach eBird. Check your connection and try again.";
+      if (res) { try { msg = (await res.json()).error || msg; } catch (e) {} }
+      updBusy = false; render(); err(msg, "up-err"); return;
+    }
+    const blob = await res.blob();
+    updBusy = false;
+    await upload(new File([blob], m[1], { type: "application/zip" }));
   }
   function inviteHTML() {
     if (!me || !me.invite) return "";
@@ -8683,16 +8756,17 @@ const Acct = (() => {
     if (!file) return;
     err("", "up-err");
     const drop = $("acct-drop"); if (drop) drop.querySelector("b").textContent = "Uploading…";
-    let text; try { text = await fileText(file); toRecords(text); } catch (e) { err(e.message || "That file couldn't be read.", "up-err"); if (drop) drop.querySelector("b").textContent = "Try another file"; return; }
+    const pb = document.querySelector("[data-upd-paste] span"); if (pb) pb.textContent = "Adding your birds…";
+    let text; try { text = await fileText(file); toRecords(text); } catch (e) { if (pb) pb.textContent = "Paste eBird link"; err(e.message || "That file couldn't be read.", "up-err"); if (drop) drop.querySelector("b").textContent = "Try another file"; return; }
     let body = text, headers = { "content-type": "text/csv" };
     if (typeof CompressionStream !== "undefined") {
       try { body = await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob(); headers["content-type"] = "application/octet-stream"; } catch (e) { body = text; }
     }
     const replace = $("acct-replace") && $("acct-replace").checked, hadBirds = !!(me && me.birds);
     const r = await call("birds" + (replace ? "?mode=replace" : ""), { method: "POST", body, raw: true, headers });
-    if (!r.ok) { err(r.error, "up-err"); if (drop) drop.querySelector("b").textContent = "Try again"; return; }
+    if (!r.ok) { if (pb) pb.textContent = "Paste eBird link"; err(r.error, "up-err"); if (drop) drop.querySelector("b").textContent = "Try again"; return; }
     me = r.data.me; await refresh(); cache.delete(me.u);
-    firstUp = !hadBirds;
+    firstUp = !hadBirds; updClear(); updManual = false; lastUndo = r.data.undo || "";
     const s = r.data.stats;
     const nn = (s.newSpecies || []).length;
     notice = s.replaced ? `Saved ${s.species} species from ${s.places} places.${s.privatePlaces ? ` ${s.privatePlaces} private ${s.privatePlaces === 1 ? "spot was" : "spots were"} tidied to the nearest town.` : ""}`
@@ -8706,6 +8780,7 @@ const Acct = (() => {
       /* the celebration says the headline; the plain notice keeps only the extra details */
       if (newDayCard) notice = `Added ${s.added} new ${s.added === 1 ? "sighting" : "sightings"}.${s.rare && s.rare.length ? ` ${andList(s.rare)} ${s.rare.length === 1 ? "is a rare find" : "are rare finds"}, so ${s.rare.length === 1 ? "it's" : "they're"} in lilac on your Collection wall. Your friends will see a special note.` : ""}`;
     }
+    if (lastUndo) notice += `<button type="button" class="linkish" data-undo-up>Undo</button>`;
     if (scope === "flock") await showFlock(); else await show(me.u);
     joinStep = 1; view = "profile"; render(); paintChrome();
     setTimeout(maybeNightNote, 1500);
@@ -8720,7 +8795,7 @@ const Acct = (() => {
 
   /* ---------- events ---------- */
   /* the Add birds button on the map opens your profile and the file picker in one tap */
-  $("add-pill").addEventListener("click", (e) => { e.stopPropagation(); $("add-file").click(); }, true);
+  $("add-pill").addEventListener("click", (e) => { e.stopPropagation(); open("update"); }, true);
   $("add-file").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; open("profile"); upload(f); });
   document.addEventListener("input", (e) => { if (e.target.id === "fb-text") $("fb-n").textContent = `${e.target.value.length} / 1500`; });
   document.addEventListener("click", async (e) => {
@@ -8807,6 +8882,27 @@ const Acct = (() => {
     if (t.closest("[data-acct-badges]")) { close(); setView("collection"); Badges.setMode("badges"); return; }
     if (t.closest("[data-go-journey]")) { close(); setView("collection"); Badges.setMode("journey"); return; }
     const fk = t.closest("[data-fbk]"); if (fk) { const txt = $("fb-text").value; fbKind = fk.dataset.fbk; render(); $("fb-text").value = txt; $("fb-n").textContent = `${txt.length} / 1500`; return; }
+    if (t.closest("[data-upd-ebird]")) { try { localStorage.setItem(UPD(), String(Date.now())); } catch (x) {} window.open("https://ebird.org/downloadMyData", "_blank", "noopener"); render(); return; }
+    if (t.closest("[data-upd-paste]")) {
+      if (updBusy) return;
+      let txt = null;
+      try { txt = await navigator.clipboard.readText(); } catch (x) { txt = null; }
+      if (txt == null) { updManual = true; render(); err("Paste the link into the box below, then tap Add.", "up-err"); const i = $("upd-link"); if (i) i.focus(); return; }
+      await updFromLink(txt); return;
+    }
+    if (t.closest("[data-upd-go]")) { if (!updBusy) await updFromLink($("upd-link") ? $("upd-link").value : ""); return; }
+    const ud = t.closest("[data-undo-up]");
+    if (ud) {
+      ud.disabled = true;
+      const r = await call("birds/undo", { method: "POST", body: { id: lastUndo } });
+      lastUndo = "";
+      if (!r.ok) { notice = esc(r.error); render(); return; }
+      me = r.data.me; cache.delete(me.u); await refresh(); newDayCard = null; firstUp = false;
+      notice = me.birds ? "Undone. Your birds are back to how they were before that upload." : "Undone. That upload has been removed.";
+      if (me.birds) { if (scope === "flock") await showFlock({ quiet: true }); else await show(me.u, { quiet: true }); }
+      else if (scope === "flock") await showFlock({ quiet: true }); else useRecords([], "built-in", "");
+      view = "profile"; render(); paintChrome(); return;
+    }
     const go = t.closest("[data-acct]"); if (go) {
       if (go.dataset.acct === "privacy") { privFrom = view; if (view === "join" && $("f-join")) draft = { ...draft, invite: $("j-inv").value, name: $("j-name").value, username: $("j-user").value, suggest: $("j-sug") ? $("j-sug").checked : true }; }
       if (go.dataset.acct === "join") joinStep = me ? 3 : 1; if (go.dataset.acct === "avatar") draft = { avatar: Avatar.norm(me && me.avatar) }; view = go.dataset.acct; notice = ""; render(); return; }

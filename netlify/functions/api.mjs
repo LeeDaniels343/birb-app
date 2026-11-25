@@ -235,7 +235,7 @@ function addItem(box, item, mergeBirds) {
     const i = box.items.findIndex((x) => x.kind === "birds" && x.by.u === item.by.u && x.t > (box.read || "") && Date.now() - Date.parse(x.t) < 6 * 3600e3);
     if (i >= 0) {
       const old = box.items.splice(i, 1)[0];
-      item = { ...old, t: now, added: (old.added || 0) + (item.added || 0), species: item.species || old.species, places: item.places || old.places, first: old.first || item.first, newSpecies: [...new Set([...(old.newSpecies || []), ...(item.newSpecies || [])])] };
+      item = { ...old, t: now, ups: [...(old.ups || []), ...(item.ups || [])].slice(-20), added: (old.added || 0) + (item.added || 0), species: item.species || old.species, places: item.places || old.places, first: old.first || item.first, newSpecies: [...new Set([...(old.newSpecies || []), ...(item.newSpecies || [])])] };
     }
   }
   box.items.unshift(item);
@@ -621,7 +621,7 @@ export default async (req, context) => {
         if (locked(me)) return fail(429, locked(me));
         if (hashPass(String(b.passcode || ""), me.salt) !== me.hash) { await failTry(me); return fail(401, "That passcode isn't right."); }
         if (isAdmin(me.u)) return fail(400, "You're the admin, so your account can't be deleted from here.");
-        await store().delete(`csv/${me.u}`); await store().delete(`users/${me.u}`); await store().delete(`inbox/${me.u}`);
+        await store().delete(`csv/${me.u}`); await store().delete(`undo/${me.u}`); await store().delete(`users/${me.u}`); await store().delete(`inbox/${me.u}`);
         if (me.invite) await store().delete(`invites/${me.invite}`);
         const { blobs } = await store().list({ prefix: "aliases/" });
         await Promise.all(blobs.map(async (a) => { if ((await store().get(a.key, { type: "text" })) === me.u) await store().delete(a.key); }));
@@ -716,7 +716,7 @@ export default async (req, context) => {
           : null));
       const { blobs } = await store().list({ prefix: "aliases/" });
       await Promise.all(blobs.map(async (a) => { if ((await store().get(a.key, { type: "text" })) === old) await store().set(a.key, nu); }));
-      await store().delete(`csv/${old}`); await store().delete(`users/${old}`);
+      await store().delete(`csv/${old}`); await store().delete(`undo/${old}`); await store().delete(`users/${old}`);
       return json({ token: tokenFor(me), me: publicMe(me) });
     }
 
@@ -728,6 +728,37 @@ export default async (req, context) => {
       me.salt = crypto.randomBytes(16).toString("base64"); me.hash = hashPass(String(b.passcode), me.salt); me.v = (me.v || 1) + 1; me.mustChange = false;
       await saveUser(me, ["salt", "hash", "v", "mustChange"]);
       return json({ token: tokenFor(me), me: publicMe(me) });
+    }
+
+    /* undo the latest upload within 30 minutes: birds, badges it earned and the notes friends got go back to how they were */
+    if (path === "birds/undo" && m === "POST") {
+      if (!me) return fail(401, "Please sign in.");
+      const b = await jsonBody(req), u = await store().get(`undo/${me.u}`, { type: "json" });
+      if (!u || u.id !== b.id || Date.now() - Date.parse(u.t) > 30 * 60e3) return fail(410, "It's too late to undo that upload. You can still upload the right file with Start fresh in Settings.");
+      if (u.prev) await store().set(`csv/${me.u}`, u.prev); else await store().delete(`csv/${me.u}`);
+      const keep = u.badges || {}, gone = new Set(Object.keys(me.badges || {}).filter((k) => !(k in keep)));
+      me.birds = u.birds || null; me.badges = keep;
+      await saveUser(me, ["birds", "badges"]);
+      await store().delete(`undo/${me.u}`);
+      const fresh = new Set(u.fresh || []);
+      for (const f of me.friends || []) {
+        await edit(`inbox/${f}`, (box) => {
+          let changed = false;
+          box.items = (box.items || []).filter((x) => {
+            if (!x.by || x.by.u !== me.u) return true;
+            if (x.kind === "rare" && x.up === u.id) { changed = true; return false; }
+            if (x.kind === "birds" && (x.ups || []).includes(u.id)) {
+              changed = true; x.ups = x.ups.filter((i) => i !== u.id); x.added = (x.added || 0) - u.added;
+              x.newSpecies = (x.newSpecies || []).filter((n) => !fresh.has(n));
+              return x.ups.length > 0 && x.added > 0;
+            }
+            if (x.kind === "badges" && gone.size && (x.ids || []).some((i) => gone.has(i))) { changed = true; x.ids = x.ids.filter((i) => !gone.has(i)); return x.ids.length > 0; }
+            return true;
+          });
+          return changed ? box : false;
+        }, { init: null });
+      }
+      return json({ me: publicMe(me) });
     }
 
     if (path === "birds") {
@@ -747,6 +778,7 @@ export default async (req, context) => {
         let res;
         try { res = cleanCSV(text); } catch (e) { return fail(400, e.message); }
         const replace = url.searchParams.get("mode") === "replace", clean = res;
+        const upId = crypto.randomBytes(6).toString("base64url"), prevBirds = me.birds || null, prevBadges = { ...(me.badges || {}) };
         let prev = null, before = new Map();
         /* two uploads at once (two tabs, a double tap) both land: the second merges into the first */
         await edit(`csv/${me.u}`, (old) => {
@@ -774,14 +806,17 @@ export default async (req, context) => {
         if (res.stats.added > 0 && fresh.length + (first ? 1 : 0) + res.stats.added > 0) {
           const friends = (await Promise.all((me.friends || []).map(findUser))).filter((f) => f && canSee(me, f));
           for (const f of friends) {
-            await notify(f.u, { kind: "birds", by: mini(me), added: res.stats.added, newSpecies: first ? [] : fresh.slice(0, 30), first, species: res.stats.species, places: res.stats.places }, true);
-            if (rare.length) await notify(f.u, { kind: "rare", by: mini(me), birds: rare.map((n) => ({ name: n, sci: after.get(n) })) });
+            await notify(f.u, { kind: "birds", by: mini(me), ups: [upId], added: res.stats.added, newSpecies: first ? [] : fresh.slice(0, 30), first, species: res.stats.species, places: res.stats.places }, true);
+            if (rare.length) await notify(f.u, { kind: "rare", by: mini(me), up: upId, birds: rare.map((n) => ({ name: n, sci: after.get(n) })) });
           }
         }
-        return json({ me: publicMe(me), stats: res.stats });
+        /* keep what was there before for 30 minutes, so this upload can be undone (say, someone else's file by mistake) */
+        const changed = res.stats.replaced || res.stats.added > 0;
+        if (changed) await store().setJSON(`undo/${me.u}`, { id: upId, t: new Date().toISOString(), prev, birds: prevBirds, badges: prevBadges, added: res.stats.added || 0, fresh });
+        return json({ me: publicMe(me), stats: res.stats, undo: changed ? upId : "" });
       }
       if (m === "DELETE") {
-        await store().delete(`csv/${me.u}`);
+        await store().delete(`csv/${me.u}`); await store().delete(`undo/${me.u}`);
         me.birds = null; await saveUser(me, ["birds"]);
         return json({ me: publicMe(me) });
       }
@@ -955,7 +990,7 @@ export default async (req, context) => {
       }
       if (path === "admin/remove" && m === "POST") {
         if (target.u === me.u) return fail(400, "You can't remove yourself.");
-        await store().delete(`csv/${target.u}`); await store().delete(`users/${target.u}`); await store().delete(`inbox/${target.u}`);
+        await store().delete(`csv/${target.u}`); await store().delete(`undo/${target.u}`); await store().delete(`users/${target.u}`); await store().delete(`inbox/${target.u}`);
         if (target.invite) await store().delete(`invites/${target.invite}`);
         await dropEverywhere(target.u);
         return json({ removed: target.u });
