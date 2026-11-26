@@ -2555,7 +2555,7 @@ function countryLabels(z) {
 }
 function wardsHere() {
   const c = countyFor(viewState.longitude, viewState.latitude);
-  if (c) return areaCountry(c) === "GB" || (MUNI_COUNTRIES.has(areaCountry(c)) && muniLoaded.has(c.f.properties.id));
+  if (c) return UKIE(areaCountry(c)) || (MUNI_COUNTRIES.has(areaCountry(c)) && muniLoaded.has(c.f.properties.id));
   return viewState.longitude > -8.7 && viewState.longitude < 2.2 && viewState.latitude > 49.8 && viewState.latitude < 61;
 }
 const EUROPE_VIEW = () => (innerWidth < 760 ? { longitude: 5, latitude: 47.5, zoom: 2.55 } : { longitude: 9, latitude: 48.2, zoom: 3.65 });
