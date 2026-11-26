@@ -2,7 +2,9 @@
 // Passcodes are salted and hashed with scrypt; sessions are signed tokens; uploads are cleaned of home addresses.
 import { getStore } from "@netlify/blobs";
 import crypto from "node:crypto";
-import towns from "./towns.mjs";
+import ukTowns from "./towns.mjs";
+import euTowns from "./eutowns.mjs";
+const towns = [...ukTowns, ...euTowns];
 import RARE from "./rare.mjs";
 import WORDS from "./words.mjs";
 
@@ -233,7 +235,7 @@ function addItem(box, item, mergeBirds) {
     const i = box.items.findIndex((x) => x.kind === "birds" && x.by.u === item.by.u && x.t > (box.read || "") && Date.now() - Date.parse(x.t) < 6 * 3600e3);
     if (i >= 0) {
       const old = box.items.splice(i, 1)[0];
-      item = { ...old, t: now, added: (old.added || 0) + (item.added || 0), species: item.species || old.species, places: item.places || old.places, first: old.first || item.first, newSpecies: [...new Set([...(old.newSpecies || []), ...(item.newSpecies || [])])] };
+      item = { ...old, t: now, ups: [...(old.ups || []), ...(item.ups || [])].slice(-20), added: (old.added || 0) + (item.added || 0), species: item.species || old.species, places: item.places || old.places, first: old.first || item.first, newSpecies: [...new Set([...(old.newSpecies || []), ...(item.newSpecies || [])])] };
     }
   }
   box.items.unshift(item);
@@ -267,7 +269,10 @@ const KEEP = ["Submission ID", "Common Name", "Scientific Name", "Taxonomic Orde
 const ROAD = /^\s*\d+[a-z]?\s|\b(road|street|lane|avenue|close|drive|crescent|terrace|gardens|grove|court|cottages?|farm|house|mews|place|row|walk|way|home)\b/i;
 /* names people give their own garden: "Back garden", "My yard", "Balcony", "Our flat" */
 const HOME = /\b(my|our|back|front|rear|side)\s+(garden|yard|patch)\b|\b(back ?yard|balcony|flat|apartment)\b/i;
-const looksHome = (loc) => ROAD.test(loc || "") || HOME.test(loc || "");
+/* elsewhere in Europe: a street name with a house number ("Calle Mayor 12", "Rue de la Paix 4"), or words for home */
+const EU_STREET = /\b(calle|c\/|avda\.?|avenida|carrer|rua|rue|via|viale|strasse|straße|str\.|gasse|ulica|ul\.|straat|laan|vej|gatan|gata)\b[^,]*\d/i;
+const EU_HOME = /\b(casa|mi jard[ií]n|jard[ií]n de casa|huerto de casa|mi terraza|garten|zuhause|zu hause|tuin|thuis|maison|chez moi|jardin de la maison|giardino di casa|hjemme|hemma)\b/i;
+const looksHome = (loc) => ROAD.test(loc || "") || HOME.test(loc || "") || EU_STREET.test(loc || "") || EU_HOME.test(loc || "");
 const PRIVATE_ID = /^P[0-9a-f]{8}$/;
 /* the stand-in for a private place: an area name, a ~1 km position and a fixed id */
 function privateSpot(priv, loc, lat, lng) {
@@ -361,6 +366,7 @@ const jsonBody = async (req) => { try { return await req.json(); } catch { retur
 /* ---------- dev copy: sample members ---------- */
 const SAMPLE_BIRDS = [["European Robin", "Erithacus rubecula"], ["Eurasian Wren", "Troglodytes troglodytes"], ["Eurasian Blackbird", "Turdus merula"], ["Great Tit", "Parus major"], ["Eurasian Blue Tit", "Cyanistes caeruleus"], ["Common Chiffchaff", "Phylloscopus collybita"], ["Eurasian Blackcap", "Sylvia atricapilla"], ["Common Chaffinch", "Fringilla coelebs"], ["European Goldfinch", "Carduelis carduelis"], ["Eurasian Magpie", "Pica pica"], ["Carrion Crow", "Corvus corone"], ["Common Wood-Pigeon", "Columba palumbus"], ["Tawny Owl", "Strix aluco"], ["Eurasian Nuthatch", "Sitta europaea"], ["Long-tailed Tit", "Aegithalos caudatus"], ["Goldcrest", "Regulus regulus"], ["Eurasian Curlew", "Numenius arquata"], ["Common Redshank", "Tringa totanus"], ["Herring Gull", "Larus argentatus"], ["Eurasian Oystercatcher", "Haematopus ostralegus"]];
 const SAMPLE_SPAIN = [["European Robin", "Erithacus rubecula"], ["Eurasian Blackbird", "Turdus merula"], ["Great Tit", "Parus major"], ["Sardinian Warbler", "Curruca melanocephala"], ["Spotless Starling", "Sturnus unicolor"], ["Eurasian Hoopoe", "Upupa epops"], ["European Serin", "Serinus serinus"], ["Iberian Green Woodpecker", "Picus sharpei"], ["Crested Lark", "Galerida cristata"], ["Zitting Cisticola", "Cisticola juncidis"], ["Monk Parakeet", "Myiopsitta monachus"], ["Azure-winged Magpie", "Cyanopica cooki"], ["Common Nightingale", "Luscinia megarhynchos"], ["Scops Owl", "Otus scops"]];
+const SAMPLE_GREECE = [["Eurasian Collared-Dove", "Streptopelia decaocto"], ["House Sparrow", "Passer domesticus"], ["Hooded Crow", "Corvus cornix"], ["Great Tit", "Parus major"], ["Sardinian Warbler", "Curruca melanocephala"], ["European Goldfinch", "Carduelis carduelis"], ["Little Owl", "Athene noctua"], ["Yellow-legged Gull", "Larus michahellis"], ["Common Kestrel", "Falco tinnunculus"], ["Crested Lark", "Galerida cristata"], ["Eurasian Blackbird", "Turdus merula"], ["Blue Rock-Thrush", "Monticola solitarius"], ["Masked Shrike", "Lanius nubicus"], ["Western Rock Nuthatch", "Sitta neumayer"], ["Eurasian Jay", "Garrulus glandarius"], ["Common Kingfisher", "Alcedo atthis"]];
 const SAMPLE_PEOPLE = [
   { u: "sample-priya", name: "Priya (sample)", county: "Leeds", region: "GB-ENG", lat: 53.83, lng: -1.53, birds: SAMPLE_BIRDS.slice(0, 15), friend: true },
   { u: "sample-tom", name: "Tom (sample)", county: "Lancashire", region: "GB-ENG", lat: 53.76, lng: -2.7, birds: SAMPLE_BIRDS.slice(0, 8).concat(SAMPLE_BIRDS.slice(16)), friend: true },
@@ -368,6 +374,8 @@ const SAMPLE_PEOPLE = [
   { u: "sample-ewan", name: "Ewan (sample)", county: "Edinburgh", region: "GB-SCT", lat: 55.95, lng: -3.19, birds: SAMPLE_BIRDS.slice(0, 6).concat(SAMPLE_BIRDS.slice(13, 18)), friend: false },
   { u: "sample-lucia", name: "Lucía (sample)", county: "Madrid", region: "ES-MD", lat: 40.42, lng: -3.7, birds: SAMPLE_SPAIN, friend: false },
   { u: "sample-javi", name: "Javi (sample)", county: "Málaga", region: "ES-AN", lat: 36.72, lng: -4.42, birds: SAMPLE_SPAIN.slice(0, 10), friend: true },
+  { u: "sample-eleni", name: "Eleni (sample)", county: "Attica", region: "GR-I", lat: 37.97, lng: 23.72, birds: SAMPLE_GREECE, friend: true },
+  { u: "sample-nikos", name: "Nikos (sample)", county: "Thessaloniki", region: "GR-B", lat: 40.62, lng: 22.94, birds: SAMPLE_GREECE.slice(0, 7).concat(SAMPLE_GREECE.slice(12)), friend: false },
 ];
 async function seedSamples(admin) {
   const head = KEEP.join(","), made = [];
@@ -613,7 +621,7 @@ export default async (req, context) => {
         if (locked(me)) return fail(429, locked(me));
         if (hashPass(String(b.passcode || ""), me.salt) !== me.hash) { await failTry(me); return fail(401, "That passcode isn't right."); }
         if (isAdmin(me.u)) return fail(400, "You're the admin, so your account can't be deleted from here.");
-        await store().delete(`csv/${me.u}`); await store().delete(`users/${me.u}`); await store().delete(`inbox/${me.u}`);
+        await store().delete(`csv/${me.u}`); await store().delete(`undo/${me.u}`); await store().delete(`users/${me.u}`); await store().delete(`inbox/${me.u}`);
         if (me.invite) await store().delete(`invites/${me.invite}`);
         const { blobs } = await store().list({ prefix: "aliases/" });
         await Promise.all(blobs.map(async (a) => { if ((await store().get(a.key, { type: "text" })) === me.u) await store().delete(a.key); }));
@@ -708,7 +716,7 @@ export default async (req, context) => {
           : null));
       const { blobs } = await store().list({ prefix: "aliases/" });
       await Promise.all(blobs.map(async (a) => { if ((await store().get(a.key, { type: "text" })) === old) await store().set(a.key, nu); }));
-      await store().delete(`csv/${old}`); await store().delete(`users/${old}`);
+      await store().delete(`csv/${old}`); await store().delete(`undo/${old}`); await store().delete(`users/${old}`);
       return json({ token: tokenFor(me), me: publicMe(me) });
     }
 
@@ -720,6 +728,37 @@ export default async (req, context) => {
       me.salt = crypto.randomBytes(16).toString("base64"); me.hash = hashPass(String(b.passcode), me.salt); me.v = (me.v || 1) + 1; me.mustChange = false;
       await saveUser(me, ["salt", "hash", "v", "mustChange"]);
       return json({ token: tokenFor(me), me: publicMe(me) });
+    }
+
+    /* undo the latest upload within 30 minutes: birds, badges it earned and the notes friends got go back to how they were */
+    if (path === "birds/undo" && m === "POST") {
+      if (!me) return fail(401, "Please sign in.");
+      const b = await jsonBody(req), u = await store().get(`undo/${me.u}`, { type: "json" });
+      if (!u || u.id !== b.id || Date.now() - Date.parse(u.t) > 30 * 60e3) return fail(410, "It's too late to undo that upload. You can still upload the right file with Start fresh in Settings.");
+      if (u.prev) await store().set(`csv/${me.u}`, u.prev); else await store().delete(`csv/${me.u}`);
+      const keep = u.badges || {}, gone = new Set(Object.keys(me.badges || {}).filter((k) => !(k in keep)));
+      me.birds = u.birds || null; me.badges = keep;
+      await saveUser(me, ["birds", "badges"]);
+      await store().delete(`undo/${me.u}`);
+      const fresh = new Set(u.fresh || []);
+      for (const f of me.friends || []) {
+        await edit(`inbox/${f}`, (box) => {
+          let changed = false;
+          box.items = (box.items || []).filter((x) => {
+            if (!x.by || x.by.u !== me.u) return true;
+            if (x.kind === "rare" && x.up === u.id) { changed = true; return false; }
+            if (x.kind === "birds" && (x.ups || []).includes(u.id)) {
+              changed = true; x.ups = x.ups.filter((i) => i !== u.id); x.added = (x.added || 0) - u.added;
+              x.newSpecies = (x.newSpecies || []).filter((n) => !fresh.has(n));
+              return x.ups.length > 0 && x.added > 0;
+            }
+            if (x.kind === "badges" && gone.size && (x.ids || []).some((i) => gone.has(i))) { changed = true; x.ids = x.ids.filter((i) => !gone.has(i)); return x.ids.length > 0; }
+            return true;
+          });
+          return changed ? box : false;
+        }, { init: null });
+      }
+      return json({ me: publicMe(me) });
     }
 
     if (path === "birds") {
@@ -739,6 +778,7 @@ export default async (req, context) => {
         let res;
         try { res = cleanCSV(text); } catch (e) { return fail(400, e.message); }
         const replace = url.searchParams.get("mode") === "replace", clean = res;
+        const upId = crypto.randomBytes(6).toString("base64url"), prevBirds = me.birds || null, prevBadges = { ...(me.badges || {}) };
         let prev = null, before = new Map();
         /* two uploads at once (two tabs, a double tap) both land: the second merges into the first */
         await edit(`csv/${me.u}`, (old) => {
@@ -766,14 +806,17 @@ export default async (req, context) => {
         if (res.stats.added > 0 && fresh.length + (first ? 1 : 0) + res.stats.added > 0) {
           const friends = (await Promise.all((me.friends || []).map(findUser))).filter((f) => f && canSee(me, f));
           for (const f of friends) {
-            await notify(f.u, { kind: "birds", by: mini(me), added: res.stats.added, newSpecies: first ? [] : fresh.slice(0, 30), first, species: res.stats.species, places: res.stats.places }, true);
-            if (rare.length) await notify(f.u, { kind: "rare", by: mini(me), birds: rare.map((n) => ({ name: n, sci: after.get(n) })) });
+            await notify(f.u, { kind: "birds", by: mini(me), ups: [upId], added: res.stats.added, newSpecies: first ? [] : fresh.slice(0, 30), first, species: res.stats.species, places: res.stats.places }, true);
+            if (rare.length) await notify(f.u, { kind: "rare", by: mini(me), up: upId, birds: rare.map((n) => ({ name: n, sci: after.get(n) })) });
           }
         }
-        return json({ me: publicMe(me), stats: res.stats });
+        /* keep what was there before for 30 minutes, so this upload can be undone (say, someone else's file by mistake) */
+        const changed = res.stats.replaced || res.stats.added > 0;
+        if (changed) await store().setJSON(`undo/${me.u}`, { id: upId, t: new Date().toISOString(), prev, birds: prevBirds, badges: prevBadges, added: res.stats.added || 0, fresh });
+        return json({ me: publicMe(me), stats: res.stats, undo: changed ? upId : "" });
       }
       if (m === "DELETE") {
-        await store().delete(`csv/${me.u}`);
+        await store().delete(`csv/${me.u}`); await store().delete(`undo/${me.u}`);
         me.birds = null; await saveUser(me, ["birds"]);
         return json({ me: publicMe(me) });
       }
@@ -947,7 +990,7 @@ export default async (req, context) => {
       }
       if (path === "admin/remove" && m === "POST") {
         if (target.u === me.u) return fail(400, "You can't remove yourself.");
-        await store().delete(`csv/${target.u}`); await store().delete(`users/${target.u}`); await store().delete(`inbox/${target.u}`);
+        await store().delete(`csv/${target.u}`); await store().delete(`undo/${target.u}`); await store().delete(`users/${target.u}`); await store().delete(`inbox/${target.u}`);
         if (target.invite) await store().delete(`invites/${target.invite}`);
         await dropEverywhere(target.u);
         return json({ removed: target.u });
